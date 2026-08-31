@@ -160,9 +160,9 @@ class TestCoordinates:
         assert abs(lon2 - lon) < 1e-6
 
     def test_haversine_known_distance(self):
-        # Delhi to Agra ≈ 200 km
+        # Delhi to Agra ≈ 178 km (great-circle)
         dist = haversine_distance(28.6139, 77.2090, 27.1767, 78.0081)
-        assert 190_000 < dist < 210_000, f"Expected ~200km, got {dist/1000:.0f}km"
+        assert 170_000 < dist < 190_000, f"Expected ~178km, got {dist/1000:.0f}km"
 
     def test_haversine_zero_distance(self):
         dist = haversine_distance(28.6139, 77.2090, 28.6139, 77.2090)
