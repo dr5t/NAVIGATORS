@@ -118,10 +118,50 @@ function initControls() {
 
     const timeline = document.getElementById('timeline');
     timeline.addEventListener('input', (e) => {
-        if (state.data) {
+        if (state.data && !window.liveSensorClient?.isCapturing) {
             const pct = parseFloat(e.target.value);
             state.currentIndex = Math.floor((pct / 100) * (state.data.data.timestamps.length - 1));
             updateFrame(state.currentIndex);
+        }
+    });
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.warn('[PWA] Service Worker registration failed:', err);
+        });
+    }
+
+    // Live Sensor Controls (Offline Edge Engine)
+    document.getElementById('btnStartLive').addEventListener('click', async () => {
+        const btn = document.getElementById('btnStartLive');
+        const statusEl = document.getElementById('edgeStatus');
+        
+        if (window.offlineEngine.isCapturing) {
+            window.offlineEngine.stopCapture();
+            btn.textContent = 'Start Offline Engine';
+            btn.style.color = '';
+            statusEl.textContent = 'Edge AI Ready';
+        } else {
+            statusEl.textContent = 'Initializing Edge AI...';
+            const success = await window.offlineEngine.requestPermissionsAndStart();
+            if (success) {
+                btn.textContent = 'Stop Engine';
+                btn.style.color = 'var(--accent-red)';
+                statusEl.textContent = 'Running Locally';
+                
+                // Clear map trajectories for live run
+                state.truthLine.setLatLngs([]);
+                state.estimatedLine.setLatLngs([]);
+                state.estimatedCoords = [];
+                // Disable playback
+                pause();
+                document.getElementById('playbackControls').style.opacity = '0.3';
+                document.getElementById('playbackControls').style.pointerEvents = 'none';
+            } else {
+                statusEl.textContent = 'Init Failed';
+                statusEl.style.color = 'var(--accent-red)';
+            }
         }
     });
 }

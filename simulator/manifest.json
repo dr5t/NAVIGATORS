@@ -1,0 +1,17 @@
+{
+  "name": "Navigators IDR Simulator",
+  "short_name": "Navigators",
+  "description": "Intelligent Dead Reckoning AI Navigation System",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#00E5FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Compass_icon.png/512px-Compass_icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

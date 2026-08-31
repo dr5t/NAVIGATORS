@@ -6,6 +6,16 @@
     <title>Navigators IDR — Intelligent Dead Reckoning Simulator</title>
     <meta name="description" content="AI/ML-powered navigation system demonstrating seamless vehicle tracking during GNSS denial using Intelligent Dead Reckoning. SIH26168 for ISRO.">
 
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Compass_icon.png/512px-Compass_icon.png">
+
+    <!-- ONNX Runtime Web -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+
     <!-- Leaflet.js for Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -75,6 +85,12 @@
                         <input type="range" id="timeline" min="0" max="100" value="0" step="0.1">
                         <span id="timeLabel">0.0s</span>
                     </div>
+                </div>
+                
+                <!-- Live Sensor Controls -->
+                <div class="live-controls glass-panel" id="liveControls" style="margin-top: 10px;">
+                    <button id="btnStartLive" class="control-btn live-btn">Start Offline Engine</button>
+                    <span id="edgeStatus" style="font-size: 11px; margin-left: 10px; color: var(--accent-cyan); font-family: var(--font-mono);">Edge AI Ready</span>
                 </div>
             </div>
             <!-- Legend -->
@@ -207,6 +223,7 @@
         </aside>
     </main>
 
+    <script src="offline_engine.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
