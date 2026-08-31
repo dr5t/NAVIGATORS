@@ -1,0 +1,112 @@
+# =============================================================================
+# Navigators IDR — Default Configuration
+# SIH26168: AI/ML Intelligent Dead Reckoning
+# =============================================================================
+
+# --- Data Pipeline ---
+data:
+  dataset_path: "./data/io_vnbd/"
+  window_size: 200          # Number of IMU samples per window (200 @ 10Hz = 20s)
+  window_stride: 50         # Stride between windows
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  imu_frequency: 10         # Hz (smartphone), set to 200 for FOG-IMU
+  normalize: true
+
+# --- Preprocessing ---
+preprocessing:
+  lowpass_cutoff: 3.0       # Hz — cutoff for Butterworth low-pass filter
+  lowpass_order: 4
+  gravity: 9.81             # m/s² — gravity magnitude for removal
+  vibration_filter: true
+  alignment_method: "pca"   # pca | static_gravity | manual
+
+# --- Model Architecture ---
+model:
+  type: "tcn"               # tcn | lstm
+  input_channels: 6         # acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z
+  output_dim: 2             # v_north, v_east (2D velocity)
+
+  tcn:
+    num_channels: [64, 64, 128, 128]   # Channels per TCN block
+    kernel_size: 7
+    dropout: 0.2
+    use_skip_connections: true
+
+  lstm:
+    hidden_size: 128
+    num_layers: 3
+    dropout: 0.2
+    bidirectional: true
+    use_attention: true
+
+# --- Training ---
+training:
+  epochs: 100
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "adamw"        # adam | adamw | sgd
+  scheduler: "cosine"       # cosine | step | plateau
+  step_lr_gamma: 0.5
+  step_lr_step: 20
+  gradient_clip: 1.0
+  early_stopping_patience: 15
+  loss: "mse_angular"       # mse | mse_angular | huber
+  angular_loss_weight: 0.3
+  checkpoint_dir: "./checkpoints/"
+  log_dir: "./runs/"
+
+# --- Extended Kalman Filter ---
+ekf:
+  state_dim: 15             # [pos(3), vel(3), orient(3), acc_bias(3), gyro_bias(3)]
+  # Process noise covariance (diagonal)
+  process_noise:
+    position: 0.01
+    velocity: 0.1
+    orientation: 0.001
+    accel_bias: 0.0001
+    gyro_bias: 0.00001
+  # Measurement noise covariance
+  gnss_noise:
+    position: 2.5           # meters (typical smartphone GPS accuracy)
+    velocity: 0.5           # m/s
+  ai_velocity_noise: 0.3    # m/s — uncertainty of AI velocity prediction
+  update_rate: 10            # Hz
+
+# --- Dead Reckoning ---
+dead_reckoning:
+  max_outage_duration: 120   # seconds — max DR duration before warning
+  drift_warning_threshold: 0.1  # 10% of distance traveled
+
+# --- Non-Holonomic Constraints ---
+nhc:
+  enabled: true
+  lateral_velocity_sigma: 0.1    # m/s — expected lateral velocity noise
+  vertical_velocity_sigma: 0.1   # m/s — expected vertical velocity noise
+  max_heading_rate: 0.5          # rad/s — max turning rate
+
+# --- Zero Velocity Update ---
+zupt:
+  enabled: true
+  accel_variance_threshold: 0.05  # m²/s⁴ — below this = stationary
+  gyro_variance_threshold: 0.01   # rad²/s² — below this = stationary
+  detection_window: 10            # samples to evaluate
+  velocity_reset_sigma: 0.01     # m/s — ZUPT measurement noise
+
+# --- Map Matching ---
+map_matching:
+  enabled: true
+  method: "geometric"       # geometric | hmm
+  search_radius: 50.0       # meters — max snap distance
+  hmm_sigma: 5.0            # meters — HMM emission probability std
+  hmm_beta: 3.0             # meters — HMM transition probability scale
+
+# --- Simulator ---
+simulator:
+  default_lat: 28.6139      # Delhi, India
+  default_lon: 77.2090
+  playback_speed: 1.0
+  map_tile_url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+  update_interval_ms: 100

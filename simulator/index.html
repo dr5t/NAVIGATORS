@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigators IDR — Intelligent Dead Reckoning Simulator</title>
+    <meta name="description" content="AI/ML-powered navigation system demonstrating seamless vehicle tracking during GNSS denial using Intelligent Dead Reckoning. SIH26168 for ISRO.">
+
+    <!-- Leaflet.js for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="app-header">
+        <div class="header-left">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polygon points="12,2 15,10 12,8 9,10"/>
+                        <line x1="12" y1="12" x2="12" y2="22" stroke-dasharray="2,2"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>NAVIGATORS</h1>
+                    <span class="subtitle">Intelligent Dead Reckoning • SIH26168</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="nav-mode-indicator" id="navModeIndicator">
+                <span class="mode-dot"></span>
+                <span class="mode-label">INITIALIZING</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="org-badge">
+                <span class="org-label">FOR</span>
+                <span class="org-name">ISRO</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-main">
+        <!-- Map Panel -->
+        <section class="map-panel" id="mapPanel">
+            <div id="map"></div>
+            <!-- Map Overlay Controls -->
+            <div class="map-overlay-top">
+                <div class="playback-controls glass-panel" id="playbackControls">
+                    <button id="btnPlay" class="control-btn" title="Play">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                    </button>
+                    <button id="btnPause" class="control-btn hidden" title="Pause">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </button>
+                    <button id="btnReset" class="control-btn" title="Reset">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 7"/><polyline points="3 22 3 16 9 16"/></svg>
+                    </button>
+                    <div class="speed-control">
+                        <label>Speed</label>
+                        <input type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="2">
+                        <span id="speedLabel">2x</span>
+                    </div>
+                    <div class="timeline-container">
+                        <input type="range" id="timeline" min="0" max="100" value="0" step="0.1">
+                        <span id="timeLabel">0.0s</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Legend -->
+            <div class="map-legend glass-panel">
+                <div class="legend-item"><span class="legend-color" style="background: #00E5FF;"></span> Ground Truth</div>
+                <div class="legend-item"><span class="legend-color" style="background: #76FF03;"></span> GNSS + INS</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FF6D00;"></span> Dead Reckoning</div>
+                <div class="legend-item"><span class="legend-color" style="background: #FF1744;"></span> GNSS Denied Zone</div>
+            </div>
+        </section>
+
+        <!-- Telemetry Panel -->
+        <aside class="telemetry-panel" id="telemetryPanel">
+            <!-- GNSS Status Card -->
+            <div class="tele-card glass-panel" id="gnssStatusCard">
+                <div class="card-header">
+                    <h3>GNSS STATUS</h3>
+                    <div class="status-led" id="gnssLed"></div>
+                </div>
+                <div class="gnss-status-display">
+                    <div class="status-text" id="gnssStatusText">ACQUIRING</div>
+                    <div class="signal-bars" id="signalBars">
+                        <div class="bar bar-1"></div>
+                        <div class="bar bar-2"></div>
+                        <div class="bar bar-3"></div>
+                        <div class="bar bar-4"></div>
+                        <div class="bar bar-5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speed & Heading Card -->
+            <div class="tele-card glass-panel">
+                <div class="card-header">
+                    <h3>VELOCITY</h3>
+                </div>
+                <div class="dual-gauge">
+                    <div class="gauge-item">
+                        <div class="gauge-value" id="speedValue">0.0</div>
+                        <div class="gauge-unit">km/h</div>
+                        <div class="gauge-label">Speed</div>
+                    </div>
+                    <div class="gauge-divider"></div>
+                    <div class="gauge-item">
+                        <div class="gauge-value" id="headingValue">0°</div>
+                        <div class="gauge-unit">deg</div>
+                        <div class="gauge-label">Heading</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Position Error Card -->
+            <div class="tele-card glass-panel">
+                <div class="card-header">
+                    <h3>POSITION ERROR</h3>
+                </div>
+                <div class="error-display">
+                    <div class="error-value" id="posErrorValue">0.0</div>
+                    <div class="error-unit">meters</div>
+                    <div class="error-bar-container">
+                        <div class="error-bar" id="posErrorBar"></div>
+                        <div class="error-threshold" style="left: 50%;"></div>
+                    </div>
+                    <div class="error-labels">
+                        <span>0m</span>
+                        <span class="threshold-label">5m target</span>
+                        <span>10m</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drift Gauge Card -->
+            <div class="tele-card glass-panel">
+                <div class="card-header">
+                    <h3>DR DRIFT</h3>
+                    <span class="card-badge" id="driftBadge">—</span>
+                </div>
+                <div class="drift-display">
+                    <div class="drift-ring-container">
+                        <svg class="drift-ring" viewBox="0 0 120 120">
+                            <circle class="drift-ring-bg" cx="60" cy="60" r="52" />
+                            <circle class="drift-ring-fill" id="driftRingFill" cx="60" cy="60" r="52" />
+                        </svg>
+                        <div class="drift-center">
+                            <span class="drift-value" id="driftValue">0.0</span>
+                            <span class="drift-unit">%</span>
+                        </div>
+                    </div>
+                    <div class="drift-target">Target: &lt; 10%</div>
+                </div>
+            </div>
+
+            <!-- Confidence Card -->
+            <div class="tele-card glass-panel">
+                <div class="card-header">
+                    <h3>CONFIDENCE</h3>
+                </div>
+                <div class="confidence-display">
+                    <div class="confidence-bar-container">
+                        <div class="confidence-bar" id="confidenceBar"></div>
+                    </div>
+                    <div class="confidence-value" id="confidenceValue">100%</div>
+                </div>
+            </div>
+
+            <!-- Metrics Summary Card -->
+            <div class="tele-card glass-panel" id="metricsCard">
+                <div class="card-header">
+                    <h3>METRICS</h3>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">ATE RMSE</span>
+                        <span class="metric-value" id="ateRmse">—</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">CEP50</span>
+                        <span class="metric-value" id="cep50">—</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">CEP95</span>
+                        <span class="metric-value" id="cep95">—</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Distance</span>
+                        <span class="metric-value" id="totalDistance">—</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

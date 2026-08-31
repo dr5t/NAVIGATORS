@@ -1,0 +1,811 @@
+/* ============================================================
+   Navigators IDR — Simulator Styles
+   Premium dark-mode glassmorphic design
+   ============================================================ */
+
+/* --- CSS Custom Properties (Design Tokens) --- */
+:root {
+    /* Colors */
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: rgba(17, 24, 39, 0.7);
+    --bg-glass: rgba(15, 23, 42, 0.65);
+
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --accent-cyan: #00E5FF;
+    --accent-green: #76FF03;
+    --accent-orange: #FF6D00;
+    --accent-red: #FF1744;
+    --accent-purple: #7C4DFF;
+    --accent-blue: #2979FF;
+
+    --gnss-active: #76FF03;
+    --gnss-denied: #FF1744;
+    --gnss-reacq: #FF6D00;
+
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+    /* Spacing */
+    --gap-xs: 4px;
+    --gap-sm: 8px;
+    --gap-md: 16px;
+    --gap-lg: 24px;
+    --gap-xl: 32px;
+
+    /* Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    /* Typography */
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Layout */
+    --header-height: 60px;
+    --telemetry-width: 340px;
+}
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-main);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Glass Panel Utility --- */
+.glass-panel {
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--glass-shadow);
+}
+
+/* --- Header --- */
+#app-header {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--gap-lg);
+    background: linear-gradient(180deg, rgba(10, 14, 26, 0.95), rgba(10, 14, 26, 0.8));
+    border-bottom: 1px solid var(--glass-border);
+    position: relative;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-md);
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    color: var(--accent-cyan);
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 4px var(--accent-cyan)); }
+    50% { filter: drop-shadow(0 0 12px var(--accent-cyan)); }
+}
+
+.logo-text h1 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.logo-text .subtitle {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+/* Nav Mode Indicator */
+.nav-mode-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-sm);
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-medium);
+}
+
+.mode-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: var(--transition-medium);
+}
+
+.mode-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+/* Mode states */
+.nav-mode-indicator.gnss-ins .mode-dot {
+    background: var(--gnss-active);
+    box-shadow: 0 0 8px var(--gnss-active);
+}
+.nav-mode-indicator.gnss-ins .mode-label { color: var(--gnss-active); }
+
+.nav-mode-indicator.dead-reckoning .mode-dot {
+    background: var(--gnss-denied);
+    box-shadow: 0 0 8px var(--gnss-denied);
+    animation: blink 0.8s infinite;
+}
+.nav-mode-indicator.dead-reckoning .mode-label { color: var(--gnss-denied); }
+
+.nav-mode-indicator.reacquisition .mode-dot {
+    background: var(--gnss-reacq);
+    box-shadow: 0 0 8px var(--gnss-reacq);
+    animation: blink 0.5s infinite;
+}
+.nav-mode-indicator.reacquisition .mode-label { color: var(--gnss-reacq); }
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Organization Badge */
+.org-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-sm);
+}
+
+.org-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+}
+
+.org-name {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent-orange);
+}
+
+/* --- Main Layout --- */
+#app-main {
+    display: flex;
+    height: calc(100vh - var(--header-height));
+}
+
+/* --- Map Panel --- */
+.map-panel {
+    flex: 1;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+}
+
+/* Leaflet dark theme overrides */
+.leaflet-container {
+    background: var(--bg-secondary) !important;
+}
+
+.leaflet-control-zoom a {
+    background: var(--bg-glass) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--glass-border) !important;
+    backdrop-filter: blur(10px);
+}
+
+.leaflet-control-attribution {
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: var(--text-muted) !important;
+    font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+    color: var(--text-secondary) !important;
+}
+
+/* Map Overlay */
+.map-overlay-top {
+    position: absolute;
+    top: var(--gap-md);
+    left: var(--gap-md);
+    right: var(--gap-md);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.playback-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-md);
+    padding: 10px var(--gap-md);
+    pointer-events: auto;
+    width: fit-content;
+}
+
+.control-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.control-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.control-btn.hidden { display: none; }
+
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-sm);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.speed-control label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.speed-control input[type="range"] {
+    width: 60px;
+    accent-color: var(--accent-cyan);
+}
+
+#speedLabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-cyan);
+    min-width: 28px;
+}
+
+.timeline-container {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-sm);
+    flex: 1;
+    min-width: 120px;
+}
+
+.timeline-container input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent-cyan);
+}
+
+#timeLabel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 48px;
+}
+
+/* Map Legend */
+.map-legend {
+    position: absolute;
+    bottom: var(--gap-lg);
+    left: var(--gap-md);
+    z-index: 1000;
+    padding: var(--gap-sm) var(--gap-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-xs);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-sm);
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+}
+
+/* --- Telemetry Panel --- */
+.telemetry-panel {
+    width: var(--telemetry-width);
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--gap-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-md);
+    background: linear-gradient(180deg, rgba(10, 14, 26, 0.6), rgba(10, 14, 26, 0.9));
+    border-left: 1px solid var(--glass-border);
+
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
+}
+
+.telemetry-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.telemetry-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.telemetry-panel::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 2px;
+}
+
+/* --- Telemetry Cards --- */
+.tele-card {
+    padding: var(--gap-md);
+    transition: var(--transition-medium);
+}
+
+.tele-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--gap-sm);
+}
+
+.card-header h3 {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+}
+
+.card-badge {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+}
+
+/* GNSS Status */
+.status-led {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: var(--transition-medium);
+}
+
+.status-led.active {
+    background: var(--gnss-active);
+    box-shadow: 0 0 10px var(--gnss-active), 0 0 20px rgba(118, 255, 3, 0.3);
+}
+
+.status-led.denied {
+    background: var(--gnss-denied);
+    box-shadow: 0 0 10px var(--gnss-denied), 0 0 20px rgba(255, 23, 68, 0.3);
+    animation: blink 0.8s infinite;
+}
+
+.gnss-status-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-text {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    transition: var(--transition-medium);
+}
+
+.signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 24px;
+}
+
+.signal-bars .bar {
+    width: 6px;
+    background: var(--text-muted);
+    border-radius: 2px;
+    transition: var(--transition-medium);
+}
+
+.bar-1 { height: 20%; }
+.bar-2 { height: 40%; }
+.bar-3 { height: 60%; }
+.bar-4 { height: 80%; }
+.bar-5 { height: 100%; }
+
+.signal-bars.active .bar {
+    background: var(--gnss-active);
+    box-shadow: 0 0 4px rgba(118, 255, 3, 0.4);
+}
+
+.signal-bars.denied .bar {
+    background: var(--glass-border);
+}
+
+/* Dual Gauge */
+.dual-gauge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gap-md);
+}
+
+.gauge-item {
+    text-align: center;
+    flex: 1;
+}
+
+.gauge-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+    line-height: 1;
+}
+
+.gauge-unit {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.gauge-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: var(--gap-xs);
+}
+
+.gauge-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--glass-border);
+}
+
+/* Position Error */
+.error-display {
+    text-align: center;
+}
+
+.error-value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-green);
+    transition: color var(--transition-medium);
+}
+
+.error-unit {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: var(--gap-sm);
+}
+
+.error-bar-container {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+    margin: var(--gap-sm) 0;
+}
+
+.error-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-orange), var(--accent-red));
+    transition: width var(--transition-medium);
+}
+
+.error-threshold {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--text-muted);
+    border-radius: 1px;
+}
+
+.error-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--text-muted);
+}
+
+.threshold-label {
+    color: var(--text-secondary);
+}
+
+/* Drift Ring Gauge */
+.drift-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gap-sm);
+}
+
+.drift-ring-container {
+    position: relative;
+    width: 110px;
+    height: 110px;
+}
+
+.drift-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.drift-ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 8;
+}
+
+.drift-ring-fill {
+    fill: none;
+    stroke: var(--accent-green);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 326.73;
+    stroke-dashoffset: 326.73;
+    transition: stroke-dashoffset var(--transition-slow), stroke var(--transition-medium);
+}
+
+.drift-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.drift-value {
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-green);
+}
+
+.drift-unit {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.drift-target {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Confidence Bar */
+.confidence-display {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-md);
+}
+
+.confidence-bar-container {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.confidence-bar {
+    height: 100%;
+    width: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-green));
+    transition: width var(--transition-medium);
+}
+
+.confidence-value {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--accent-green);
+    min-width: 45px;
+    text-align: right;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap-sm);
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    padding: var(--gap-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+}
+
+.metric-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.metric-value {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+/* --- Custom Leaflet Markers --- */
+.vehicle-marker {
+    width: 20px;
+    height: 20px;
+    position: relative;
+}
+
+.vehicle-marker-inner {
+    width: 20px;
+    height: 20px;
+    background: var(--accent-cyan);
+    border-radius: 50%;
+    border: 3px solid var(--bg-primary);
+    box-shadow: 0 0 12px var(--accent-cyan), 0 0 24px rgba(0, 229, 255, 0.3);
+    position: relative;
+}
+
+.vehicle-marker-inner::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 8px solid var(--accent-cyan);
+}
+
+.vehicle-marker-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 229, 255, 0.15);
+    border-radius: 50%;
+    animation: marker-pulse 2s ease-out infinite;
+}
+
+@keyframes marker-pulse {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* DR active marker style */
+.vehicle-marker.dr-active .vehicle-marker-inner {
+    background: var(--accent-orange);
+    box-shadow: 0 0 12px var(--accent-orange), 0 0 24px rgba(255, 109, 0, 0.3);
+}
+
+.vehicle-marker.dr-active .vehicle-marker-inner::after {
+    border-bottom-color: var(--accent-orange);
+}
+
+.vehicle-marker.dr-active .vehicle-marker-pulse {
+    background: rgba(255, 109, 0, 0.15);
+}
+
+/* --- GNSS Denied Zone Overlay --- */
+.gnss-denied-overlay {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 23, 68, 0.08) 10px,
+        rgba(255, 23, 68, 0.08) 20px
+    );
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+    :root {
+        --telemetry-width: 280px;
+    }
+
+    .playback-controls {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 600px) {
+    #app-main {
+        flex-direction: column;
+    }
+
+    .telemetry-panel {
+        width: 100%;
+        height: 40vh;
+        border-left: none;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .map-panel {
+        height: 60vh;
+    }
+}
