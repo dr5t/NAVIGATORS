@@ -18,6 +18,8 @@ Develop an AI/ML-powered IDR system that utilizes a smartphone's IMU sensors to 
 *   **GNSS + INS fusion:** Fuse GNSS and inertial measurements while reducing drift and improving velocity/position estimates.
 *   **Seamless outage handling:** Switch rapidly between GNSS-aided navigation and dead reckoning, then return to fused navigation when GNSS returns.
 *   **External IMU support:** Core edge engine should accommodate external IMU data, not only smartphone sensors.
+*   **100% Offline Edge Execution:** The entire AI model and navigation engine must run directly on the mobile device's CPU/NPU without requiring *any* backend servers, internet connection, or cellular network.
+*   **WebAssembly/ONNX Integration:** Utilize ONNX Runtime Web to execute PyTorch neural networks locally within a Progressive Web App (PWA).
 *   **Real-time navigation UI:** Display a continuous vehicle position without obvious freezing or location jumps.
 
 ## 4. Performance Targets

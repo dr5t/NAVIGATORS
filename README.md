@@ -21,29 +21,27 @@ Conventional GPS/GNSS-based navigation fails in tunnels, underpasses, and dense 
 │                    SMARTPHONE / EDGE DEVICE                     │
 │                                                                 │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐ │
-│  │  IMU      │───▶│ Preproc  │───▶│ AI Model │───▶│   EKF     │ │
-│  │  Sensors  │    │ Filter   │    │ TCN/LSTM │    │  Fusion   │ │
+│  │  IMU      │───▶│ Buffer   │───▶│ AI Model │───▶│  Dead     │ │
+│  │  Sensors  │    │ Window   │    │ (ONNX)   │    │ Reckoning │ │
 │  └──────────┘    └──────────┘    └──────────┘    └─────┬─────┘ │
 │                                                        │       │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐         │       │
-│  │  GNSS    │───▶│  ZUPT    │───▶│   NHC    │─────────┘       │
-│  │  Receiver│    │  Detect  │    │ Constrain│                  │
-│  └──────────┘    └──────────┘    └──────────┘                  │
+│  ┌──────────┐    ┌──────────┐                          │       │
+│  │  GNSS    │───▶│  ZUPT    │──────────────────────────┘       │
+│  │  Receiver│    │  Detect  │                                  │
+│  └──────────┘    └──────────┘                                  │
 │                                                                 │
 │  ┌──────────┐    ┌──────────┐                                  │
-│  │  Map     │───▶│  UI      │  ◀── Continuous position output  │
-│  │  Match   │    │  Render  │                                   │
+│  │ Offline  │───▶│  UI      │  ◀── Continuous position output  │
+│  │ Map      │    │  Render  │                                   │
 │  └──────────┘    └──────────┘                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Processing Flow
-
-| GNSS Status | Pipeline |
-|---|---|
-| **Available** | GNSS + IMU → AI filtering → EKF Fusion → Map Match → Position |
-| **Lost** | IMU → AI velocity estimation → Dead Reckoning → NHC → Map Match → Position |
-| **Restored** | DR → Re-acquisition → GNSS + INS fusion → Corrected position |
+1.  **AI Velocity Estimator:** A PyTorch-based Temporal Convolutional Network (TCN) trained to predict vehicle velocity vectors `[v_east, v_north]` from raw IMU data.
+2.  **Model Export (ONNX):** The trained PyTorch model is exported to an ONNX format for efficient cross-platform deployment.
+3.  **100% Offline Edge Engine (WebAssembly):** The `simulator` acts as a Progressive Web App (PWA). It uses `onnxruntime-web` to load the AI model directly into the mobile device's CPU.
+4.  **Local Dead Reckoning:** The PWA captures live `DeviceMotionEvent` (accelerometer/gyroscope), buffers the data, runs the neural network locally, and integrates the velocity to plot the vehicle's position on a map—**without any backend server or internet connection.**
+5.  **Constraints Engine:** Implements Zero Velocity Updates (ZUPT) to prevent drift when stationary.
 
 ---
 
