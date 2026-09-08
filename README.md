@@ -19,8 +19,8 @@ The system has been rigorously tested against simulated multi-distance outages.
 
 | GNSS Outage Distance | System Target | Actual Drift | Status |
 | :--- | :--- | :--- | :--- |
-| **50 meters** | < 5.0 meters | **0.08 meters** | PASS ✓ |
-| **1000 meters** | < 100.0 meters | **2.12 meters** | PASS ✓ |
+| **50 meters** | < 5.0 meters | **INVALIDATED — GROUND-TRUTH VELOCITY LEAKAGE** | FAIL |
+| **1000 meters** | < 100.0 meters | **INVALIDATED** | FAIL |
 
 *AI Inference (ONNX): 4.64ms per 200-sample window. Max update rate: 215Hz.*
 
