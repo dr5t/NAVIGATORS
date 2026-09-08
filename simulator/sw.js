@@ -7,6 +7,8 @@ const ASSETS = [
     './offline_engine.js',
     './manifest.json',
     './model.onnx',
+    './model.onnx.data',
+    './data/simulation.json',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
     'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js'

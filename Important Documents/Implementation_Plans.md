@@ -66,6 +66,21 @@
 
 ---
 
+## Phase 5: Hardened Sensor Pipeline & Edge EKF (Completed)
+
+### Plan
+1. **Sensor Pipeline**: Build a robust preprocessor with non-linear median filtering to remove pothole/shock vibrations from IMU data.
+2. **ML Augmentations**: Introduce continuous Gaussian noise, impulsive noise, speed variation, and random heading misalignment during AI model training to guarantee generalization.
+3. **Edge Engine Rewrite**: Port the entire Python EKF (15-state), Map Matching, ZUPT, and NHC logic to purely functional JavaScript for execution inside the PWA without external backends.
+
+### What We Did
+- Developed `matrix.js` and `ekf.js` to run a fully optimized 15-state Extended Kalman Filter natively in the browser.
+- Ported Geometric Map Matching to `map_matcher.js` for offline snapping to road networks.
+- Upgraded `src/models/trainer.py` with rigorous batch augmentations.
+- Upgraded `src/data/preprocessor.py` with median filtering to protect the velocity inference from violent mechanical shocks.
+
+---
+
 ## Current Position & Readiness
 
 **Current State**: **System Ready for Field Testing**
@@ -75,9 +90,11 @@ We have successfully built a full-stack, AI-powered Intelligent Dead Reckoning s
 ### Key Capabilities Currently Active:
 - **Zero-Connectivity Operations**: The entire application is a self-contained PWA that installs on the device and operates in Airplane mode.
 - **Edge Inference**: The PyTorch model is running in WebAssembly on the mobile CPU.
+- **Full Edge EKF**: A 15-state Extended Kalman Filter, complete with ZUPT, NHC, and Map Matching runs natively in JS.
 - **Seamless Handover**: The system initializes with GNSS (if available) and seamlessly falls back to AI-driven Dead Reckoning when GNSS is lost.
 
 ### Next Steps (Optional/Future Work):
 - **Field Data Collection**: Collect real-world IMU data on specific vehicles to fine-tune the ONNX model.
-- **Advanced EKF on Edge**: Translate the full 15-state EKF (currently in Python) to WebAssembly (C++ or Rust) for even higher precision on the edge, replacing the simplified JS Dead Reckoning engine.
 - **Native Android App**: If browser sensor limitations become a bottleneck, port the WebAssembly solution to a native Android APK using React Native or Flutter.
+- **External IMU support**: Architecture-level
+- **Real vehicle field validation**: ⚠️ Future work

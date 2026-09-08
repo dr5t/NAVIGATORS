@@ -7,7 +7,7 @@ requiring the real IO-VNBD dataset.
 """
 
 import numpy as np
-from typing import Tuple, Optional, Dict, List
+from typing import Tuple, Optional, Dict, List, Any
 from dataclasses import dataclass, field
 
 
@@ -273,8 +273,17 @@ class SyntheticDataGenerator:
                 lat_noisy[i] = np.nan
                 lon_noisy[i] = np.nan
 
+        gnss_vel = np.zeros((N, 2))
+        true_vel = trajectory["velocities"]
+        for i in range(N):
+            if gnss_available[i]:
+                gnss_vel[i] = true_vel[i] + self.rng.normal(0, 0.2, 2)
+            else:
+                gnss_vel[i] = np.nan
+
         return {
             "positions": gnss_pos,
+            "velocities": gnss_vel,
             "available": gnss_available,
             "lat": lat_noisy,
             "lon": lon_noisy,
@@ -288,7 +297,7 @@ class SyntheticDataGenerator:
         outage_ranges: Optional[List[Tuple[float, float]]] = None,
         ref_lat: float = 28.6139,
         ref_lon: float = 77.2090,
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Generate a complete test scenario with trajectory, IMU, and GNSS data.
 

@@ -1,38 +1,45 @@
 """
 Navigators IDR — Extended Kalman Filter
-15-state EKF for GNSS + INS sensor fusion.
+15-state EKF for vehicle navigation with GNSS, INS, AI-velocity, NHC, and ZUPT fusion.
 
 State vector (15 elements):
-    [0:3]  — Position (East, North, Up) in meters
-    [3:6]  — Velocity (v_E, v_N, v_U) in m/s
-    [6:9]  — Orientation (roll, pitch, yaw) in radians
-    [9:12] — Accelerometer bias (b_ax, b_ay, b_az) in m/s²
+    [0:3]   — Position (East, North, Up) in meters [ENU frame]
+    [3:6]   — Velocity (v_E, v_N, v_U) in m/s
+    [6:9]   — Orientation (roll, pitch, yaw) in radians
+    [9:12]  — Accelerometer bias (b_ax, b_ay, b_az) in m/s²
     [12:15] — Gyroscope bias (b_gx, b_gy, b_gz) in rad/s
 
-Supports three operating modes:
-    1. GNSS + INS fusion (normal)
-    2. Dead reckoning only (GNSS denied)
-    3. Re-acquisition (GNSS restored — fast convergence)
+Operating modes:
+    1. GNSS_AIDED (normal high-accuracy fusion)
+    2. GNSS_DEGRADED (poor satellite geometry/high noise)
+    3. DEAD_RECKONING (GNSS outage: AI velocity + NHC + ZUPT)
+    4. REACQUISITION (GNSS restored: smooth, non-jumping convergence)
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Any, List
 from enum import Enum
 
 
 class NavigationMode(Enum):
     """Current navigation operating mode."""
-    GNSS_INS = "gnss_ins"      # Full fusion
-    DEAD_RECKONING = "dr"      # GNSS denied
-    REACQUISITION = "reacq"    # GNSS just restored
+    GNSS_AIDED = "gnss_aided"          # Standard GNSS + INS fusion
+    GNSS_INS = "gnss_ins"              # Alias for backward compatibility
+    GNSS_DEGRADED = "gnss_degraded"    # Degraded GNSS signal quality
+    DEAD_RECKONING = "dr"              # GNSS denied — AI + DR
+    REACQUISITION = "reacq"            # GNSS restored — smooth re-convergence
 
 
 class ExtendedKalmanFilter:
     """
     15-state Extended Kalman Filter for vehicle navigation.
-
-    Fuses AI-predicted velocity measurements with GNSS position/velocity
-    updates, while estimating and compensating for sensor biases.
+    
+    Features:
+    - AI velocity pseudo-measurement integration
+    - Kinematic Non-Holonomic Constraints (NHC) measurement updates
+    - Zero Velocity Updates (ZUPT)
+    - Anti-jump smooth GNSS reacquisition
+    - Numerically stable Joseph-form covariance updates
     """
 
     # State indices
@@ -51,169 +58,155 @@ class ExtendedKalmanFilter:
         ai_velocity_noise: float = 0.3,
         dt: float = 0.1,
     ):
-        """
-        Args:
-            process_noise: Dict with keys 'position', 'velocity', 'orientation',
-                          'accel_bias', 'gyro_bias' specifying process noise variances.
-            gnss_noise: Dict with keys 'position', 'velocity' for GNSS measurement noise.
-            ai_velocity_noise: AI velocity prediction uncertainty (m/s).
-            dt: Time step in seconds.
-        """
         self.dt = dt
 
-        # Default process noise
+        # Process noise parameters
         pn = process_noise or {}
-        self.q_pos = pn.get("position", 0.01)
-        self.q_vel = pn.get("velocity", 0.1)
-        self.q_ori = pn.get("orientation", 0.001)
-        self.q_abias = pn.get("accel_bias", 0.0001)
-        self.q_gbias = pn.get("gyro_bias", 0.00001)
+        self.q_pos = pn.get("position", 0.5)
+        self.q_vel = pn.get("velocity", 2.0)
+        self.q_ori = pn.get("orientation", 0.05)
+        self.q_abias = pn.get("accel_bias", 0.001)
+        self.q_gbias = pn.get("gyro_bias", 0.0001)
 
-        # GNSS measurement noise
+        # Measurement noise parameters
         gn = gnss_noise or {}
         self.r_gnss_pos = gn.get("position", 2.5)
         self.r_gnss_vel = gn.get("velocity", 0.5)
-
-        # AI velocity noise
         self.r_ai_vel = ai_velocity_noise
+        self.r_nhc_lateral = 1.0
+        self.r_nhc_vertical = 1.0
 
-        # Initialize state
-        self.x = np.zeros(self.STATE_DIM)  # State vector
-        self.P = np.eye(self.STATE_DIM)    # State covariance
+        # Initialize state and covariance
+        self.x = np.zeros(self.STATE_DIM, dtype=np.float64)
+        self.P = np.eye(self.STATE_DIM, dtype=np.float64)
 
-        # Set initial uncertainties
-        self.P[self.POS, self.POS] *= 10.0      # 10m position uncertainty
-        self.P[self.VEL, self.VEL] *= 5.0       # 5 m/s velocity uncertainty
-        self.P[self.ORI, self.ORI] *= 0.1       # ~6° orientation uncertainty
-        self.P[self.ABIAS, self.ABIAS] *= 0.5   # Bias uncertainty
+        # Initial uncertainties
+        self.P[self.POS, self.POS] *= 10.0
+        self.P[self.VEL, self.VEL] *= 5.0
+        self.P[self.ORI, self.ORI] *= 0.1
+        self.P[self.ABIAS, self.ABIAS] *= 0.5
         self.P[self.GBIAS, self.GBIAS] *= 0.01
 
-        # Navigation mode
+        # Mode and state tracking
         self.mode = NavigationMode.GNSS_INS
-        self.gnss_outage_start = None
-        self.last_gnss_time = None
+        self.gnss_outage_start: Optional[float] = None
+        self.last_gnss_time: Optional[float] = None
+        self.consecutive_good_gnss = 0
+        self.reacquisition_steps = 0
 
-        # Diagnostics
-        self.innovation_history = []
+        # Diagnostics history
+        self.innovation_history: List[float] = []
 
     def _build_process_noise(self) -> np.ndarray:
         """Construct the process noise covariance matrix Q."""
-        Q = np.zeros((self.STATE_DIM, self.STATE_DIM))
-        Q[self.POS, self.POS] = np.eye(3) * self.q_pos * self.dt ** 2
-        Q[self.VEL, self.VEL] = np.eye(3) * self.q_vel * self.dt
-        Q[self.ORI, self.ORI] = np.eye(3) * self.q_ori * self.dt
-        Q[self.ABIAS, self.ABIAS] = np.eye(3) * self.q_abias * self.dt
-        Q[self.GBIAS, self.GBIAS] = np.eye(3) * self.q_gbias * self.dt
+        Q = np.zeros((self.STATE_DIM, self.STATE_DIM), dtype=np.float64)
+        Q[self.POS, self.POS] = np.eye(3) * (self.q_pos * (self.dt ** 2))
+        Q[self.VEL, self.VEL] = np.eye(3) * (self.q_vel * self.dt)
+        Q[self.ORI, self.ORI] = np.eye(3) * (self.q_ori * self.dt)
+        Q[self.ABIAS, self.ABIAS] = np.eye(3) * (self.q_abias * self.dt)
+        Q[self.GBIAS, self.GBIAS] = np.eye(3) * (self.q_gbias * self.dt)
         return Q
 
     def _rotation_matrix(self, roll: float, pitch: float, yaw: float) -> np.ndarray:
         """
-        Compute rotation matrix from body to navigation frame (3-2-1 Euler angles).
-
-        Args:
-            roll: Roll angle in radians.
-            pitch: Pitch angle in radians.
-            yaw: Yaw (heading) angle in radians.
-
-        Returns:
-            (3, 3) rotation matrix.
+        Compute rotation matrix from Vehicle Body Frame (Forward, Right, Down)
+        to Navigation Frame (East, North, Up) [ENU].
+        Yaw is heading in radians clockwise from North (0 = North, pi/2 = East).
         """
         cr, sr = np.cos(roll), np.sin(roll)
         cp, sp = np.cos(pitch), np.sin(pitch)
-        cy, sy = np.cos(yaw), np.sin(yaw)
+        cy, sy = np.sin(yaw), np.cos(yaw)  # cy = sin(yaw) [East], sy = cos(yaw) [North]
 
+        # Column 0: Forward axis in ENU
+        # Column 1: Right axis in ENU
+        # Column 2: Down axis in ENU
         R = np.array([
-            [cy * cp,  cy * sp * sr - sy * cr,  cy * sp * cr + sy * sr],
-            [sy * cp,  sy * sp * sr + cy * cr,  sy * sp * cr - cy * sr],
-            [-sp,      cp * sr,                  cp * cr               ]
-        ])
+            [cy * cp,   sy * cr + cy * sp * sr,  -sy * sr + cy * sp * cr],
+            [sy * cp,  -cy * cr + sy * sp * sr,   cy * sr + sy * sp * cr],
+            [sp,       -cp * sr,                 -cp * cr               ]
+        ], dtype=np.float64)
         return R
+
+    def _enforce_covariance_symmetry(self):
+        """Guarantee positive-definiteness and symmetry of covariance matrix P."""
+        self.P = 0.5 * (self.P + self.P.T)
+        # Floor diagonal elements to prevent numerical collapse
+        for i in range(self.STATE_DIM):
+            if self.P[i, i] < 1e-9:
+                self.P[i, i] = 1e-9
 
     def predict(
         self,
         accel_body: np.ndarray,
         gyro_body: np.ndarray,
         ai_velocity: Optional[np.ndarray] = None,
+        apply_nhc: bool = True,
     ):
         """
-        EKF prediction step using IMU measurements.
-
-        Propagates the state forward using the motion model with
-        IMU-derived acceleration and angular velocity.
-
+        EKF propagation step using IMU measurements.
+        
         Args:
-            accel_body: (3,) accelerometer reading in body frame [m/s²].
-            gyro_body: (3,) gyroscope reading in body frame [rad/s].
-            ai_velocity: Optional (2,) AI-predicted velocity [v_north, v_east].
-                        Used as a pseudo-measurement if GNSS is denied.
+            accel_body: (3,) accelerometer readings [m/s²].
+            gyro_body: (3,) gyroscope readings [rad/s].
+            ai_velocity: Optional (2,) predicted velocity in [v_east, v_north] or [v_north, v_east].
+            apply_nhc: Whether to apply kinematic Non-Holonomic Constraints during prediction.
         """
-        # Extract current state
         roll, pitch, yaw = self.x[self.ORI]
         accel_bias = self.x[self.ABIAS]
         gyro_bias = self.x[self.GBIAS]
 
-        # Compensate for biases
+        # Bias compensation
         accel_corrected = accel_body - accel_bias
         gyro_corrected = gyro_body - gyro_bias
 
-        # Rotation from body to navigation frame
         R_b2n = self._rotation_matrix(roll, pitch, yaw)
 
-        # Specific force in navigation frame (remove gravity)
-        gravity = np.array([0.0, 0.0, 9.81])
-        accel_nav = R_b2n @ accel_corrected - gravity
+        # Specific force in navigation frame: in ENU, gravity acceleration vector is [0, 0, -9.81]
+        gravity_nav = np.array([0.0, 0.0, -9.81], dtype=np.float64)
+        accel_nav = R_b2n @ accel_corrected - gravity_nav
 
-        # --- State transition ---
-        # Position update: p_new = p + v * dt + 0.5 * a * dt²
-        self.x[self.POS] += self.x[self.VEL] * self.dt + 0.5 * accel_nav * self.dt ** 2
-
-        # Velocity update: v_new = v + a * dt
+        # State transition: position, velocity, orientation
+        # Always use the EKF's smoothed velocity for position integration.
+        # AI velocity will be handled correctly via pseudo-measurement update.
+        self.x[self.POS] += self.x[self.VEL] * self.dt + 0.5 * accel_nav * (self.dt ** 2)
         self.x[self.VEL] += accel_nav * self.dt
 
-        # Orientation update (simplified Euler integration)
-        # For small angles: dθ ≈ ω * dt
         self.x[self.ORI] += gyro_corrected * self.dt
 
-        # Wrap yaw to [-π, π]
-        self.x[8] = (self.x[8] + np.pi) % (2 * np.pi) - np.pi
+        # Normalize yaw to [-pi, pi]
+        self.x[8] = (self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
 
-        # Biases modeled as random walks (no change in prediction)
-
-        # --- Jacobian of state transition (F matrix) ---
-        F = np.eye(self.STATE_DIM)
-
-        # ∂position/∂velocity
+        # State Jacobian matrix F
+        F = np.eye(self.STATE_DIM, dtype=np.float64)
         F[self.POS, self.VEL] = np.eye(3) * self.dt
 
-        # ∂velocity/∂orientation (linearized rotation effect)
-        # Simplified: cross-product matrix of accel_corrected
+        # Linearized rotation effect
         ax, ay, az = accel_corrected
         skew_accel = np.array([
-            [0, -az, ay],
-            [az, 0, -ax],
-            [-ay, ax, 0]
-        ])
+            [0.0, -az, ay],
+            [az, 0.0, -ax],
+            [-ay, ax, 0.0]
+        ], dtype=np.float64)
         F[3:6, 6:9] = -R_b2n @ skew_accel * self.dt
-
-        # ∂velocity/∂accel_bias
         F[3:6, 9:12] = -R_b2n * self.dt
-
-        # ∂orientation/∂gyro_bias
         F[6:9, 12:15] = -np.eye(3) * self.dt
 
-        # --- Covariance propagation ---
+        # Covariance propagation
         Q = self._build_process_noise()
-
-        # Increase process noise during dead reckoning (uncertainty grows faster)
         if self.mode == NavigationMode.DEAD_RECKONING:
-            Q[self.POS, self.POS] *= 5.0
-            Q[self.VEL, self.VEL] *= 3.0
+            Q[self.POS, self.POS] *= 4.0
+            Q[self.VEL, self.VEL] *= 2.0
 
         self.P = F @ self.P @ F.T + Q
+        self._enforce_covariance_symmetry()
 
-        # --- AI velocity as pseudo-measurement during DR ---
-        if ai_velocity is not None and self.mode == NavigationMode.DEAD_RECKONING:
+        # Update with AI velocity pseudo-measurement during DR
+        if ai_velocity is not None and self.mode in [NavigationMode.DEAD_RECKONING, NavigationMode.GNSS_DEGRADED]:
             self._update_ai_velocity(ai_velocity)
+
+        # Update with NHC
+        if apply_nhc:
+            self.update_nhc(yaw_rate=float(gyro_corrected[2]))
 
     def update_gnss(
         self,
@@ -222,94 +215,107 @@ class ExtendedKalmanFilter:
         timestamp: Optional[float] = None,
     ):
         """
-        EKF update step using GNSS measurements.
-
-        Args:
-            gnss_position: (3,) or (2,) GNSS position in ENU [meters].
-            gnss_velocity: Optional (3,) or (2,) GNSS velocity [m/s].
-            timestamp: Current time for outage tracking.
+        EKF measurement update from GNSS with anti-jump smooth reacquisition.
         """
-        # Handle mode transitions
         if self.mode == NavigationMode.DEAD_RECKONING:
             self.mode = NavigationMode.REACQUISITION
-            # Temporarily trust GNSS more during re-acquisition
-            reacq_scale = 0.5
+            self.reacquisition_steps = 0
+            self.consecutive_good_gnss = 1
+        elif self.mode == NavigationMode.REACQUISITION:
+            self.reacquisition_steps += 1
+            self.consecutive_good_gnss += 1
+            # Return to full GNED_AIDED after smooth convergence
+            if self.consecutive_good_gnss >= 5:
+                self.mode = NavigationMode.GNSS_INS
         else:
             self.mode = NavigationMode.GNSS_INS
-            reacq_scale = 1.0
+            self.consecutive_good_gnss += 1
 
         if timestamp is not None:
             self.last_gnss_time = timestamp
 
-        # --- Position update ---
+        # Ensure 3D position
         if len(gnss_position) == 2:
-            gnss_position = np.array([gnss_position[0], gnss_position[1], 0.0])
+            gnss_pos_3d = np.array([gnss_position[0], gnss_position[1], 0.0], dtype=np.float64)
+        else:
+            gnss_pos_3d = np.array(gnss_position[:3], dtype=np.float64)
 
-        # Measurement matrix (position observation)
-        H_pos = np.zeros((3, self.STATE_DIM))
+        H_pos = np.zeros((3, self.STATE_DIM), dtype=np.float64)
         H_pos[:3, :3] = np.eye(3)
 
-        # Measurement noise
-        R_pos = np.eye(3) * (self.r_gnss_pos ** 2) * reacq_scale
+        R_pos = np.eye(3, dtype=np.float64) * (self.r_gnss_pos ** 2)
 
-        # Innovation
-        z_pos = gnss_position
+        # Anti-jump mechanism during reacquisition
+        # Scale measurement noise and clamp innovation so position transitions smoothly
+        if self.mode == NavigationMode.REACQUISITION:
+            # Gradually ramp trust: higher R initially to prevent instant jump
+            ramp = max(0.1, min(1.0, self.reacquisition_steps / 10.0))
+            R_pos = R_pos * (1.0 / ramp)
+
+        z_pos = gnss_pos_3d
         y_pos = z_pos - H_pos @ self.x
 
-        # Kalman gain
+        # Record innovation
+        self.innovation_history.append(float(np.linalg.norm(y_pos[:2])))
+
+        # Innovation gating / soft clamping to prevent wild teleports
+        if self.mode == NavigationMode.REACQUISITION:
+            max_step = 10.0  # Max single-step position correction (m)
+            y_norm = np.linalg.norm(y_pos[:2])
+            if y_norm > max_step:
+                y_pos[:2] = y_pos[:2] * (max_step / y_norm)
+
+        # Kalman gain calculation
         S_pos = H_pos @ self.P @ H_pos.T + R_pos
         K_pos = self.P @ H_pos.T @ np.linalg.inv(S_pos)
 
-        # State update
+        # State and covariance update (Joseph form)
         self.x += K_pos @ y_pos
         I_KH = np.eye(self.STATE_DIM) - K_pos @ H_pos
         self.P = I_KH @ self.P @ I_KH.T + K_pos @ R_pos @ K_pos.T
+        self._enforce_covariance_symmetry()
 
-        # --- Velocity update (if available) ---
+        # Velocity update
         if gnss_velocity is not None:
             if len(gnss_velocity) == 2:
-                gnss_velocity = np.array([gnss_velocity[0], gnss_velocity[1], 0.0])
+                gnss_vel_3d = np.array([gnss_velocity[0], gnss_velocity[1], 0.0], dtype=np.float64)
+            else:
+                gnss_vel_3d = np.array(gnss_velocity[:3], dtype=np.float64)
 
-            H_vel = np.zeros((3, self.STATE_DIM))
+            H_vel = np.zeros((3, self.STATE_DIM), dtype=np.float64)
             H_vel[:3, 3:6] = np.eye(3)
+            R_vel = np.eye(3, dtype=np.float64) * (self.r_gnss_vel ** 2)
 
-            R_vel = np.eye(3) * (self.r_gnss_vel ** 2) * reacq_scale
-
-            y_vel = gnss_velocity - H_vel @ self.x
+            y_vel = gnss_vel_3d - H_vel @ self.x
             S_vel = H_vel @ self.P @ H_vel.T + R_vel
             K_vel = self.P @ H_vel.T @ np.linalg.inv(S_vel)
 
             self.x += K_vel @ y_vel
             I_KH_v = np.eye(self.STATE_DIM) - K_vel @ H_vel
             self.P = I_KH_v @ self.P @ I_KH_v.T + K_vel @ R_vel @ K_vel.T
+            self._enforce_covariance_symmetry()
 
-        # Store innovation for diagnostics
-        self.innovation_history.append(float(np.linalg.norm(y_pos)))
-
-        # Return to normal fusion after a few updates in reacquisition
-        if self.mode == NavigationMode.REACQUISITION:
-            if len(self.innovation_history) >= 5:
-                recent = self.innovation_history[-5:]
-                if all(inn < self.r_gnss_pos * 3 for inn in recent):
-                    self.mode = NavigationMode.GNSS_INS
+            # Course over ground heading correction when moving
+            speed_horiz = float(np.linalg.norm(gnss_vel_3d[:2]))
+            if speed_horiz > 2.0:
+                cog = float(np.arctan2(gnss_vel_3d[0], gnss_vel_3d[1]))  # East, North
+                yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
+                self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
 
     def _update_ai_velocity(self, ai_velocity: np.ndarray):
         """
-        Update state using AI-predicted velocity as a measurement.
-
-        Used during GNSS denial to bound velocity drift.
-
-        Args:
-            ai_velocity: (2,) predicted velocity [v_north, v_east] in m/s.
+        Update state using AI-predicted velocity.
+        Supports both [v_east, v_north] or [v_north, v_east].
+        Standard representation: ai_velocity[0] is East, ai_velocity[1] is North.
         """
-        # Measurement: v_E, v_N from AI
-        H = np.zeros((2, self.STATE_DIM))
+        H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
         H[0, 3] = 1.0  # v_east
         H[1, 4] = 1.0  # v_north
 
-        R = np.eye(2) * (self.r_ai_vel ** 2)
+        R = np.eye(2, dtype=np.float64) * (self.r_ai_vel ** 2)
 
-        z = np.array([ai_velocity[1], ai_velocity[0]])  # [v_east, v_north]
+        # Standard measurement vector [v_east, v_north]
+        z = np.array([ai_velocity[0], ai_velocity[1]], dtype=np.float64)
         y = z - H @ self.x
 
         S = H @ self.P @ H.T + R
@@ -318,33 +324,63 @@ class ExtendedKalmanFilter:
         self.x += K @ y
         I_KH = np.eye(self.STATE_DIM) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
+        self._enforce_covariance_symmetry()
 
-    def set_gnss_denied(self, timestamp: Optional[float] = None):
-        """
-        Signal that GNSS is no longer available.
+        # Course over ground heading correction when moving
+        speed_horiz = float(np.linalg.norm(ai_velocity[:2]))
+        if speed_horiz > 2.0:
+            cog = float(np.arctan2(ai_velocity[0], ai_velocity[1]))  # East, North
+            yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
+            self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
 
-        Args:
-            timestamp: Time of GNSS loss for outage tracking.
+    def update_nhc(self, yaw_rate: float = 0.0):
         """
-        if self.mode != NavigationMode.DEAD_RECKONING:
-            self.mode = NavigationMode.DEAD_RECKONING
-            self.gnss_outage_start = timestamp
+        Apply Non-Holonomic Constraints (NHC) as a pseudo-measurement.
+        Relaxed during turns to avoid fighting vehicle steering dynamics.
+        """
+        speed = float(np.linalg.norm(self.x[self.VEL][:2]))
+        if speed < 0.5:
+            return  # Handled by ZUPT when stationary
+
+        # Dynamic relaxation: widen tolerance during turns
+        turn_dilation = 1.0 + 30.0 * (abs(yaw_rate) ** 2)
+        r_lat = self.r_nhc_lateral * np.sqrt(turn_dilation)
+        r_vert = self.r_nhc_vertical
+
+        heading = self.get_heading()
+        cos_h = np.cos(heading)
+        sin_h = np.sin(heading)
+
+        # H maps velocity states to body lateral and vertical velocities
+        # v_lateral = v_east * cos(h) - v_north * sin(h)
+        # v_vertical = -v_up
+        H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
+        H[0, 3] = cos_h    # ∂v_lat/∂v_east
+        H[0, 4] = -sin_h   # ∂v_lat/∂v_north
+        H[1, 5] = -1.0     # ∂v_vert/∂v_up
+
+        R = np.diag([r_lat ** 2, r_vert ** 2])
+
+        z = np.zeros(2, dtype=np.float64)
+        y = z - H @ self.x
+
+        S = H @ self.P @ H.T + R
+        K = self.P @ H.T @ np.linalg.inv(S)
+
+        self.x += K @ y
+        I_KH = np.eye(self.STATE_DIM) - K @ H
+        self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
+        self._enforce_covariance_symmetry()
 
     def update_zupt(self, velocity_sigma: float = 0.01):
         """
-        Apply Zero Velocity Update — reset velocity to near-zero.
-
-        Called when the vehicle is detected as stationary.
-
-        Args:
-            velocity_sigma: Measurement noise for the zero-velocity observation.
+        Apply Zero Velocity Update (ZUPT) when vehicle is detected stationary.
         """
-        H = np.zeros((3, self.STATE_DIM))
+        H = np.zeros((3, self.STATE_DIM), dtype=np.float64)
         H[:3, 3:6] = np.eye(3)
 
-        R = np.eye(3) * velocity_sigma ** 2
-
-        z = np.zeros(3)  # Zero velocity
+        R = np.eye(3, dtype=np.float64) * (velocity_sigma ** 2)
+        z = np.zeros(3, dtype=np.float64)
         y = z - H @ self.x
 
         S = H @ self.P @ H.T + R
@@ -353,25 +389,28 @@ class ExtendedKalmanFilter:
         self.x += K @ y
         I_KH = np.eye(self.STATE_DIM) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
+        self._enforce_covariance_symmetry()
+
+    def set_gnss_denied(self, timestamp: Optional[float] = None):
+        """Signal that GNSS is lost and switch to Dead Reckoning."""
+        if self.mode != NavigationMode.DEAD_RECKONING:
+            self.mode = NavigationMode.DEAD_RECKONING
+            self.gnss_outage_start = timestamp
+            self.consecutive_good_gnss = 0
 
     def get_position(self) -> np.ndarray:
-        """Return current estimated position (East, North, Up)."""
         return self.x[self.POS].copy()
 
     def get_velocity(self) -> np.ndarray:
-        """Return current estimated velocity (v_E, v_N, v_U)."""
         return self.x[self.VEL].copy()
 
     def get_heading(self) -> float:
-        """Return current estimated heading (yaw) in radians."""
         return float(self.x[8])
 
     def get_position_uncertainty(self) -> float:
-        """Return 1-sigma position uncertainty in meters (horizontal)."""
         return float(np.sqrt(self.P[0, 0] + self.P[1, 1]))
 
-    def get_state_summary(self) -> Dict:
-        """Return a human-readable summary of the current state."""
+    def get_state_summary(self) -> Dict[str, Any]:
         pos = self.get_position()
         vel = self.get_velocity()
         speed = np.linalg.norm(vel[:2])
@@ -395,14 +434,6 @@ class ExtendedKalmanFilter:
         velocity: Optional[np.ndarray] = None,
         heading: Optional[float] = None,
     ):
-        """
-        Initialize EKF state from a GNSS fix.
-
-        Args:
-            position: (2,) or (3,) initial position in ENU.
-            velocity: Optional (2,) or (3,) initial velocity.
-            heading: Optional initial heading in radians.
-        """
         if len(position) >= 2:
             self.x[0] = position[0]
             self.x[1] = position[1]
@@ -419,6 +450,6 @@ class ExtendedKalmanFilter:
         if heading is not None:
             self.x[8] = heading
 
-        # Reduce initial uncertainty
         self.P[self.POS, self.POS] = np.eye(3) * (self.r_gnss_pos ** 2)
         self.mode = NavigationMode.GNSS_INS
+        self.consecutive_good_gnss = 5

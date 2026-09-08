@@ -310,7 +310,8 @@ class HMMMapMatcher:
                 max_prev = 0.0
                 for k, (seg_k, _, _) in enumerate(self.prev_candidates):
                     trans = self._transition_prob(seg_k, seg_j, travel_distance)
-                    val = self.prev_probabilities[k] * trans
+                    prev_prob = self.prev_probabilities[k] if self.prev_probabilities is not None else 0.0
+                    val = prev_prob * trans
                     max_prev = max(max_prev, val)
                 probs[j] = emissions[j] * max_prev
         else:

@@ -30,9 +30,11 @@ from navigation.map_matching import create_map_matcher, RoadNetwork
 from utils.metrics import compute_all_metrics
 
 
+from typing import Optional
+
 def run_simulation(
-    checkpoint_path: str = None,
-    output_path: str = None,
+    checkpoint_path: Optional[str] = None,
+    output_path: Optional[str] = None,
 ):
     """
     Run a full navigation simulation.
@@ -166,9 +168,10 @@ def run_simulation(
             if not prev_gnss:
                 # GNSS just restored — end DR
                 if dr.is_active:
-                    dr_summary = dr.stop()
+                    dr_summary = dr.stop(gnss_restore_position=gnss_positions[i])
                     print(f"    t={t:.1f}s: GNSS restored | "
-                          f"DR drift: {dr_summary['drift_percent']:.1f}%")
+                          f"DR drift: {dr_summary['drift_percent']:.2f}% "
+                          f"(error: {dr_summary['drift_error_m']:.2f}m / {dr_summary['distance_traveled_m']:.1f}m)")
 
             ekf.update_gnss(gnss_positions[i], timestamp=t)
             prev_gnss = True
@@ -177,9 +180,7 @@ def run_simulation(
                 # GNSS just lost — start DR
                 ekf.set_gnss_denied(timestamp=t)
                 pos = ekf.get_position()
-                dr.start(pos[:2], ekf.get_heading(), ekf.get_velocity()[:2].dot(
-                    np.array([np.sin(ekf.get_heading()), np.cos(ekf.get_heading())])
-                ), t)
+                dr.start(pos[:2], ekf.get_heading(), np.linalg.norm(ekf.get_velocity()[:2]), t)
                 print(f"    t={t:.1f}s: GNSS DENIED — Dead reckoning active")
 
             # DR update
@@ -231,16 +232,31 @@ def run_simulation(
     est_pos_array = np.array(results["estimated_positions"])
     true_pos_array = np.array(results["true_positions"])
 
+    # Compute metrics specifically during GNSS outages
+    outage_mask = ~np.array(results["gnss_available"])
+    if np.any(outage_mask):
+        outage_est = est_pos_array[outage_mask]
+        outage_true = true_pos_array[outage_mask]
+        outage_dist = np.sum(np.linalg.norm(np.diff(outage_true, axis=0), axis=1))
+        outage_final_err = np.linalg.norm(outage_est[-1] - outage_true[-1])
+        outage_drift_pct = (outage_final_err / max(outage_dist, 1e-6)) * 100.0
+        outage_rmse = np.sqrt(np.mean(np.sum((outage_est - outage_true) ** 2, axis=1)))
+    else:
+        outage_dist = 0.0
+        outage_drift_pct = 0.0
+        outage_rmse = 0.0
+
     metrics = compute_all_metrics(
         est_pos_array, true_pos_array,
-        np.array([[v[1], v[0]] for v in results["speed_estimated"]]) if False else None,
     )
 
     print(f"\n{'─'*40}")
-    print(f"  Drift:    {metrics['drift_percent']:.2f}% (target: <10%)")
-    print(f"  ATE RMSE: {metrics['ate']['rmse']:.2f} m")
-    print(f"  CEP50:    {metrics['cep']['CEP50']:.2f} m")
-    print(f"  CEP95:    {metrics['cep']['CEP95']:.2f} m")
+    print(f"  GNSS-Denied Outage Drift: {outage_drift_pct:.2f}% (target: <10%)")
+    print(f"  GNSS-Denied Distance:    {outage_dist:.1f} m")
+    print(f"  GNSS-Denied ATE RMSE:    {outage_rmse:.2f} m")
+    print(f"  Overall Trajectory RMSE: {metrics['ate']['rmse']:.2f} m")
+    print(f"  CEP50:                   {metrics['cep']['CEP50']:.2f} m")
+    print(f"  CEP95:                   {metrics['cep']['CEP95']:.2f} m")
     print(f"{'─'*40}")
 
     # --- Save results ---

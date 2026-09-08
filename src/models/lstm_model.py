@@ -15,7 +15,7 @@ Output: (batch, 2) — [v_north, v_east] predicted velocity
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 
 class TemporalAttention(nn.Module):
@@ -152,7 +152,7 @@ class LSTMVelocityEstimator(nn.Module):
 
     def forward(
         self, x: torch.Tensor, return_attention: bool = False
-    ) -> torch.Tensor:
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         """
         Forward pass.
 

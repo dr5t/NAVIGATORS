@@ -1,23 +1,23 @@
 """
 Navigators IDR — Zero Velocity Update (ZUPT) Detection
-Detects when the vehicle is stationary to reset accumulated velocity errors.
-
-ZUPT is a critical error-bounding technique: when the vehicle stops
-(e.g., at a traffic light), we know velocity = 0 with high certainty.
-This resets accumulated drift in the velocity estimate.
+Multi-signal robust detector identifying when the vehicle is stationary.
 """
 
 import numpy as np
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 from collections import deque
 
 
 class ZUPTDetector:
     """
-    Detects stationary (zero-velocity) periods from IMU data.
+    Detects stationary (zero-velocity) periods from IMU and motion data.
 
-    Uses variance-based detection on accelerometer and gyroscope
-    readings to identify when the vehicle has stopped.
+    Robust multi-criteria detection:
+        1. Accelerometer magnitude variance
+        2. Gyroscope axis variance and magnitude
+        3. Gravity vector consistency (|mean_accel| ≈ 9.81 m/s²)
+        4. Optional velocity/speed check
+        5. Minimum dwell time to prevent false triggers on smooth motion
     """
 
     def __init__(
@@ -27,43 +27,34 @@ class ZUPTDetector:
         detection_window: int = 10,
         velocity_reset_sigma: float = 0.01,
         gravity: float = 9.81,
+        min_stationary_samples: int = 3,
     ):
-        """
-        Args:
-            accel_variance_threshold: Max accelerometer variance (m²/s⁴) for stationary.
-            gyro_variance_threshold: Max gyroscope variance (rad²/s²) for stationary.
-            detection_window: Number of samples to evaluate for stationarity.
-            velocity_reset_sigma: ZUPT measurement noise (m/s) — lower = more trust.
-            gravity: Expected gravity magnitude for accelerometer normalization.
-        """
         self.accel_threshold = accel_variance_threshold
         self.gyro_threshold = gyro_variance_threshold
         self.window_size = detection_window
         self.velocity_sigma = velocity_reset_sigma
         self.gravity = gravity
+        self.min_stationary_samples = min_stationary_samples
 
-        # Buffers for sliding window
+        # Buffers
         self.accel_buffer = deque(maxlen=detection_window)
         self.gyro_buffer = deque(maxlen=detection_window)
 
         # State
         self.is_stationary = False
-        self.stationary_duration = 0.0  # seconds
-        self.last_detection_metrics = {}
+        self.consecutive_stationary = 0
+        self.stationary_duration = 0.0
+        self.last_detection_metrics: Dict[str, Any] = {}
 
     def update(
-        self, accel: np.ndarray, gyro: np.ndarray, dt: float = 0.1
+        self,
+        accel: np.ndarray,
+        gyro: np.ndarray,
+        dt: float = 0.1,
+        estimated_speed: Optional[float] = None,
     ) -> bool:
         """
-        Process a new IMU sample and determine if stationary.
-
-        Args:
-            accel: (3,) accelerometer reading in m/s².
-            gyro: (3,) gyroscope reading in rad/s.
-            dt: Time step in seconds.
-
-        Returns:
-            True if vehicle is currently stationary.
+        Evaluate if vehicle is stationary based on multi-signal criteria.
         """
         self.accel_buffer.append(accel.copy())
         self.gyro_buffer.append(gyro.copy())
@@ -72,73 +63,76 @@ class ZUPTDetector:
             self.is_stationary = False
             return False
 
-        # Compute variances over the window
         accel_array = np.array(list(self.accel_buffer))
         gyro_array = np.array(list(self.gyro_buffer))
 
-        # For accelerometer: compute variance of magnitude
-        # (when stationary, magnitude ≈ gravity with low variance)
+        # 1. Variance of accelerometer magnitude
         accel_magnitudes = np.linalg.norm(accel_array, axis=1)
-        accel_var = np.var(accel_magnitudes)
+        accel_var = float(np.var(accel_magnitudes))
+        accel_mean_mag = float(np.mean(accel_magnitudes))
 
-        # For gyroscope: compute variance of each axis and take max
-        gyro_var = np.max(np.var(gyro_array, axis=0))
+        # 2. Gravity magnitude check (reaction force close to 9.81 m/s²)
+        gravity_consistent = abs(accel_mean_mag - self.gravity) < 1.0
 
-        # Detection decision
+        # 3. Gyroscope variance and maximum rate
+        gyro_var = float(np.max(np.var(gyro_array, axis=0)))
+        max_gyro_rate = float(np.max(np.linalg.norm(gyro_array, axis=1)))
+
+        # 4. Optional speed check
+        speed_ok = True
+        if estimated_speed is not None:
+            speed_ok = estimated_speed < 0.5
+
+        # Decision
+        condition_met = (
+            accel_var < self.accel_threshold
+            and gyro_var < self.gyro_threshold
+            and max_gyro_rate < 0.15
+            and gravity_consistent
+            and speed_ok
+        )
+
+        if condition_met:
+            self.consecutive_stationary += 1
+        else:
+            self.consecutive_stationary = 0
+
         was_stationary = self.is_stationary
-        self.is_stationary = (accel_var < self.accel_threshold and
-                              gyro_var < self.gyro_threshold)
+        self.is_stationary = self.consecutive_stationary >= self.min_stationary_samples
 
-        # Track duration
         if self.is_stationary:
             self.stationary_duration += dt
         else:
             self.stationary_duration = 0.0
 
-        # Store metrics for diagnostics
         self.last_detection_metrics = {
-            "accel_variance": float(accel_var),
-            "gyro_variance": float(gyro_var),
-            "accel_threshold": self.accel_threshold,
-            "gyro_threshold": self.gyro_threshold,
+            "accel_variance": accel_var,
+            "gyro_variance": gyro_var,
+            "accel_mean_mag": accel_mean_mag,
             "is_stationary": self.is_stationary,
             "stationary_duration": self.stationary_duration,
-            "transition": (
-                "moving→stopped" if self.is_stationary and not was_stationary
-                else "stopped→moving" if not self.is_stationary and was_stationary
-                else "stationary" if self.is_stationary
-                else "moving"
-            ),
+            "consecutive_samples": self.consecutive_stationary,
         }
 
-        return self.is_stationary
+        return bool(self.is_stationary)
 
     def get_zupt_measurement(self) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Get the ZUPT measurement for EKF update.
+        """Return zero velocity measurement vector and covariance matrix."""
+        z = np.zeros(3, dtype=np.float64)
+        R = np.eye(3, dtype=np.float64) * (self.velocity_sigma ** 2)
 
-        Returns:
-            Tuple of:
-                z: (3,) zero velocity measurement
-                R: (3, 3) measurement noise covariance
-        """
-        z = np.zeros(3)
-        R = np.eye(3) * self.velocity_sigma ** 2
-
-        # If stationary for longer, increase confidence (reduce noise)
-        if self.stationary_duration > 2.0:
-            confidence_boost = min(10.0, self.stationary_duration / 2.0)
-            R /= confidence_boost
+        if self.stationary_duration > 1.0:
+            boost = min(10.0, self.stationary_duration)
+            R /= boost
 
         return z, R
 
     def reset(self):
-        """Reset the ZUPT detector state."""
         self.accel_buffer.clear()
         self.gyro_buffer.clear()
         self.is_stationary = False
+        self.consecutive_stationary = 0
         self.stationary_duration = 0.0
 
-    def get_metrics(self) -> dict:
-        """Return the latest detection metrics for diagnostics."""
+    def get_metrics(self) -> Dict[str, Any]:
         return self.last_detection_metrics.copy()

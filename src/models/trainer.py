@@ -174,6 +174,7 @@ class Trainer:
         # TensorBoard
         self.writer = None
         if HAS_TENSORBOARD:
+            from torch.utils.tensorboard import SummaryWriter
             log_dir = self.config.get("log_dir", "./runs")
             self.writer = SummaryWriter(log_dir)
 
@@ -191,6 +192,36 @@ class Trainer:
         for batch_x, batch_y in self.train_loader:
             batch_x = batch_x.to(self.device)
             batch_y = batch_y.to(self.device)
+
+            # Data Augmentation (Vibrations, speed variation, random orientation)
+            if self.config.get("use_augmentation", True):
+                # 1. Continuous sensor noise
+                batch_x += torch.randn_like(batch_x) * 0.01
+
+                # 2. Impulsive vibration noise (potholes/bumps) affecting accelerometer (first 3 channels)
+                mask = torch.rand_like(batch_x[:, :, :3]) < 0.01
+                batch_x[:, :, :3] += mask.float() * torch.randn_like(batch_x[:, :, :3]) * 1.5
+
+                # 3. Random speed scaling (+/- 10%)
+                scale = torch.empty(batch_x.shape[0], 1, 1, device=self.device).uniform_(0.9, 1.1)
+                batch_x = batch_x * scale
+                batch_y = batch_y * scale.squeeze(1)
+
+                # 4. Small random yaw rotation (heading misalignment)
+                angles = torch.empty(batch_x.shape[0], device=self.device).uniform_(-0.15, 0.15)
+                cos_a = torch.cos(angles).unsqueeze(1)
+                sin_a = torch.sin(angles).unsqueeze(1)
+
+                # Rotate Accel (channels 0, 1) and Gyro (channels 3, 4)
+                a_f = batch_x[:, :, 0].clone()
+                a_r = batch_x[:, :, 1].clone()
+                batch_x[:, :, 0] = a_f * cos_a - a_r * sin_a
+                batch_x[:, :, 1] = a_f * sin_a + a_r * cos_a
+
+                g_f = batch_x[:, :, 3].clone()
+                g_r = batch_x[:, :, 4].clone()
+                batch_x[:, :, 3] = g_f * cos_a - g_r * sin_a
+                batch_x[:, :, 4] = g_f * sin_a + g_r * cos_a
 
             self.optimizer.zero_grad()
             predictions = self.model(batch_x)
@@ -271,6 +302,7 @@ class Trainer:
         print(f"{'='*60}\n")
 
         start_time = time.time()
+        epoch = 0
 
         for epoch in range(1, self.epochs + 1):
             epoch_start = time.time()

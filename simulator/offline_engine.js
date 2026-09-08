@@ -21,16 +21,20 @@ class OfflineEngine {
         this.session = null;
         this.modelLoading = false;
         
-        // Navigation State (Simple Dead Reckoning)
+        // Navigation State
         this.initialized = false;
         this.refLat = 0;
         this.refLon = 0;
-        this.position = [0, 0]; // [East, North] in meters
-        this.velocity = [0, 0]; // [East, North] in m/s
-        this.heading = 0; // radians
+        
+        // Edge EKF Engine
+        this.ekf = new ExtendedKalmanFilter();
+        
+        // Setup simple map matching grid for demo
+        this.roadNetwork = new RoadNetwork();
+        this.roadNetwork.generateGridNetwork([0, 0], 100.0, 5);
+        this.mapMatcher = new GeometricMapMatcher(this.roadNetwork, 30.0);
         
         // EKF Mode Emulation
-        this.mode = 'gnss_ins'; // 'gnss_ins', 'dr', 'reacq'
         this.gnssAvailable = false;
         this.zuptActive = false;
         
@@ -174,11 +178,11 @@ class OfflineEngine {
             // First good GNSS fix initializes the map origin
             this.refLat = this.currentGnss.lat;
             this.refLon = this.currentGnss.lon;
-            this.position = [0, 0];
-            this.velocity = [0, 0];
-            this.heading = this.currentGnss.heading;
+            this.ekf.x[0][0] = 0;
+            this.ekf.x[1][0] = 0;
+            this.ekf.x[8][0] = this.currentGnss.heading;
             this.initialized = true;
-            console.log("[Edge Engine] Initialized Map via GNSS", this.refLat, this.refLon);
+            console.log("[Edge Engine] Initialized EKF Map Origin via GNSS", this.refLat, this.refLon);
         }
 
         if (!this.initialized) {
@@ -187,16 +191,23 @@ class OfflineEngine {
             return;
         }
 
-        // 3. Simple ZUPT (Zero Velocity Update) detection
+        // 3. EKF Predict (High frequency, 10Hz)
+        this.ekf.dt = dt;
+        this.ekf.predict(this.currentAccel, this.currentGyro, null, true); // apply NHC
+
+        // 4. Simple ZUPT (Zero Velocity Update) detection
         // If variance of accel/gyro is very low, we are stationary
         const recentAccel = this.sensorBuffer.slice(-10).map(s => Math.sqrt(s[0]*s[0] + s[1]*s[1] + s[2]*s[2]));
         const variance = recentAccel.length > 0 ? 
             recentAccel.reduce((acc, val) => acc + Math.pow(val - recentAccel.reduce((a,b)=>a+b)/recentAccel.length, 2), 0) / recentAccel.length : 100;
         
         this.zuptActive = variance < 0.05;
+        if (this.zuptActive) {
+            this.ekf.updateZupt(0.01);
+        }
 
-        // 4. Run Edge AI Model if buffer is full
-        let aiVelocity = [0, 0];
+        // 5. Run Edge AI Model if buffer is full
+        let aiVelocity = null;
         if (this.sensorBuffer.length === this.windowSize && this.session && !this.zuptActive) {
             try {
                 // Flatten the 2D buffer into a 1D Float32Array
@@ -207,80 +218,94 @@ class OfflineEngine {
                     }
                 }
                 
-                // Create ONNX Tensor: shape [batch=1, seq=200, features=6]
                 const tensor = new ort.Tensor('float32', flatData, [1, this.windowSize, 6]);
-                
-                // The input name must match the exported ONNX model (usually 'x' or 'input')
                 const inputName = this.session.inputNames[0];
                 const feeds = {};
                 feeds[inputName] = tensor;
                 
-                // Run Inference
                 const results = await this.session.run(feeds);
                 const outputName = this.session.outputNames[0];
-                const v = results[outputName].data; // Float32Array [v_east, v_north]
+                const v = results[outputName].data; // Model output: [v_north, v_east]
                 
-                aiVelocity = [v[0], v[1]];
+                // Convert to ENU velocity: [v_east, v_north]
+                aiVelocity = [v[1], v[0]];
+                
+                // If GNSS is denied, feed AI velocity into EKF
+                if (!hasGoodGNSS) {
+                    this.ekf._updateAiVelocity(aiVelocity);
+                }
             } catch (e) {
                 console.error("[Edge Engine] Inference Error:", e);
             }
         }
 
-        // 5. Navigation Update (Dead Reckoning vs GNSS)
+        // 6. Navigation Update (GNSS Update)
         const metersPerDegLat = 111320.0;
         const metersPerDegLon = 111320.0 * Math.cos(this.refLat * Math.PI / 180);
 
         if (hasGoodGNSS) {
-            // GNSS Available -> We use GNSS as truth
-            this.mode = 'gnss_ins';
             this.gnssAvailable = true;
+            this.drDuration = 0;
+            this.drDistanceTraveled = 0;
             
-            const dn = (this.currentGnss.lat - this.refLat) * metersPerDegLat;
             const de = (this.currentGnss.lon - this.refLon) * metersPerDegLon;
+            const dn = (this.currentGnss.lat - this.refLat) * metersPerDegLat;
             
-            this.position = [de, dn];
-            this.heading = this.currentGnss.heading;
+            const vE = this.currentGnss.speed * Math.sin(this.currentGnss.heading);
+            const vN = this.currentGnss.speed * Math.cos(this.currentGnss.heading);
             
-            // Clear GNSS so we only update on fresh fixes
-            this.currentGnss = null;
+            this.ekf.updateGnss([de, dn], [vE, vN]);
+            this.currentGnss = null; // Consume
         } else {
-            // GNSS Denied -> Intelligent Dead Reckoning!
-            this.mode = 'dr';
             this.gnssAvailable = false;
+            this.drDuration = (this.drDuration || 0) + dt;
+            this.ekf.setGnssDenied();
             
-            if (this.zuptActive) {
-                this.velocity = [0, 0];
-            } else {
-                // Use AI predicted velocity!
-                this.velocity = aiVelocity;
-                
-                // Integrate velocity into position (Dead Reckoning)
-                this.position[0] += this.velocity[0] * dt;
-                this.position[1] += this.velocity[1] * dt;
-                
-                // Update heading (simple gyro integration for demo purposes, 
-                // normally EKF fuses this properly)
-                this.heading += this.currentGyro[2] * dt;
-            }
+            const vel = this.ekf.getVelocity();
+            const stepDist = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]) * dt;
+            this.drDistanceTraveled = (this.drDistanceTraveled || 0) + stepDist;
         }
 
-        // 6. Push to UI
-        const estLat = this.refLat + (this.position[1] / metersPerDegLat);
-        const estLon = this.refLon + (this.position[0] / metersPerDegLon);
-        const speed = Math.sqrt(this.velocity[0]*this.velocity[0] + this.velocity[1]*this.velocity[1]);
+        // 7. Map Matching
+        let pos = this.ekf.getPosition();
+        let heading = this.ekf.getHeading();
+        let match = this.mapMatcher.match(pos, heading);
+        
+        // Optionally feedback map matching if highly confident (soft map matching)
+        if (match.confidence > 0.8 && this.ekf.mode === 'dr') {
+            // Apply a small snap to EKF state to bound drift
+            this.ekf.x[0][0] = 0.9 * this.ekf.x[0][0] + 0.1 * match.snapped_position[0];
+            this.ekf.x[1][0] = 0.9 * this.ekf.x[1][0] + 0.1 * match.snapped_position[1];
+        }
+
+        // 8. Extract Final State for UI
+        pos = this.ekf.getPosition();
+        const vel = this.ekf.getVelocity();
+        const estLat = this.refLat + (pos[1] / metersPerDegLat);
+        const estLon = this.refLon + (pos[0] / metersPerDegLon);
+        const speed = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]);
+        
+        // Compute physical uncertainty
+        const posUncertainty = this.ekf.P[0][0] + this.ekf.P[1][1]; // trace of pos covariance
+        const driftPct = (this.ekf.mode === 'dr' && (this.drDistanceTraveled || 0) > 2.0)
+            ? (Math.sqrt(posUncertainty) / this.drDistanceTraveled) * 100.0
+            : 0.0;
+        const confidenceScore = this.ekf.mode === 'dr'
+            ? Math.max(0.1, Math.exp(-(this.drDuration || 0) / 60.0))
+            : 1.0;
 
         this.updateUI({
             status: 'active',
-            nav_mode: this.mode,
+            nav_mode: this.ekf.mode,
             gnss_available: this.gnssAvailable,
             estimated_lat: estLat,
             estimated_lon: estLon,
             speed: speed,
-            heading: this.heading,
+            heading: this.ekf.getHeading(),
             zupt_active: this.zuptActive,
-            position_error: this.mode === 'dr' ? 2.5 : 0.5, // Mock uncertainty
-            dr_drift_percent: this.mode === 'dr' ? 1.2 : 0.0,
-            confidence: this.mode === 'dr' ? 0.95 : 1.0
+            position_error: Math.sqrt(posUncertainty),
+            dr_drift_percent: driftPct,
+            confidence: confidenceScore
         });
     }
 

@@ -61,7 +61,7 @@ def export_to_onnx(
 
     torch.onnx.export(
         model,
-        dummy_input,
+        (dummy_input,),
         output_path,
         export_params=True,
         opset_version=opset_version,
@@ -76,6 +76,8 @@ def export_to_onnx(
 
     print(f"[ONNX] Exported model to: {output_path}")
 
+    import onnx
+    import onnx.checker
     # Validate
     onnx_model = onnx.load(output_path)
     onnx.checker.check_model(onnx_model)
@@ -83,7 +85,7 @@ def export_to_onnx(
 
     # Optimize
     if optimize:
-        from onnx import optimizer
+        from onnx import optimizer  # type: ignore
         try:
             passes = ["eliminate_identity", "fuse_bn_into_conv", "fuse_consecutive_transposes"]
             optimized = optimizer.optimize(onnx_model, passes)
@@ -132,6 +134,7 @@ def verify_onnx_model(
         pt_input = torch.from_numpy(test_input)
         pt_output = pytorch_model(pt_input).numpy()
 
+    import onnxruntime as ort
     # ONNX Runtime inference
     session = ort.InferenceSession(onnx_path)
     ort_output = session.run(None, {"imu_window": test_input})[0]
@@ -161,6 +164,7 @@ class ONNXInferenceEngine:
         if not HAS_ONNX:
             raise ImportError("onnxruntime required. Install with: pip install onnxruntime")
 
+        import onnxruntime as ort
         self.session = ort.InferenceSession(
             model_path,
             providers=["CPUExecutionProvider"],
@@ -185,5 +189,5 @@ class ONNXInferenceEngine:
             imu_window = imu_window[np.newaxis, ...]  # Add batch dim
 
         imu_window = imu_window.astype(np.float32)
-        result = self.session.run(None, {self.input_name: imu_window})
-        return result[0][0]  # Remove batch dim
+        result = self.session.run(None, {self.input_name: imu_window})  # type: ignore
+        return result[0][0]  # type: ignore

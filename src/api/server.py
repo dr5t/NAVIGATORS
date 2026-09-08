@@ -102,7 +102,7 @@ class NavigationSession:
             pass
 
         # Handle Initialization
-        if gnss_available and not self.initialized:
+        if gnss_available and gnss is not None and not self.initialized:
             # Simple init: assume origin is first GNSS, and speed is 0
             # A real system would use a WGS84->ENU projection relative to a home point.
             # We will use the lat/lon as a pseudo-ENU for visualization purposes, or setup a proper reference.
@@ -116,7 +116,7 @@ class NavigationSession:
             return {"status": "waiting_for_gnss"}
 
         # State transitions based on GNSS
-        if gnss_available:
+        if gnss_available and gnss is not None:
             if not self.prev_gnss_available and self.dr.is_active:
                 self.dr.stop()
             

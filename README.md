@@ -42,6 +42,7 @@ Conventional GPS/GNSS-based navigation fails in tunnels, underpasses, and dense 
 3.  **100% Offline Edge Engine (WebAssembly):** The `simulator` acts as a Progressive Web App (PWA). It uses `onnxruntime-web` to load the AI model directly into the mobile device's CPU.
 4.  **Local Dead Reckoning:** The PWA captures live `DeviceMotionEvent` (accelerometer/gyroscope), buffers the data, runs the neural network locally, and integrates the velocity to plot the vehicle's position on a map—**without any backend server or internet connection.**
 5.  **Constraints Engine:** Implements Zero Velocity Updates (ZUPT) to prevent drift when stationary.
+6.  **External IMU support:** Architecture-level
 
 ---
 
@@ -152,10 +153,19 @@ python -m pytest tests/ -v
 ## 🧠 Key Technologies
 
 - **AI Model:** TCN (Temporal Convolutional Network) for lightweight edge inference, LSTM with attention as alternative
-- **Sensor Fusion:** 15-state Extended Kalman Filter (position, velocity, orientation, biases)
-- **Constraints:** Non-Holonomic (no sideslip), ZUPT (zero velocity at stops)
-- **Map Matching:** Geometric snapping + HMM-based probabilistic road selection
+- **Robust Training Pipeline:** Data augmentations including continuous noise, impulsive shock injection, speed variance, and heading misalignment to avoid overfitting.
+- **Sensor Fusion:** 15-state Extended Kalman Filter (position, velocity, orientation, biases). Implemented in both Python (for benchmarking) and native JavaScript (for 100% offline Edge PWA execution).
+- **Constraints:** Non-Holonomic Constraints (NHC, dynamically relaxed for turns) and ZUPT (zero velocity at stops).
+- **Map Matching:** Geometric snapping + HMM-based probabilistic road selection, fully offline.
+- **Signal Processing:** Non-linear median filtering combined with Butterworth low-pass to eliminate mechanical shocks from raw IMU data.
 - **Dataset:** IO-VNBD (58 hours, 4400 km, collected in UK/Nigeria/France)
+
+---
+
+## 🔮 Future Work
+
+- **Real vehicle field validation:** ⚠️ Future work
+- **Native Android APK Migration:** Currently operating as a high-performance PWA in Safari/Chrome. Future work can wrap this in React Native/Flutter to bypass browser-specific sensor sampling caps.
 
 ---
 

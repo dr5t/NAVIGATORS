@@ -140,3 +140,41 @@ class TestNavigationMode:
                          "accel_bias", "gyro_bias"]
         for key in expected_keys:
             assert key in summary, f"Missing key: {key}"
+
+    def test_gnss_reacquisition_smooth_convergence(self):
+        """GNSS reacquisition must not cause an instantaneous jump > 10m."""
+        ekf = ExtendedKalmanFilter(dt=0.1)
+        ekf.initialize_from_gnss(np.array([0.0, 0.0, 0.0]))
+        ekf.set_gnss_denied(timestamp=0.0)
+
+        # Simulate DR drifting 50 meters away
+        for i in range(100):
+            ekf.predict(np.array([1.0, 0.0, 9.81]), np.zeros(3))
+
+        dr_pos = ekf.get_position()
+        # True GNSS arrives at (0, 0, 0)
+        gnss_pos = np.array([0.0, 0.0, 0.0])
+
+        # Apply first reacquisition update
+        ekf.update_gnss(gnss_pos, timestamp=10.0)
+        reacq_pos = ekf.get_position()
+
+        step_jump = np.linalg.norm(reacq_pos - dr_pos)
+        # Verify single-step correction is capped / damped and doesn't teleport
+        assert step_jump <= 10.0, f"Reacquisition caused instant jump of {step_jump:.2f}m > 10m"
+        assert ekf.mode == NavigationMode.REACQUISITION
+
+    def test_ekf_nhc_constrains_lateral_velocity(self):
+        """NHC must suppress lateral velocity during EKF prediction."""
+        ekf = ExtendedKalmanFilter(dt=0.1)
+        # Facing North: heading = 0 rad
+        ekf.initialize_from_gnss(np.array([0.0, 0.0, 0.0]), velocity=np.array([5.0, 10.0, 0.0]), heading=0.0)
+
+        # Predict with NHC applied
+        for _ in range(10):
+            ekf.predict(np.array([0.0, 0.0, 9.81]), np.zeros(3), apply_nhc=True)
+
+        vel = ekf.get_velocity()
+        # In North heading, East velocity (index 0) is lateral velocity
+        assert abs(vel[0]) < 1.0, f"Expected suppressed lateral velocity, got {vel[0]:.2f} m/s"
+

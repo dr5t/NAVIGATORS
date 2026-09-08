@@ -115,7 +115,7 @@ class IOVNBDDataset(Dataset):
                 for i in range(len(windows)):
                     start = i * self.window_stride
                     end = start + self.window_size
-                    if end <= len(gt_velocity):
+                    if gt_velocity is not None and end <= len(gt_velocity):
                         # Mean velocity over the window
                         label = np.mean(gt_velocity[start:end], axis=0)
                         self.windows.append(windows[i])

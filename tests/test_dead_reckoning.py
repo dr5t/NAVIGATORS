@@ -22,6 +22,7 @@ class TestDeadReckoning:
         dr = DeadReckoningEngine(dt=0.1)
         dr.start(np.array([0.0, 0.0]), heading=0.0, speed=0.0, timestamp=0.0)
 
+        pos = np.array([0.0, 0.0])
         for i in range(100):
             pos = dr.update(ai_speed=0.0, timestamp=i * 0.1)
 
@@ -31,6 +32,7 @@ class TestDeadReckoning:
         dr = DeadReckoningEngine(dt=0.1)
         dr.start(np.array([0.0, 0.0]), heading=0.0, speed=10.0, timestamp=0.0)
 
+        pos = np.array([0.0, 0.0])
         for i in range(100):  # 10 seconds
             pos = dr.update(ai_speed=10.0, timestamp=i * 0.1)
 

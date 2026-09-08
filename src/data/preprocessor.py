@@ -2,12 +2,31 @@
 Navigators IDR — IMU Data Preprocessor
 Noise filtering, gravity removal, phone alignment, and windowing.
 
-Handles the critical preprocessing step that converts raw smartphone IMU
-readings into clean, vehicle-frame-aligned feature windows for the AI model.
+### The Dead Reckoning Problem & Solution
+Inertial Dead Reckoning (IDR) attempts to track the position of a vehicle or pedestrian 
+using only internal sensors (Accelerometer and Gyroscope).
+
+Mathematically, a traditional dead reckoning system wants:
+1. To track the orientation of the sensor relative to the Earth.
+2. To subtract the 1g (9.81 m/s²) gravity vector to isolate pure linear acceleration.
+3. To integrate linear acceleration over time to get velocity:  v(t) = v(t-1) + a(t) * Δt
+4. To integrate velocity over time to get position:           p(t) = p(t-1) + v(t) * Δt
+
+**The Fatal Flaw:** Numerical double-integration causes microscopic sensor noise, biases, 
+and tiny orientation errors to compound into a quadratic drift. Within seconds, a naive 
+dead reckoning system drifts uncontrollably.
+
+**The AI Solution:** Modern systems skip the flawed double-integration. Instead, they 
+feed short, cleaned windows of IMU data into Deep Learning models (like LSTMs/TCNs) 
+that recognize biomechanical or vehicle motion patterns to estimate velocity directly.
+
+This module provides the *perfect* pipeline for what the AI needs: it filters high-frequency 
+noise, rotates the raw phone readings into a stable vehicle frame, isolates gravity, and 
+chops the data into normalized sliding windows.
 """
 
 import numpy as np
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, medfilt
 from typing import Tuple, Optional
 
 
@@ -29,6 +48,8 @@ class IMUPreprocessor:
         lowpass_order: int = 4,
         gravity: float = 9.81,
         alignment_method: str = "pca",
+        use_median_filter: bool = True,
+        median_kernel_size: int = 5,
     ):
         """
         Args:
@@ -37,17 +58,21 @@ class IMUPreprocessor:
             lowpass_order: Butterworth filter order.
             gravity: Expected gravity magnitude in m/s².
             alignment_method: Phone-to-vehicle alignment ('pca', 'static_gravity', 'manual').
+            use_median_filter: Whether to apply median filter for shock/impulse noise.
+            median_kernel_size: Size of the median filter kernel (must be odd).
         """
         self.sample_rate = sample_rate
         self.lowpass_cutoff = lowpass_cutoff
         self.lowpass_order = lowpass_order
         self.gravity = gravity
         self.alignment_method = alignment_method
+        self.use_median = use_median_filter
+        self.median_kernel = median_kernel_size if median_kernel_size % 2 == 1 else median_kernel_size + 1
 
         # Precompute Butterworth filter coefficients
         nyquist = sample_rate / 2.0
         if lowpass_cutoff < nyquist:
-            self.b, self.a = butter(lowpass_order, lowpass_cutoff / nyquist, btype='low')
+            self.b, self.a = butter(lowpass_order, lowpass_cutoff / nyquist, btype='low')  # type: ignore
         else:
             self.b, self.a = None, None
 
@@ -61,12 +86,19 @@ class IMUPreprocessor:
         Returns:
             Filtered data of same shape.
         """
-        if self.b is None or len(data) < 3 * max(len(self.a), len(self.b)):
+        if self.b is None or self.a is None or len(data) < 3 * max(len(self.a), len(self.b)):  # type: ignore
             return data  # Too short to filter or cutoff >= Nyquist
 
         filtered = np.zeros_like(data)
         for c in range(data.shape[1]):
-            filtered[:, c] = filtfilt(self.b, self.a, data[:, c])
+            # First apply median filter if enabled, to remove impulsive spikes (potholes, drops)
+            channel_data = data[:, c]
+            if self.use_median:
+                channel_data = medfilt(channel_data, kernel_size=self.median_kernel)
+                
+            # Then apply the low-pass filter
+            filtered[:, c] = filtfilt(self.b, self.a, channel_data)
+            
         return filtered
 
     def estimate_gravity_vector(self, accel: np.ndarray) -> np.ndarray:
@@ -252,18 +284,42 @@ class IMUPreprocessor:
         else:
             data_flat = data
 
-        if mean is None:
-            mean = np.mean(data_flat, axis=0)
-        if std is None:
-            std = np.std(data_flat, axis=0)
-            std[std < 1e-8] = 1.0  # Prevent division by zero
+        actual_mean = np.asarray(np.mean(data_flat, axis=0) if mean is None else mean)
+        actual_std = np.asarray(np.std(data_flat, axis=0) if std is None else std)
 
-        normalized = (data_flat - mean) / std
+        actual_std[actual_std < 1e-8] = 1.0  # Prevent division by zero
+
+        normalized = (data_flat - actual_mean) / actual_std
 
         if len(original_shape) == 3:
             normalized = normalized.reshape(original_shape)
 
-        return normalized, mean, std
+        return normalized, actual_mean, actual_std
+
+    def naive_dead_reckoning(self, accel_linear: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Mathematical demonstration of how a traditional Dead Reckoning system works.
+        It numerically integrates linear acceleration to velocity, and velocity to position.
+        
+        NOTE: This is provided as a baseline. In reality, without AI, Zero-Velocity 
+        Updates (ZUPT), or external constraints (GPS), this diverges rapidly due to 
+        accumulated drift.
+        
+        Args:
+            accel_linear: (N, 3) gravity-removed acceleration in vehicle frame (m/s²).
+            
+        Returns:
+            Tuple of (velocity, position), both (N, 3) arrays in meters/sec and meters.
+        """
+        dt = 1.0 / self.sample_rate
+        
+        # 1. Integrate acceleration -> velocity (v = a*dt)
+        velocity = np.cumsum(accel_linear * dt, axis=0)
+        
+        # 2. Integrate velocity -> position (p = v*dt)
+        position = np.cumsum(velocity * dt, axis=0)
+        
+        return velocity, position
 
     def preprocess(
         self,

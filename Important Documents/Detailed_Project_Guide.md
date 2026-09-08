@@ -13,8 +13,9 @@ When a vehicle enters a "GNSS-denied" environment, traditional navigation system
 We have built a 100% offline, AI-powered navigation engine that runs directly on commercial mobile devices (Edge Inference) without requiring any internet connection.
 
 **How it works:**
-1. **AI Velocity Estimation:** Instead of relying on pure physics equations that suffer from sensor noise, we trained a Temporal Convolutional Network (TCN). This neural network analyzes a rolling window of vibration and motion patterns from the phone's sensors to accurately predict the vehicle's speed and heading.
-2. **Physical Constraints:** The AI is fused with physical constraints like Zero Velocity Updates (ZUPT) and Non-Holonomic Constraints (NHC) to mathematically eliminate drift when the vehicle is stopped or moving in a straight line.
+1. **AI Velocity Estimation:** Instead of relying on pure physics equations that suffer from sensor noise, we trained a Temporal Convolutional Network (TCN). This neural network analyzes a rolling window of vibration and motion patterns from the phone's sensors to accurately predict the vehicle's speed and heading. The training pipeline uses heavy data augmentations (noise injection, shocks, scaling) to ensure generalization.
+2. **Robust Signal Processing:** Before hitting the AI, raw IMU data is preprocessed using a non-linear median filter combined with a Butterworth low-pass filter to strip out pothole shocks without losing kinematic data.
+3. **Physical Constraints:** The AI is fused with an Extended Kalman Filter (EKF) and physical constraints like Zero Velocity Updates (ZUPT) and Non-Holonomic Constraints (NHC) to mathematically eliminate drift when the vehicle is stopped or moving in a straight line.
 3. **Seamless Handover:** When GPS is lost, the system instantly switches to AI Dead Reckoning. When GPS returns, it automatically corrects any minor drift and resumes satellite tracking.
 4. **100% Offline Edge Architecture:** The entire neural network (compiled via ONNX) and Dead Reckoning engine run in WebAssembly directly on the mobile phone's CPU. **No backend servers or cloud connections are required.**
 

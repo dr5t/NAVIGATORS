@@ -6,7 +6,7 @@ All metrics assume inputs in ENU (meters) or LLA (degrees) coordinates.
 """
 
 import numpy as np
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, Any
 
 
 def positional_drift_percent(
@@ -206,7 +206,7 @@ def compute_all_metrics(
     true_positions: np.ndarray,
     estimated_velocity: Optional[np.ndarray] = None,
     true_velocity: Optional[np.ndarray] = None
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """
     Compute a comprehensive set of all evaluation metrics.
 
