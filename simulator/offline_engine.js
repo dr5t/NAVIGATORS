@@ -4,59 +4,275 @@
  * Performs Dead Reckoning locally on the mobile processor without any network connection.
  */
 
+class GnssStateMachine {
+    constructor() {
+        this.state = 'NORMAL';
+        this.timeInCurrentState = 0;
+    }
+
+    update(gnssData, dt) {
+        // gnssData might be null if disconnected
+        let acc = gnssData ? gnssData.accuracy : 999.0;
+        if (gnssData === null) acc = 999.0;
+
+        this.timeInCurrentState += dt;
+
+        switch (this.state) {
+            case 'NORMAL':
+                if (acc > 20.0 && this.timeInCurrentState > 1.0) {
+                    this.state = 'DEGRADED';
+                    this.timeInCurrentState = 0;
+                } else if (acc <= 20.0) {
+                    this.timeInCurrentState = 0; // reset timer
+                }
+                break;
+            case 'DEGRADED':
+                if (acc > 50.0 && this.timeInCurrentState > 3.0) {
+                    this.state = 'DEAD_RECKONING';
+                    this.timeInCurrentState = 0;
+                } else if (acc <= 20.0 && this.timeInCurrentState > 2.0) {
+                    this.state = 'NORMAL';
+                    this.timeInCurrentState = 0;
+                } else if (acc > 20.0 && acc <= 50.0) {
+                    // stays in degraded
+                } else if (acc <= 20.0) {
+                    // slowly transitioning back to normal
+                } else {
+                    // > 50 but hasn't been 3 seconds yet
+                }
+                break;
+            case 'DEAD_RECKONING':
+                if (acc < 50.0) {
+                    this.state = 'REACQUISITION';
+                    this.timeInCurrentState = 0;
+                }
+                break;
+            case 'REACQUISITION':
+                if (acc < 20.0 && this.timeInCurrentState > 3.0) {
+                    this.state = 'NORMAL';
+                    this.timeInCurrentState = 0;
+                } else if (acc > 50.0) {
+                    this.state = 'DEAD_RECKONING';
+                    this.timeInCurrentState = 0;
+                }
+                break;
+        }
+
+        return this.state;
+    }
+}
+
+class ZUPTDetector {
+    constructor() {
+        this.accelThreshold = 0.05;
+        this.gyroThreshold = 0.01;
+        this.windowSize = 10;
+        this.gravity = 9.81;
+        this.minStationarySamples = 3;
+
+        this.accelBuffer = [];
+        this.gyroBuffer = [];
+
+        this.isStationary = false;
+        this.consecutiveStationary = 0;
+    }
+
+    update(accel, gyro, speed) {
+        this.accelBuffer.push(accel);
+        this.gyroBuffer.push(gyro);
+
+        if (this.accelBuffer.length > this.windowSize) {
+            this.accelBuffer.shift();
+            this.gyroBuffer.shift();
+        }
+
+        if (this.accelBuffer.length < this.windowSize) {
+            this.isStationary = false;
+            return false;
+        }
+
+        // 1. Accelerometer variance and mean magnitude
+        let accelMagnitudes = this.accelBuffer.map(a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]));
+        let accelMean = accelMagnitudes.reduce((a, b) => a + b) / accelMagnitudes.length;
+        let accelVar = accelMagnitudes.reduce((acc, val) => acc + Math.pow(val - accelMean, 2), 0) / accelMagnitudes.length;
+
+        // 2. Gravity consistency
+        let gravityConsistent = Math.abs(accelMean - this.gravity) < 1.0;
+
+        // 3. Gyroscope variance and max rate
+        let gyroMags = this.gyroBuffer.map(g => Math.sqrt(g[0]*g[0] + g[1]*g[1] + g[2]*g[2]));
+        let gyroMeanMag = gyroMags.reduce((a, b) => a + b) / gyroMags.length;
+        let gyroVar = gyroMags.reduce((acc, val) => acc + Math.pow(val - gyroMeanMag, 2), 0) / gyroMags.length;
+        let maxGyroRate = Math.max(...gyroMags);
+
+        // 4. GNSS Speed check
+        let speedOk = true;
+        if (speed !== null && speed !== undefined) {
+            speedOk = speed < 0.5;
+        }
+
+        let conditionMet = (
+            accelVar < this.accelThreshold &&
+            gyroVar < this.gyroThreshold &&
+            maxGyroRate < 0.15 &&
+            gravityConsistent &&
+            speedOk
+        );
+
+        if (conditionMet) {
+            this.consecutiveStationary++;
+        } else {
+            this.consecutiveStationary = 0;
+        }
+
+        this.isStationary = this.consecutiveStationary >= this.minStationarySamples;
+        return this.isStationary;
+    }
+
+    reset() {
+        this.accelBuffer = [];
+        this.gyroBuffer = [];
+        this.isStationary = false;
+        this.consecutiveStationary = 0;
+    }
+}
+
 class OfflineEngine {
     constructor() {
         this.isCapturing = false;
-        
+
         // Sensor Data Buffer
         this.currentAccel = [0, 0, 0];
         this.currentGyro = [0, 0, 0];
         this.currentGnss = null;
-        
+
         // Buffer for ONNX model (window_size = 200, features = 6)
         this.windowSize = 200;
         this.sensorBuffer = []; // stores [ax, ay, az, gx, gy, gz] arrays
-        
+
         // ONNX Runtime Session
         this.session = null;
         this.modelLoading = false;
-        
+        this.profiler = new DeviceProfiler();
+        this.modelContract = null;
+        this.imuFilter = new CausalIMUFilter();
+        this.sensorTimes = [];
+
         // Navigation State
         this.initialized = false;
         this.refLat = 0;
         this.refLon = 0;
-        
+
         // Edge EKF Engine
         this.ekf = new ExtendedKalmanFilter();
-        
-        // Setup simple map matching grid for demo
+
+        // Coordinate Aligner
+        this.aligner = new PhoneVehicleAligner();
+
+        // Real downloaded roads share one projection with the map and EKF.
         this.roadNetwork = new RoadNetwork();
-        this.roadNetwork.generateGridNetwork([0, 0], 100.0, 5);
+        this.localMap = null;
+        this.gpsOutage = false;
+        this.gnssGeneration = 0;
+        this.inferenceRunning = false;
+        this.lastGnssTime = -Infinity;
+        this.lastMotionTime = -Infinity;
         this.mapMatcher = new GeometricMapMatcher(this.roadNetwork, 30.0);
-        
-        // EKF Mode Emulation
+
+        // GNSS State Machine
+        this.gnssStateMachine = new GnssStateMachine();
+        this.zuptDetector = new ZUPTDetector();
         this.gnssAvailable = false;
         this.zuptActive = false;
-        
+
         // Loop controls
         this.lastTime = performance.now() / 1000.0;
         this.loopInterval = null;
-        
+
         // Ensure ONNX Runtime is available
         if (typeof ort !== 'undefined') {
-            ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
+            ort.env.wasm.wasmPaths = new URL('./vendor/onnxruntime/', document.baseURI).href;
+            ort.env.wasm.numThreads = 1;
         }
+    }
+
+    setLocalMap(localMap) {
+        this.localMap = localMap;
+        this.roadNetwork.segments = [];
+        for (const road of localMap.data.roads) {
+            this.roadNetwork.addRoad(road.points, road.id, road.name, road.speed_limit, road.one_way);
+        }
+        this.roadNetwork.buildSpatialHash();
+        this.refLat = localMap.data.origin.lat;
+        this.refLon = localMap.data.origin.lon;
+    }
+
+    setGpsOutage(enabled) {
+        if (enabled && (!this.initialized || !this.isCapturing)) return false;
+        this.gpsOutage = enabled;
+        this.gnssGeneration++;
+        this.currentGnss = null;
+        this.lastGnssTime = -Infinity;
+        if (enabled) {
+            if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
+            this.watchId = undefined;
+            this.gnssStateMachine.state = 'DEAD_RECKONING';
+            this.gnssStateMachine.timeInCurrentState = 0;
+            this.ekf.setGnssDenied();
+            this.gnssAvailable = false;
+        } else if (this.isCapturing) {
+            this.startGnssWatch();
+        }
+        return true;
+    }
+
+    startGnssWatch() {
+        if (!('geolocation' in navigator) || this.gpsOutage) return;
+        const generation = ++this.gnssGeneration;
+        this.watchId = navigator.geolocation.watchPosition(position => {
+            if (this.gpsOutage || !this.isCapturing || generation !== this.gnssGeneration) return;
+            if (Date.now() - position.timestamp > 3000) return;
+            this.lastGnssTime = performance.now() / 1000;
+            this.currentGnss = {
+                lat: position.coords.latitude, lon: position.coords.longitude,
+                accuracy: position.coords.accuracy, speed: position.coords.speed || 0,
+                heading: (position.coords.heading || 0) * Math.PI / 180,
+            };
+        }, error => {
+            if (generation !== this.gnssGeneration) return;
+            console.warn('[Edge Engine] GNSS:', error.message);
+            this.currentGnss = null;
+            this.lastGnssTime = -Infinity;
+        }, { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
     }
 
     async initModel() {
         if (this.session) return true;
         if (this.modelLoading) return false;
-        
+
         this.modelLoading = true;
+        const startup = performance.now();
         try {
+            const contractResponse = await fetch('./model.contract.json');
+            if (!contractResponse.ok) throw new Error('Model contract missing: export the trained model first');
+            this.modelContract = await contractResponse.json();
+            const contract = this.modelContract;
+            if (contract.mean?.length !== 6 || contract.std?.length !== 6 ||
+                !contract.mean.every(Number.isFinite) || !contract.std.every(v => Number.isFinite(v) && v > 0) ||
+                JSON.stringify(contract.output_order) !== '["east","north"]') throw new Error('Invalid model input/output contract');
+            this.windowSize = contract.window_size;
+            const modelBytes = new Uint8Array(await (await fetch('./model.onnx')).arrayBuffer());
+            const external = contract.external_data ? new Uint8Array(await (await fetch('./model.onnx.data')).arrayBuffer()) : null;
+            this.profiler.modelBytes = modelBytes.byteLength + (external?.byteLength || 0);
             console.log("[Edge AI] Loading ONNX Model into WebAssembly...");
             // Load the model exported to the simulator folder
-            this.session = await ort.InferenceSession.create('./model.onnx');
+            this.session = await ort.InferenceSession.create(modelBytes, {
+                executionProviders: ['wasm'],
+                externalData: external ? [{ path: 'model.onnx.data', data: external }] : [],
+            });
+            this.profiler.startupMs = performance.now() - startup;
+            document.getElementById('modelValidation').textContent = contract.preprocessing === 'legacy-unverified'
+                ? 'Diagnostic model · real-data validation unavailable' : 'Causal model loaded · validate accuracy on held-out trips';
             console.log("[Edge AI] Model loaded successfully!");
             this.modelLoading = false;
             return true;
@@ -69,6 +285,7 @@ class OfflineEngine {
     }
 
     async requestPermissionsAndStart() {
+        if (!this.localMap) return false;
         // iOS requires explicit permission for DeviceMotionEvent
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
@@ -83,7 +300,7 @@ class OfflineEngine {
                 return false;
             }
         }
-        
+
         const modelLoaded = await this.initModel();
         if (!modelLoaded) return false;
 
@@ -95,13 +312,29 @@ class OfflineEngine {
         if (this.isCapturing) return;
         console.log('[Edge Engine] Starting sensor capture & local processing...');
         this.isCapturing = true;
+        this.initialized = false;
+        this.currentGnss = null;
+        this.lastGnssTime = -Infinity;
+        this.lastMotionTime = -Infinity;
+        this.gpsOutage = false;
+        this.ekf = new ExtendedKalmanFilter();
+        this.gnssStateMachine = new GnssStateMachine();
+        this.zuptDetector.reset();
+        document.getElementById('btnGpsOutage').textContent = 'Simulate GNSS outage';
 
         // Reset buffers and timers
         this.sensorBuffer = [];
+        this.sensorTimes = [];
+        this.imuFilter = new CausalIMUFilter();
+        this.profiler.reset();
         this.lastTime = performance.now() / 1000.0;
 
         // IMU Listeners
         this.handleMotion = (event) => {
+            if (!event.accelerationIncludingGravity || !event.rotationRate) return;
+            const motionTime = performance.now() / 1000;
+            const motionDt = Number.isFinite(this.lastMotionTime) ? motionTime - this.lastMotionTime : 0;
+            this.lastMotionTime = motionTime;
             const accel = event.accelerationIncludingGravity;
             if (accel) {
                 this.currentAccel = [accel.x || 0, accel.y || 0, accel.z || 0];
@@ -110,46 +343,39 @@ class OfflineEngine {
             if (gyro) {
                 const toRad = Math.PI / 180;
                 this.currentGyro = [
-                    (gyro.alpha || 0) * toRad, 
-                    (gyro.beta || 0) * toRad, 
-                    (gyro.gamma || 0) * toRad
+                    (gyro.beta || 0) * toRad,
+                    (gyro.gamma || 0) * toRad,
+                    (gyro.alpha || 0) * toRad
                 ];
+            }
+            if (this.aligner.isAligned) {
+                const aligned = [...this.aligner.rotate(this.currentAccel), ...this.aligner.rotate(this.currentGyro)];
+                this.sensorBuffer.push(this.imuFilter.step(aligned, motionDt));
+                this.sensorTimes.push(motionTime);
+                if (this.sensorBuffer.length > this.windowSize) { this.sensorBuffer.shift(); this.sensorTimes.shift(); }
+                if (this.sensorTimes.length > 1) {
+                    this.observedImuRate = (this.sensorTimes.length - 1) / (motionTime - this.sensorTimes[0]);
+                }
             }
         };
         window.addEventListener('devicemotion', this.handleMotion);
 
-        // GNSS Listener
-        if ('geolocation' in navigator) {
-            this.watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    this.currentGnss = {
-                        lat: position.coords.latitude,
-                        lon: position.coords.longitude,
-                        alt: position.coords.altitude || 0,
-                        accuracy: position.coords.accuracy,
-                        speed: position.coords.speed || 0,
-                        heading: (position.coords.heading || 0) * (Math.PI / 180)
-                    };
-                },
-                (error) => {
-                    console.warn('[Edge Engine] GNSS Error:', error.message);
-                    this.currentGnss = null;
-                },
-                { enableHighAccuracy: true, maximumAge: 0 }
-            );
-        }
+        this.startGnssWatch();
 
         // Run Edge Inference Loop at ~10 Hz
+        this.aligner.reset();
         this.loopInterval = setInterval(() => this.runInferenceLoop(), 100);
     }
 
     stopCapture() {
         this.isCapturing = false;
+        this.gnssGeneration++;
         if (this.handleMotion) {
             window.removeEventListener('devicemotion', this.handleMotion);
         }
         if (this.watchId !== undefined) {
             navigator.geolocation.clearWatch(this.watchId);
+            this.watchId = undefined;
         }
         if (this.loopInterval) {
             clearInterval(this.loopInterval);
@@ -158,119 +384,193 @@ class OfflineEngine {
     }
 
     async runInferenceLoop() {
+        if (!this.isCapturing || this.inferenceRunning) return;
+        this.inferenceRunning = true;
+        const loopStart = performance.now();
+        try {
+            const active = await this.processInferenceStep();
+            if (active) {
+                this.profiler.record('total_loop', performance.now() - loopStart);
+                this.profiler.loops++;
+            }
+        } finally {
+            this.inferenceRunning = false;
+        }
+    }
+
+    async processInferenceStep() {
         const currentTime = performance.now() / 1000.0;
         const dt = currentTime - this.lastTime;
         this.lastTime = currentTime;
 
-        // 1. Buffer the IMU data
-        this.sensorBuffer.push([...this.currentAccel, ...this.currentGyro]);
-        if (this.sensorBuffer.length > this.windowSize) {
-            this.sensorBuffer.shift(); // Keep only last 200 samples
+        if (currentTime - this.lastMotionTime > 1) {
+            document.getElementById('edgeStatus').textContent = 'Waiting for IMU samples';
+            return;
         }
+        // Snapshot fixes across asynchronous inference; never reuse stale GPS during an outage.
+        const gnssGeneration = this.gnssGeneration;
+        const gnss = !this.gpsOutage && currentTime - this.lastGnssTime <= 3 ? this.currentGnss : null;
+        const currentGnssState = this.gnssStateMachine.update(gnss, dt);
 
-        // 2. GNSS Logic (Initialization & Ground Truth update)
         let hasGoodGNSS = false;
-        if (this.currentGnss && this.currentGnss.accuracy < 20.0) {
+        let speed = 0;
+
+        // In NORMAL or REACQUISITION, we strictly use GNSS
+        // In DEGRADED, we use it but it might be jumping
+        // In DEAD_RECKONING, we completely ignore it.
+        if ((currentGnssState === 'NORMAL' || currentGnssState === 'DEGRADED' || currentGnssState === 'REACQUISITION') && gnss && gnss.accuracy <= 50) {
             hasGoodGNSS = true;
+            speed = gnss.speed;
         }
 
-        if (hasGoodGNSS && !this.initialized) {
-            // First good GNSS fix initializes the map origin
-            this.refLat = this.currentGnss.lat;
-            this.refLon = this.currentGnss.lon;
-            this.ekf.x[0][0] = 0;
-            this.ekf.x[1][0] = 0;
-            this.ekf.x[8][0] = this.currentGnss.heading;
+
+        // 2. Alignment Phase
+        const isAligned = this.aligner.feed(this.currentAccel, speed, currentTime);
+        if (!isAligned) {
+            // Documenting: update UI here if necessary to say "Calibrating..."
+            document.getElementById('edgeStatus').textContent = "Calibrating Orientation...";
+            document.getElementById('edgeStatus').style.color = "var(--accent-cyan)";
+            return; // Wait until aligned
+        }
+
+        // 3. Buffer the Aligned IMU data
+        const alignedAccel = this.aligner.rotate(this.currentAccel);
+        const alignedGyro = this.aligner.rotate(this.currentGyro);
+
+        if (hasGoodGNSS && gnss.accuracy <= 20 && !this.initialized) {
+            // The fix initializes position within the downloaded map's reference frame.
+            const initial = this.localMap.toENU(gnss.lat, gnss.lon);
+            this.ekf.x[0][0] = initial[0];
+            this.ekf.x[1][0] = initial[1];
+            this.ekf.x[8][0] = gnss.heading;
             this.initialized = true;
+            document.getElementById('btnGpsOutage').disabled = false;
             console.log("[Edge Engine] Initialized EKF Map Origin via GNSS", this.refLat, this.refLon);
         }
 
         if (!this.initialized) {
             // Can't navigate until we know where we are
+            document.getElementById('edgeStatus').textContent = 'Waiting for initial GPS fix';
             this.updateUI({ status: 'waiting_for_gnss' });
             return;
         }
 
         // 3. EKF Predict (High frequency, 10Hz)
+        let ekfStart = performance.now();
+        let ekfMs = 0;
         this.ekf.dt = dt;
-        this.ekf.predict(this.currentAccel, this.currentGyro, null, true); // apply NHC
+        this.ekf.predict(alignedAccel, alignedGyro, null, true); // apply NHC
 
-        // 4. Simple ZUPT (Zero Velocity Update) detection
-        // If variance of accel/gyro is very low, we are stationary
-        const recentAccel = this.sensorBuffer.slice(-10).map(s => Math.sqrt(s[0]*s[0] + s[1]*s[1] + s[2]*s[2]));
-        const variance = recentAccel.length > 0 ? 
-            recentAccel.reduce((acc, val) => acc + Math.pow(val - recentAccel.reduce((a,b)=>a+b)/recentAccel.length, 2), 0) / recentAccel.length : 100;
-        
-        this.zuptActive = variance < 0.05;
+        // 4. Robust ZUPT (Zero Velocity Update) detection
+        // Uses accelerometer variance, gyroscope variance, gravity check, and GNSS speed
+        let estSpeed = hasGoodGNSS ? speed : null;
+        this.zuptActive = this.zuptDetector.update(this.currentAccel, this.currentGyro, estSpeed);
+
         if (this.zuptActive) {
             this.ekf.updateZupt(0.01);
         }
 
+        ekfMs += performance.now() - ekfStart;
         // 5. Run Edge AI Model if buffer is full
         let aiVelocity = null;
-        if (this.sensorBuffer.length === this.windowSize && this.session && !this.zuptActive) {
+        let aiError = null;
+        const expectedRate = this.modelContract?.sample_rate_hz;
+        const rateMatches = !expectedRate || (this.observedImuRate && Math.abs(this.observedImuRate / expectedRate - 1) <= 0.1);
+        if (!rateMatches) aiError = 'IMU rate differs from trained model';
+        if (this.sensorBuffer.length === this.windowSize && this.session && !this.zuptActive && rateMatches) {
             try {
+                const aiStart = performance.now();
                 // Flatten the 2D buffer into a 1D Float32Array
                 const flatData = new Float32Array(this.windowSize * 6);
                 for (let i = 0; i < this.windowSize; i++) {
                     for (let j = 0; j < 6; j++) {
-                        flatData[i * 6 + j] = this.sensorBuffer[i][j];
+                        flatData[i * 6 + j] = (this.sensorBuffer[i][j] - (this.modelContract?.mean[j] || 0)) / (this.modelContract?.std[j] || 1);
                     }
                 }
-                
+
                 const tensor = new ort.Tensor('float32', flatData, [1, this.windowSize, 6]);
                 const inputName = this.session.inputNames[0];
                 const feeds = {};
                 feeds[inputName] = tensor;
-                
+
                 const results = await this.session.run(feeds);
+                this.profiler.record('tcn', performance.now() - aiStart);
                 const outputName = this.session.outputNames[0];
-                const v = results[outputName].data; // Model output: [v_north, v_east]
-                
-                // Convert to ENU velocity: [v_east, v_north]
-                aiVelocity = [v[1], v[0]];
-                
+                const v = results[outputName].data;
+                if (v.length !== 2 || !Array.from(v).every(Number.isFinite)) throw new Error('Invalid AI velocity');
+                aiVelocity = [v[0], v[1]]; // Training targets and EKF use East, North.
+
+                if (!this.isCapturing) return;
+                if (this.gpsOutage || gnssGeneration !== this.gnssGeneration) hasGoodGNSS = false;
                 // If GNSS is denied, feed AI velocity into EKF
                 if (!hasGoodGNSS) {
+                    ekfStart = performance.now();
                     this.ekf._updateAiVelocity(aiVelocity);
+                    ekfMs += performance.now() - ekfStart;
+                }
+
+                // Edge AI Status indicator
+                const statusEl = document.getElementById('edgeStatus');
+                if (statusEl) {
+                    if (currentGnssState === 'DEAD_RECKONING') {
+                        statusEl.textContent = `DEAD RECKONING (AI ACTIVE)`;
+                        statusEl.style.color = "#ff5252";
+                    } else if (currentGnssState === 'NORMAL') {
+                        statusEl.textContent = `NORMAL (GNSS + AI)`;
+                        statusEl.style.color = "#00e676";
+                    } else if (currentGnssState === 'DEGRADED') {
+                        statusEl.textContent = `DEGRADED (Fusing)`;
+                        statusEl.style.color = "#ffeb3b";
+                    } else if (currentGnssState === 'REACQUISITION') {
+                        statusEl.textContent = `REACQUISITION (Stabilizing)`;
+                        statusEl.style.color = "#ffeb3b";
+                    }
                 }
             } catch (e) {
+                aiError = e.message;
                 console.error("[Edge Engine] Inference Error:", e);
             }
         }
 
+        ekfStart = performance.now();
         // 6. Navigation Update (GNSS Update)
-        const metersPerDegLat = 111320.0;
-        const metersPerDegLon = 111320.0 * Math.cos(this.refLat * Math.PI / 180);
+        const metersPerDegLat = this.localMap.metersPerDegree;
+        const metersPerDegLon = this.localMap.lonScale;
 
+        if (this.gpsOutage || gnssGeneration !== this.gnssGeneration) hasGoodGNSS = false;
         if (hasGoodGNSS) {
             this.gnssAvailable = true;
             this.drDuration = 0;
             this.drDistanceTraveled = 0;
-            
-            const de = (this.currentGnss.lon - this.refLon) * metersPerDegLon;
-            const dn = (this.currentGnss.lat - this.refLat) * metersPerDegLat;
-            
-            const vE = this.currentGnss.speed * Math.sin(this.currentGnss.heading);
-            const vN = this.currentGnss.speed * Math.cos(this.currentGnss.heading);
-            
-            this.ekf.updateGnss([de, dn], [vE, vN]);
-            this.currentGnss = null; // Consume
+
+            const de = (gnss.lon - this.refLon) * metersPerDegLon;
+            const dn = (gnss.lat - this.refLat) * metersPerDegLat;
+
+            const vE = gnss.speed * Math.sin(gnss.heading);
+            const vN = gnss.speed * Math.cos(gnss.heading);
+
+            if (this.lastFusedGnss !== gnss) {
+                this.ekf.updateGnss([de, dn], [vE, vN]);
+                this.lastFusedGnss = gnss;
+            }
         } else {
             this.gnssAvailable = false;
             this.drDuration = (this.drDuration || 0) + dt;
             this.ekf.setGnssDenied();
-            
+
             const vel = this.ekf.getVelocity();
             const stepDist = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]) * dt;
             this.drDistanceTraveled = (this.drDistanceTraveled || 0) + stepDist;
         }
 
+        ekfMs += performance.now() - ekfStart;
+        this.profiler.record('ekf', ekfMs);
         // 7. Map Matching
+        const mapStart = performance.now();
         let pos = this.ekf.getPosition();
         let heading = this.ekf.getHeading();
         let match = this.mapMatcher.match(pos, heading);
-        
+
         // Optionally feedback map matching if highly confident (soft map matching)
         if (match.confidence > 0.8 && this.ekf.mode === 'dr') {
             // Apply a small snap to EKF state to bound drift
@@ -278,13 +578,14 @@ class OfflineEngine {
             this.ekf.x[1][0] = 0.9 * this.ekf.x[1][0] + 0.1 * match.snapped_position[1];
         }
 
+        this.profiler.record('map_matching', performance.now() - mapStart);
         // 8. Extract Final State for UI
         pos = this.ekf.getPosition();
         const vel = this.ekf.getVelocity();
         const estLat = this.refLat + (pos[1] / metersPerDegLat);
         const estLon = this.refLon + (pos[0] / metersPerDegLon);
-        const speed = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]);
-        
+        const estimatedSpeed = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]);
+
         // Compute physical uncertainty
         const posUncertainty = this.ekf.P[0][0] + this.ekf.P[1][1]; // trace of pos covariance
         const driftPct = (this.ekf.mode === 'dr' && (this.drDistanceTraveled || 0) > 2.0)
@@ -294,19 +595,27 @@ class OfflineEngine {
             ? Math.max(0.1, Math.exp(-(this.drDuration || 0) / 60.0))
             : 1.0;
 
+        document.getElementById('mapStatus').textContent = this.localMap.contains(estLat, estLon)
+            ? 'Local OSM map · navigation active' : 'Outside downloaded map · map matching unavailable';
+        document.getElementById('edgeStatus').textContent = this.zuptActive
+            ? 'IMU + EKF · stationary (AI paused)'
+            : `IMU + EKF · ${aiVelocity ? 'AI active' : `AI buffering ${this.sensorBuffer.length}/${this.windowSize}`} · ${this.gpsOutage ? 'GPS disabled' : this.ekf.mode === 'reacq' ? 'REACQUISITION' : currentGnssState}`;
+        document.getElementById('componentStatus').textContent =
+            `AI: ${aiError ? 'ERROR (' + aiError + ')' : aiVelocity ? 'ACTIVE' : this.zuptActive ? 'PAUSED' : 'BUFFERING'} · EKF: ACTIVE · NHC: ${estimatedSpeed >= 0.5 ? 'ACTIVE' : 'LOW SPEED'} · ZUPT: ${this.zuptActive ? 'ACTIVE' : 'MONITORING'} · MAP: ${match.confidence > 0.8 ? 'MATCHED' : 'NO CONFIDENT MATCH'}`;
         this.updateUI({
             status: 'active',
             nav_mode: this.ekf.mode,
             gnss_available: this.gnssAvailable,
             estimated_lat: estLat,
             estimated_lon: estLon,
-            speed: speed,
+            speed: estimatedSpeed,
             heading: this.ekf.getHeading(),
             zupt_active: this.zuptActive,
             position_error: Math.sqrt(posUncertainty),
             dr_drift_percent: driftPct,
             confidence: confidenceScore
         });
+        return true;
     }
 
     updateUI(data) {
@@ -322,6 +631,7 @@ class OfflineEngine {
         if (data.status === 'active' && typeof updateNavMode === 'function') {
             updateNavMode(data.nav_mode);
             updateGnssStatus(data.gnss_available);
+            if (data.nav_mode === 'reacq') document.getElementById('gnssStatusText').textContent = 'REACQUIRED';
             updateSpeed(data.speed * 3.6, data.heading);
             updatePositionError(data.position_error);
             updateDrift(data.dr_drift_percent);
@@ -330,12 +640,12 @@ class OfflineEngine {
             if (typeof state !== 'undefined' && state.map) {
                 const estLat = data.estimated_lat;
                 const estLon = data.estimated_lon;
-                
+
                 state.estimatedCoords.push([estLat, estLon]);
                 state.estimatedLine.setLatLngs(state.estimatedCoords);
                 state.vehicleMarker.setLatLng([estLat, estLon]);
                 state.map.panTo([estLat, estLon], { animate: true, duration: 0.1 });
-                
+
                 const markerEl = state.vehicleMarker.getElement();
                 if (markerEl) {
                     const wrapper = markerEl.querySelector('.vehicle-marker') || markerEl;

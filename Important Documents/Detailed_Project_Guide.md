@@ -1,55 +1,32 @@
-# Detailed Project Guide
+# Navigators IDR — Detailed Project Guide
 
-## Overview
-This guide provides instructions on how to set up, test, and understand the Navigators IDR Python codebase.
+## 1. Introduction
+This guide explains the exact components and data flow of the Navigators IDR system.
 
-## Repository Structure
-- `/src/navigation/`: Core mathematical engine.
-  - `ekf.py`: The 15-state Extended Kalman Filter.
-  - `nhc.py`: Non-Holonomic Constraint processor.
-  - `zupt.py`: Zero-Velocity Update detector.
-  - `map_matching.py`: Offline geographic snapping.
-  - `dead_reckoning.py`: State manager for GNSS-denied periods.
-  - `alignment.py`: Smartphone-to-vehicle PCA alignment.
-- `/src/models/`: AI/ML processing.
-  - `tcn_model.py`: Temporal Convolutional Network logic.
-- `/src/data/`: Data handling.
-  - `preprocessor.py`: Butterworth and Median filters.
-- `/src/api/`: Interfaces.
-  - `server.py`: FastAPI implementation serving REST endpoints and WebSockets.
-- `/scripts/`: Evaluation and Utilities.
-  - `benchmark.py`: Systematic benchmark evaluation for ISRO targets.
+## 2. Component Walkthrough
+### 2.1 Preprocessing and Alignment
+Raw IMU data is noisy and arbitrary in orientation. The system first estimates gravity to establish the *Down* vector. Then, by observing acceleration during movement, it establishes the *Forward* vector. This allows the system to rotate all raw IMU data into the vehicle frame.
 
-## Local Setup
+### 2.2 Deep Learning (TCN) Velocity Estimation
+Instead of raw double integration (which drifts quadratically in seconds), the system windows 200 timesteps (2 seconds) of aligned IMU data and passes it to an ONNX-exported Temporal Convolutional Network. The network outputs a `[v_forward, v_lateral]` prediction.
 
-### 1. Environment Requirements
-- Python 3.9+
-- `pip`
+### 2.3 The 15-State EKF
+The EKF state vector includes:
+- Position (3D)
+- Velocity (3D)
+- Attitude (3D Quaternions/Euler)
+- Accel Bias (3D)
+- Gyro Bias (3D)
 
-### 2. Installation
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+The EKF prediction step uses raw IMU. The update step fuses the TCN velocity prediction (as a pseudo-measurement), NHC, ZUPT, and GNSS (when available).
 
-### 3. Running the Benchmarks
-To prove the system works, run the automated benchmark suite. It tests ablation configurations and the 50m / 1000m GNSS outages.
-```bash
-python scripts/benchmark.py
-```
-*Expected output: All sections report `PASS ✓` and Drift Percentages < 10%.*
+## 3. Data Collection Protocol
+When generating the training dataset, variety is critical to generalization.
+- **Do not train on one person's driving only.**
+- Collect multiple trips across different environments (Urban, Highway, Residential).
+- Capture different traffic states (Free-flowing, Stop-and-Go).
+- Ensure the phone is mounted in completely different physical orientations across trips to force the Phone-to-Vehicle Triad alignment algorithm to generalize.
+- **Labels**: During training *only*, the GNSS speed and heading are mathematically converted into `vel_forward` and `vel_lateral` to serve as the ground truth labels for the TCN.
 
-### 4. Running the Navigation Server
-To run the local backend server that can accept real sensor data:
-```bash
-python src/api/server.py
-```
-This will start a FastAPI server at `http://localhost:8000`.
-
-### 5. Interacting with the API
-The server exposes several endpoints for external clients (like a React Native or Flutter mobile app) to communicate with:
-- **`GET /health`**: Verifies the service is running.
-- **`POST /session/start`**: Creates a new tracking session and returns a `session_id`.
-- **`POST /sensor/batch`**: Uploads a batch of IMU and GNSS data to be processed by the EKF.
-- **`GET /navigation/state`**: Retrieves the current map-matched position and mode (GNSS or DR).
+## 4. Running the Validation Suite
+The `scripts/benchmark.py` script runs the entire system through real-world scenarios. It dynamically injects artificial GNSS outages (e.g. 100m, 250m) and strictly cuts off the EKF's access to the GNSS tracks. The system must natively dead-reckon using only the TCN predictions, and the resulting positional error is measured against the hidden GNSS ground truth.

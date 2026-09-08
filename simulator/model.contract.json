@@ -1,0 +1,27 @@
+{
+  "mean": [
+    0.006006147246807814,
+    -0.0611853264272213,
+    0.009916617535054684,
+    -0.005785080138593912,
+    -0.04405861720442772,
+    -0.09234816581010818
+  ],
+  "std": [
+    0.5046311020851135,
+    0.5049269795417786,
+    0.6589140295982361,
+    0.48565465211868286,
+    0.5191401839256287,
+    0.5328733921051025
+  ],
+  "window_size": 200,
+  "output_order": [
+    "east",
+    "north"
+  ],
+  "sample_rate_hz": null,
+  "preprocessing": "legacy-unverified",
+  "external_data": true,
+  "validation_status": "No valid real recording available; diagnostic model only"
+}

@@ -36,9 +36,18 @@ const state = {
 // ========================================================
 // Initialization
 // ========================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initMap();
     initControls();
+    try {
+        state.localMap = await LocalMap.load();
+        state.localMap.draw(state.map);
+        window.offlineEngine.setLocalMap(state.localMap);
+        document.getElementById('mapStatus').textContent = `Local OSM map · ${state.localMap.data.roads.length} roads`;
+    } catch (error) {
+        document.getElementById('mapStatus').textContent = error.message;
+        document.getElementById('btnStartLive').disabled = true;
+    }
     loadSimulationData();
 });
 
@@ -49,13 +58,6 @@ function initMap() {
         zoomControl: true,
         attributionControl: true,
     });
-
-    // Dark map tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://carto.com">CARTO</a> | Navigators IDR',
-        subdomains: 'abcd',
-        maxZoom: 20,
-    }).addTo(state.map);
 
     // Ground truth trajectory line
     state.truthLine = L.polyline([], {
@@ -125,23 +127,68 @@ function initControls() {
         }
     });
 
-    // PWA Service Worker Registration
+    // Installation succeeds only after the complete local application is cached.
+    const offlineStatus = document.getElementById('offlineStatus');
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
-            console.warn('[PWA] Service Worker registration failed:', err);
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data?.type === 'OFFLINE_STATUS') {
+                offlineStatus.textContent = event.data.ready
+                    ? 'Offline files ready · reload once before disconnecting'
+                    : 'Offline files incomplete · reconnect and reload';
+            }
         });
+        navigator.serviceWorker.register('./sw.js').then(registration => {
+            const check = () => registration.active?.postMessage({ type: 'CHECK_OFFLINE' });
+            check();
+            navigator.serviceWorker.addEventListener('controllerchange', check);
+            registration.addEventListener('updatefound', () => {
+                const worker = registration.installing;
+                worker?.addEventListener('statechange', () => {
+                    if (worker.state === 'redundant') offlineStatus.textContent = 'Offline download failed · reconnect and reload';
+                });
+            });
+        }).catch(error => {
+            offlineStatus.textContent = `Offline installation failed: ${error.message}`;
+        });
+    } else {
+        offlineStatus.textContent = 'Offline installation requires HTTPS or localhost';
     }
+
+    document.getElementById('btnGpsOutage').addEventListener('click', () => {
+        const engine = window.offlineEngine;
+        if (engine.setGpsOutage(!engine.gpsOutage)) {
+            document.getElementById('btnGpsOutage').textContent = engine.gpsOutage
+                ? 'Restore GPS' : 'Simulate GNSS outage';
+        }
+    });
+
+    document.getElementById('btnResetTimings').addEventListener('click', () => window.offlineEngine.profiler.reset());
+    document.getElementById('btnExportTimings').addEventListener('click', () => {
+        const engine = window.offlineEngine;
+        const report = { ...engine.profiler.report(), model_contract: engine.modelContract,
+            observed_imu_rate_hz: engine.observedImuRate ?? null, source: 'live browser engine' };
+        const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'navigators-device-timings.json';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
 
     // Live Sensor Controls (Offline Edge Engine)
     document.getElementById('btnStartLive').addEventListener('click', async () => {
         const btn = document.getElementById('btnStartLive');
         const statusEl = document.getElementById('edgeStatus');
-        
+
         if (window.offlineEngine.isCapturing) {
             window.offlineEngine.stopCapture();
             btn.textContent = 'Start Offline Engine';
             btn.style.color = '';
-            statusEl.textContent = 'Edge AI Ready';
+            statusEl.textContent = 'Engine stopped';
+            document.getElementById('componentStatus').textContent = 'IMU / AI / EKF / NHC / map matching: stopped';
+            document.getElementById('btnGpsOutage').disabled = true;
+            document.getElementById('playbackControls').style.opacity = '';
+            document.getElementById('playbackControls').style.pointerEvents = '';
         } else {
             statusEl.textContent = 'Initializing Edge AI...';
             const success = await window.offlineEngine.requestPermissionsAndStart();
@@ -149,7 +196,7 @@ function initControls() {
                 btn.textContent = 'Stop Engine';
                 btn.style.color = 'var(--accent-red)';
                 statusEl.textContent = 'Running Locally';
-                
+
                 // Clear map trajectories for live run
                 state.truthLine.setLatLngs([]);
                 state.estimatedLine.setLatLngs([]);
@@ -161,6 +208,38 @@ function initControls() {
             } else {
                 statusEl.textContent = 'Init Failed';
                 statusEl.style.color = 'var(--accent-red)';
+            }
+        }
+    });
+
+    // Data Recording Controls
+    let recordingTimerInterval = null;
+    document.getElementById('btnRecordTrip').addEventListener('click', async () => {
+        const btn = document.getElementById('btnRecordTrip');
+        const indicator = document.getElementById('recordingIndicator');
+        const timerText = document.getElementById('recordingTimer');
+
+        if (window.dataRecorder && window.dataRecorder.isRecording) {
+            window.dataRecorder.stopRecordingAndDownload();
+            btn.textContent = 'Record Trip Data';
+            indicator.style.display = 'none';
+            if (recordingTimerInterval) clearInterval(recordingTimerInterval);
+        } else if (window.dataRecorder) {
+            btn.textContent = 'Requesting...';
+            const success = await window.dataRecorder.requestPermissionsAndStart();
+            if (success) {
+                btn.textContent = 'Stop & Save Trip';
+                indicator.style.display = 'flex';
+
+                const startTime = Date.now();
+                recordingTimerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const s = (elapsed % 60).toString().padStart(2, '0');
+                    timerText.textContent = `${m}:${s}`;
+                }, 1000);
+            } else {
+                btn.textContent = 'Record Trip Data';
             }
         }
     });
@@ -200,7 +279,9 @@ function onDataLoaded() {
     // Center map on trajectory
     const firstLat = data.data.true_lat_lon[0][0];
     const firstLon = data.data.true_lat_lon[0][1];
-    state.map.setView([firstLat, firstLon], 16);
+    const covered = state.localMap?.contains(firstLat, firstLon);
+    if (covered) state.map.setView([firstLat, firstLon], 16);
+    else if (state.localMap) document.getElementById('mapStatus').textContent = 'Local OSM map ready · saved replay is outside this area';
 
     // Mark GNSS denied zones on the map
     markGnssDeniedZones();
@@ -218,8 +299,9 @@ function onDataLoaded() {
     // Show initial frame
     updateFrame(0);
 
-    // Auto-play
-    setTimeout(play, 500);
+    // Keep the downloaded area visible when the saved replay covers another city.
+    if (covered) setTimeout(play, 500);
+    else if (state.localMap) state.map.fitBounds([state.localMap.toLatLon(state.localMap.bounds.slice(0, 2)), state.localMap.toLatLon(state.localMap.bounds.slice(2))]);
 }
 
 function markGnssDeniedZones() {
@@ -255,7 +337,7 @@ function markGnssDeniedZones() {
 // Playback Control
 // ========================================================
 function play() {
-    if (!state.data) return;
+    if (!state.data || window.offlineEngine.isCapturing) return;
     state.playing = true;
     document.getElementById('btnPlay').classList.add('hidden');
     document.getElementById('btnPause').classList.remove('hidden');
@@ -387,7 +469,7 @@ function updateNavMode(mode) {
     switch (mode) {
         case 'gnss_ins':
             indicator.classList.add('gnss-ins');
-            label.textContent = 'GNSS + INS';
+            label.textContent = 'NORMAL · GNSS + INS';
             break;
         case 'dr':
             indicator.classList.add('dead-reckoning');

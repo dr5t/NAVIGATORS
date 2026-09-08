@@ -10,7 +10,8 @@ import json
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from data.data_loader import get_dataloaders
+from data.data_loader import get_dataloaders, validate_training_splits
+from evaluation.preprocessing import PREPROCESSING_ID
 from models.tcn_model import TCNVelocityEstimator
 from models.trainer import Trainer
 
@@ -19,7 +20,7 @@ def main():
     print("  NAVIGATORS IDR — MODEL TRAINING (PHASE 3)")
     print("="*60)
     
-    data_dir = os.path.join(os.path.dirname(__file__), "..", "data", "synthetic_trajectories")
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "data", "real_dataset")
     checkpoint_dir = os.path.join(os.path.dirname(__file__), "..", "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
     
@@ -29,7 +30,13 @@ def main():
     )
     
     # Save stats for inference
+    dataset_contract = validate_training_splits(data_dir)
     stats_dict = {
+        "preprocessing": PREPROCESSING_ID,
+        "sample_rate_hz": dataset_contract['sample_rate_hz'],
+        "source_hashes": dataset_contract['source_hashes'],
+        "window_size": 200,
+        "output_order": ["east", "north"],
         "mean": stats["mean"].tolist(),
         "std": stats["std"].tolist()
     }
@@ -60,6 +67,7 @@ def main():
     )
     
     # Pack model configuration into trainer config for checkpoint saving
+    config["data_contract"] = stats_dict
     config["model"] = {
         "type": "tcn",
         "input_channels": 6,
@@ -82,6 +90,7 @@ def main():
     
     # Final Test Set Evaluation
     print("\nEvaluating on Test Set...")
+    trainer.model, _ = Trainer.load_checkpoint(os.path.join(checkpoint_dir, "best_model.pt"), device=trainer.device)
     trainer.val_loader = test_loader
     test_loss, test_metrics = trainer.validate()
     print(f"Test Loss: {test_loss:.4f}")

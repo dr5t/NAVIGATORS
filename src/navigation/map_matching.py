@@ -9,9 +9,11 @@ Supports two methods:
 Uses offline road network data (no external API required).
 """
 
+import json
 import numpy as np
 from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass, field
+from scipy.spatial import cKDTree
 
 
 @dataclass
@@ -54,12 +56,57 @@ class RoadNetwork:
 
     def __init__(self):
         self.segments: List[RoadSegment] = []
-        self._spatial_index = None  # Simple grid index
+        self._spatial_index = None  # cKDTree index
+        self._segment_midpoints = None
 
     def add_segment(self, segment: RoadSegment):
         """Add a road segment to the network."""
         self.segments.append(segment)
         self._spatial_index = None  # Invalidate index
+
+    def load_osm_network(self, filepath: str):
+        """
+        Load OpenStreetMap road network from JSON.
+        """
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+            
+        for road in data.get('roads', []):
+            points = road.get('points', [])
+            self.add_road(
+                points=[np.array(p) for p in points],
+                road_id=road.get('id', ''),
+                name=road.get('name', ''),
+                speed_limit=road.get('speed_limit', 50.0),
+                one_way=road.get('one_way', False)
+            )
+            
+        self.build_spatial_index()
+
+    def build_spatial_index(self):
+        """Build KDTree for fast spatial queries."""
+        if not self.segments:
+            return
+            
+        midpoints = []
+        for seg in self.segments:
+            mid = (seg.start + seg.end) / 2.0
+            midpoints.append(mid)
+            
+        self._segment_midpoints = np.array(midpoints)
+        self._spatial_index = cKDTree(self._segment_midpoints)
+        self._max_half_length = max(seg.length for seg in self.segments) / 2
+
+    def get_candidate_segments(self, position: np.ndarray, radius: float = 50.0) -> List[RoadSegment]:
+        """Find candidate segments near a position using the spatial index."""
+        if self._spatial_index is None:
+            self.build_spatial_index()
+            
+        if self._spatial_index is None:
+            return self.segments
+            
+        indices = self._spatial_index.query_ball_point(position, r=radius + self._max_half_length) # Includes candidates near endpoints of long roads
+        return [self.segments[i] for i in indices]
 
     def add_road(
         self,
@@ -189,7 +236,9 @@ class GeometricMapMatcher:
         best_distance = float('inf')
         best_segment = None
 
-        for seg in self.roads.segments:
+        candidates = self.roads.get_candidate_segments(position, self.search_radius)
+
+        for seg in candidates:
             nearest, dist = self.roads.nearest_point_on_segment(position, seg)
 
             if dist < best_distance and dist <= self.search_radius:
@@ -284,10 +333,23 @@ class HMMMapMatcher:
         Returns:
             MapMatchResult.
         """
-        # Find candidate segments within search radius
+        # Find candidate segments within search radius using spatial index
         candidates = []
-        for seg in self.roads.segments:
+        possible_segments = self.roads.get_candidate_segments(position, self.search_radius)
+        
+        for seg in possible_segments:
             nearest, dist = self.roads.nearest_point_on_segment(position, seg)
+            
+            # Additional penalty for heading compatibility and motion direction
+            if heading is not None:
+                heading_diff = abs(heading - seg.heading)
+                heading_diff = min(heading_diff, 2 * np.pi - heading_diff)
+                if not seg.one_way:
+                    heading_diff = min(heading_diff, abs(heading_diff - np.pi))
+                
+                # Heavily penalize segments perpendicular to motion
+                dist += (dist * heading_diff)
+                
             if dist <= self.search_radius:
                 candidates.append((seg, nearest, dist))
 
@@ -362,7 +424,10 @@ def create_map_matcher(
     """
     if road_network is None:
         road_network = RoadNetwork()
-        road_network.generate_grid_network()
+        try:
+            road_network.load_osm_network("data/road_network.json")
+        except FileNotFoundError:
+            road_network.generate_grid_network()
 
     if method == "hmm":
         return HMMMapMatcher(road_network, **kwargs)

@@ -414,20 +414,25 @@ class Trainer:
 
         # Reconstruct model
         model_class = checkpoint.get("model_class", "TCNVelocityEstimator")
-        if model_class == "LSTMVelocityEstimator":
-            model = LSTMVelocityEstimator(
-                input_channels=config.get("input_channels", 6),
-                output_dim=config.get("output_dim", 2),
-                hidden_size=config.get("hidden_size", 128),
-                num_layers=config.get("num_layers", 3),
-            )
-        else:
-            model = TCNVelocityEstimator(
-                input_channels=config.get("input_channels", 6),
-                output_dim=config.get("output_dim", 2),
-                num_channels=config.get("num_channels", [64, 64, 128, 128]),
-                kernel_size=config.get("kernel_size", 7),
-            )
+        
+        # Determine top-level config for model creation
+        if "model" not in config:
+            # Fallback if old format
+            config["model"] = {
+                "type": "lstm" if model_class == "LSTMVelocityEstimator" else "tcn",
+                "input_channels": config.get("input_channels", 6),
+                "output_dim": config.get("output_dim", 2),
+                "lstm": {
+                    "hidden_size": config.get("hidden_size", 128),
+                    "num_layers": config.get("num_layers", 3),
+                },
+                "tcn": {
+                    "num_channels": config.get("num_channels", [64, 64, 128, 128]),
+                    "kernel_size": config.get("kernel_size", 7),
+                }
+            }
+            
+        model = create_model(config)
 
         model.load_state_dict(checkpoint["model_state_dict"])
         model.to(device)

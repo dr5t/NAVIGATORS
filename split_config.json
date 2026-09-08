@@ -1,0 +1,6 @@
+{
+  "train": ["trip_1.json", "trip_2.json", "trip_3.json"],
+  "val": ["trip_4.json"],
+  "test": ["trip_5.json", "trip_6.json"],
+  "default": "train"
+}

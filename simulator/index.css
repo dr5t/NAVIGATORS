@@ -845,3 +845,9 @@ html, body {
         height: 60vh;
     }
 }
+
+/* The basemap is rendered from downloaded OSM vectors, without tile requests. */
+#map { background: #101b2c; }
+.offline-status { margin-top: 10px; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 12px; }
+.offline-status span { max-width: 280px; }
+.control-btn:disabled { opacity: 0.45; cursor: not-allowed; }

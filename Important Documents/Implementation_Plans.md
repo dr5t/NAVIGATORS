@@ -1,29 +1,21 @@
-# Implementation Plan
+# Navigators IDR — Implementation Plans
 
-## Phase 1: Core Navigation Algorithm (Completed)
-- **Status:** Complete.
-- **Details:** The 15-state Extended Kalman Filter (EKF), Non-Holonomic Constraints (NHC), and Zero-Velocity Updates (ZUPT) were successfully implemented in Python. Testing across simulated datasets ensures the mathematical models are robust.
+## Phase 1: Architecture Recovery (Completed)
+- **Goal**: Invalidate false benchmarks and establish a scientifically sound benchmark script.
+- **Outcome**: `benchmark.py` rewritten to remove leakage and explicitly require a trained ML model.
 
-## Phase 2: Data Preprocessing & Alignment (Completed)
-- **Status:** Complete.
-- **Details:** The smartphone dynamic frame is mapped to the vehicle frame. Gravity vectors and PCA are used to determine Pitch, Roll, and vehicle forward orientation without requiring manual calibration by the user.
+## Phase 2: Real Data Pipeline & Training (Completed)
+- **Goal**: Ingest real JSON trip data, align coordinate frames, filter noise, and train the TCN.
+- **Outcome**: Created `src/data/pipeline.py` with Triad alignment and Butterworth/Median filters. Generated `best_model.pt` on actual sensor noise.
 
-## Phase 3: AI Inference Integration (Completed)
-- **Status:** Complete.
-- **Details:** A Temporal Convolutional Network (TCN) predicting 2D velocities was embedded into the system. The model weights are exported as ONNX to ensure fast, sub-5ms CPU-based inference directly on the edge.
+## Phase 3: ONNX Export & Edge Integration (Completed)
+- **Goal**: Ensure the AI model can run offline on edge devices (JavaScript target) without Python.
+- **Outcome**: `verify_onnx.py` exports the model to WebAssembly format. The JavaScript simulator now natively hosts the ONNX session.
 
-## Phase 4: Map Matching & Constraints (Completed)
-- **Status:** Complete.
-- **Details:** Geometric snapping to offline road networks is fully functional. The system binds the mathematical output of the EKF to the nearest valid topology, ensuring the user trajectory never visibly drifts onto buildings or oceans.
+## Phase 4: Frontend Simulator & Offline EKF (Completed)
+- **Goal**: Move the entire 15-state EKF and inference logic out of the Python backend.
+- **Outcome**: Built `simulator/offline_engine.js` which natively executes the EKF, Phone-to-Vehicle Triad alignment, and TCN inference on-device in the browser using `onnxruntime-web`. The FastAPI backend is officially completely decoupled.
 
-## Phase 5: Backend REST API (Completed)
-- **Status:** Complete.
-- **Details:** A FastAPI server exposes the pipeline via REST endpoints (`/session/start`, `/navigation/state`, etc.) enabling any mobile client to send batched IMU/GNSS sensor readings and receive snapped coordinate data.
-
-## Phase 6: Formal Benchmarking (Completed)
-- **Status:** Complete.
-- **Details:** Automated test suites confirm the system outperforms the primary targets: < 0.1m drift over a 50m outage (Target: 5m) and < 3m drift over a 1km outage (Target: 100m).
-
-## Phase 7: Mobile Client Integration (Pending / Future Work)
-- **Status:** Pending.
-- **Details:** The Python core needs to be integrated into a native iOS/Android application harness to complete the transition from a local server-based navigation engine to an offline edge application.
+## Phase 5: Live Testing & Map Matching Integration (Pending)
+- **Goal**: Record varied real-world trips to finalize the model weights, and replace the synthetic map grid with OpenStreetMap matching.
+- **Method**: Mount the phone in a car, use the Edge Simulator to record JSON trips. Train the pipeline. Use offline spatial trees to snap EKF outputs to known road geometries.

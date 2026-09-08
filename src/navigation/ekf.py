@@ -148,7 +148,7 @@ class ExtendedKalmanFilter:
         Args:
             accel_body: (3,) accelerometer readings [m/s²].
             gyro_body: (3,) gyroscope readings [rad/s].
-            ai_velocity: Optional (2,) predicted velocity in [v_east, v_north] or [v_north, v_east].
+            ai_velocity: Optional (2,) predicted velocity in [v_east, v_north].
             apply_nhc: Whether to apply kinematic Non-Holonomic Constraints during prediction.
         """
         roll, pitch, yaw = self.x[self.ORI]
@@ -217,6 +217,8 @@ class ExtendedKalmanFilter:
         """
         EKF measurement update from GNSS with anti-jump smooth reacquisition.
         """
+        prior_x = self.x.copy()
+        prior_p = self.P.copy()
         if self.mode == NavigationMode.DEAD_RECKONING:
             self.mode = NavigationMode.REACQUISITION
             self.reacquisition_steps = 0
@@ -224,9 +226,6 @@ class ExtendedKalmanFilter:
         elif self.mode == NavigationMode.REACQUISITION:
             self.reacquisition_steps += 1
             self.consecutive_good_gnss += 1
-            # Return to full GNED_AIDED after smooth convergence
-            if self.consecutive_good_gnss >= 5:
-                self.mode = NavigationMode.GNSS_INS
         else:
             self.mode = NavigationMode.GNSS_INS
             self.consecutive_good_gnss += 1
@@ -302,10 +301,24 @@ class ExtendedKalmanFilter:
                 yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
                 self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
 
+        if self.mode == NavigationMode.REACQUISITION:
+            # Limit the complete correction, including position/velocity cross-covariance.
+            # Preserve uncertainty while only applying part of the measurement correction.
+            correction = self.x - prior_x
+            correction[8] = (correction[8] + np.pi) % (2 * np.pi) - np.pi
+            distance = float(np.linalg.norm(correction[:2]))
+            fraction = min(1.0, 2.0 / max(distance, 1e-12))
+            self.x = prior_x + fraction * correction
+            self.P = (1 - fraction) * prior_p + fraction * self.P
+            self._enforce_covariance_symmetry()
+            residual = np.linalg.norm(gnss_pos_3d[:2] - self.x[:2])
+            if self.consecutive_good_gnss >= 5 and residual <= 3.0:
+                self.mode = NavigationMode.GNSS_INS
+
     def _update_ai_velocity(self, ai_velocity: np.ndarray):
         """
         Update state using AI-predicted velocity.
-        Supports both [v_east, v_north] or [v_north, v_east].
+        Uses [v_east, v_north].
         Standard representation: ai_velocity[0] is East, ai_velocity[1] is North.
         """
         H = np.zeros((2, self.STATE_DIM), dtype=np.float64)

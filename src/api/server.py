@@ -38,15 +38,31 @@ app.add_middleware(
 try:
     from models.trainer import Trainer
     checkpoint_path = os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "best_model.pt")
+    stats_path = os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "norm_stats.json")
     if os.path.exists(checkpoint_path):
         ml_model, _ = Trainer.load_checkpoint(checkpoint_path)
         ml_model.eval()
+        
+        import json
+        NORM_MEAN = None
+        NORM_STD = None
+        if os.path.exists(stats_path):
+            with open(stats_path, "r") as f:
+                stats = json.load(f)
+                NORM_MEAN = np.array(stats["mean"], dtype=np.float32)
+                NORM_STD = np.array(stats["std"], dtype=np.float32)
+                NORM_STD[NORM_STD < 1e-6] = 1.0
+                
         print("[Server] Loaded ML Model successfully")
     else:
         ml_model = None
+        NORM_MEAN = None
+        NORM_STD = None
         print("[Server] No ML Model checkpoint found, will use mock inference")
 except Exception as e:
     ml_model = None
+    NORM_MEAN = None
+    NORM_STD = None
     print(f"[Server] Could not load ML model: {e}")
 
 class NavigationSession:
@@ -105,7 +121,9 @@ class NavigationSession:
             self.window_buffer.pop(0)
             
         if ml_model is not None and len(self.window_buffer) == self.window_size:
-            window = np.array(self.window_buffer)
+            window = np.array(self.window_buffer, dtype=np.float32)
+            if NORM_MEAN is not None and NORM_STD is not None:
+                window = (window - NORM_MEAN) / NORM_STD
             window_tensor = torch.tensor(window[np.newaxis, ...], dtype=torch.float32)
             with torch.no_grad():
                 ai_velocity = ml_model(window_tensor).numpy()[0]

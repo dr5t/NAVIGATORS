@@ -11,19 +11,12 @@
     <meta name="theme-color" content="#0a0e1a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Compass_icon.png/512px-Compass_icon.png">
-
-    <!-- ONNX Runtime Web -->
-    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-
-    <!-- Leaflet.js for Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'self'">
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg">
+    <script src="./vendor/onnxruntime/ort.wasm.min.js"></script>
+    <link rel="stylesheet" href="./vendor/leaflet/leaflet.css">
+    <script src="./vendor/leaflet/leaflet.js"></script>
 
     <link rel="stylesheet" href="index.css">
 </head>
@@ -86,11 +79,33 @@
                         <span id="timeLabel">0.0s</span>
                     </div>
                 </div>
-                
+
                 <!-- Live Sensor Controls -->
                 <div class="live-controls glass-panel" id="liveControls" style="margin-top: 10px;">
                     <button id="btnStartLive" class="control-btn live-btn">Start Offline Engine</button>
-                    <span id="edgeStatus" style="font-size: 11px; margin-left: 10px; color: var(--accent-cyan); font-family: var(--font-mono);">Edge AI Ready</span>
+                    <span id="edgeStatus" style="font-size: 11px; margin-left: 10px; color: var(--accent-cyan); font-family: var(--font-mono);">AI not loaded</span>
+                </div>
+
+                <div class="glass-panel offline-status" role="status" aria-live="polite">
+                    <span id="mapStatus">Loading local OSM map…</span>
+                    <span id="offlineStatus">Preparing offline files…</span>
+                    <button id="btnGpsOutage" class="control-btn live-btn" disabled>Simulate GNSS outage</button>
+                </div>
+
+                <div class="glass-panel offline-status" role="status" aria-live="polite">
+                    <span id="componentStatus">Start the engine to inspect active components</span>
+                    <span id="modelValidation">Model validation: awaiting real recordings</span>
+                    <button id="btnExportTimings" class="control-btn live-btn">Export device timings</button>
+                    <button id="btnResetTimings" class="control-btn live-btn">Reset timings</button>
+                </div>
+
+                <!-- Data Recording Controls -->
+                <div class="live-controls glass-panel" id="recorderControls" style="margin-top: 10px; display: flex; align-items: center;">
+                    <button id="btnRecordTrip" class="control-btn live-btn" style="background: rgba(255, 23, 68, 0.2); border-color: var(--accent-red);">Record Trip Data</button>
+                    <div id="recordingIndicator" style="display: none; align-items: center; margin-left: 10px;">
+                        <span class="status-led" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red); margin-right: 5px;"></span>
+                        <span id="recordingTimer" style="font-size: 12px; color: var(--accent-red); font-family: var(--font-mono);">00:00</span>
+                    </div>
                 </div>
             </div>
             <!-- Legend -->
@@ -226,7 +241,12 @@
     <script src="engine/matrix.js"></script>
     <script src="engine/ekf.js"></script>
     <script src="engine/map_matcher.js"></script>
+    <script src="engine/alignment.js"></script>
+    <script src="local_map.js"></script>
+    <script src="device_profiler.js"></script>
+    <script src="engine/preprocessing.js"></script>
     <script src="offline_engine.js"></script>
+    <script src="data_recorder.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

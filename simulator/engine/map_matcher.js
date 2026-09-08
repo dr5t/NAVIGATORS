@@ -28,6 +28,75 @@ class RoadSegment {
 class RoadNetwork {
     constructor() {
         this.segments = [];
+        this.spatialHash = new Map();
+        this.gridSize = 200.0; // 200m grid cells
+    }
+
+    async loadOSMNetwork(url) {
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.roads) {
+                for (let road of data.roads) {
+                    this.addRoad(road.points, road.id, road.name, road.speed_limit, road.one_way);
+                }
+            }
+            this.buildSpatialHash();
+            console.log(`[Map Matcher] Loaded ${this.segments.length} road segments.`);
+            return true;
+        } catch (e) {
+            console.error("[Map Matcher] Failed to load OSM Network:", e);
+            return false;
+        }
+    }
+
+    _hash(x, y) {
+        let gx = Math.floor(x / this.gridSize);
+        let gy = Math.floor(y / this.gridSize);
+        return `${gx},${gy}`;
+    }
+
+    buildSpatialHash() {
+        this.spatialHash.clear();
+        for (let seg of this.segments) {
+            // Index the entire segment so long roads remain matchable at their midpoint.
+            const minX = Math.floor(Math.min(seg.start[0], seg.end[0]) / this.gridSize);
+            const maxX = Math.floor(Math.max(seg.start[0], seg.end[0]) / this.gridSize);
+            const minY = Math.floor(Math.min(seg.start[1], seg.end[1]) / this.gridSize);
+            const maxY = Math.floor(Math.max(seg.start[1], seg.end[1]) / this.gridSize);
+            for (let x = minX; x <= maxX; x++) {
+                for (let y = minY; y <= maxY; y++) {
+                    const key = `${x},${y}`;
+                    if (!this.spatialHash.has(key)) this.spatialHash.set(key, new Set());
+                    this.spatialHash.get(key).add(seg);
+                }
+            }
+        }
+    }
+
+    getCandidateSegments(position, searchRadius) {
+        if (this.spatialHash.size === 0) return this.segments;
+
+        let candidates = new Set();
+        let r = searchRadius + 100.0; // Margin
+
+        let minX = position[0] - r;
+        let maxX = position[0] + r;
+        let minY = position[1] - r;
+        let maxY = position[1] + r;
+
+        for (let x = minX; x <= maxX + this.gridSize; x += this.gridSize) {
+            for (let y = minY; y <= maxY + this.gridSize; y += this.gridSize) {
+                let h = this._hash(x, y);
+                if (this.spatialHash.has(h)) {
+                    for (let seg of this.spatialHash.get(h)) {
+                        candidates.add(seg);
+                    }
+                }
+            }
+        }
+        return Array.from(candidates);
     }
 
     addSegment(segment) {
@@ -107,7 +176,9 @@ class GeometricMapMatcher {
         let best_distance = Infinity;
         let best_segment = null;
 
-        for (let seg of this.roads.segments) {
+        let candidates = this.roads.getCandidateSegments(position, this.search_radius);
+
+        for (let seg of candidates) {
             let res = this.roads.nearestPointOnSegment(position, seg);
             let nearest = res.nearest;
             let dist = res.dist;
@@ -116,7 +187,7 @@ class GeometricMapMatcher {
                 if (heading !== null) {
                     let heading_diff = Math.abs(heading - seg.heading);
                     heading_diff = Math.min(heading_diff, 2 * Math.PI - heading_diff);
-                    
+
                     if (!seg.one_way) {
                         heading_diff = Math.min(heading_diff, Math.abs(heading_diff - Math.PI));
                     }

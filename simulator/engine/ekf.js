@@ -196,6 +196,8 @@ class ExtendedKalmanFilter {
     }
 
     updateGnss(gnss_pos, gnss_vel = null) {
+        const priorX = this.x.map(row => [...row]);
+        const priorP = this.P.map(row => [...row]);
         if (this.mode === 'dr') {
             this.mode = 'reacq';
             this.reacquisition_steps = 0;
@@ -203,7 +205,6 @@ class ExtendedKalmanFilter {
         } else if (this.mode === 'reacq') {
             this.reacquisition_steps++;
             this.consecutive_good_gnss++;
-            if (this.consecutive_good_gnss >= 5) this.mode = 'gnss_ins';
         } else {
             this.mode = 'gnss_ins';
             this.consecutive_good_gnss++;
@@ -279,6 +280,16 @@ class ExtendedKalmanFilter {
                 if (this.x[8][0] < 0) this.x[8][0] += 2*Math.PI;
                 this.x[8][0] -= Math.PI;
             }
+        }
+        if (this.mode === 'reacq') {
+            const correction = this.x.map((row, i) => row[0] - priorX[i][0]);
+            correction[8] = Math.atan2(Math.sin(correction[8]), Math.cos(correction[8]));
+            const fraction = Math.min(1, 2 / Math.max(Math.hypot(correction[0], correction[1]), 1e-12));
+            this.x = priorX.map((row, i) => [row[0] + fraction * correction[i]]);
+            this.P = priorP.map((row, i) => row.map((v, j) => (1 - fraction) * v + fraction * this.P[i][j]));
+            this._enforceSymmetry();
+            const residual = Math.hypot(gnss_pos[0] - this.x[0][0], gnss_pos[1] - this.x[1][0]);
+            if (this.consecutive_good_gnss >= 5 && residual <= 3) this.mode = 'gnss_ins';
         }
     }
 
