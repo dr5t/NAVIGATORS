@@ -1,41 +1,45 @@
-# Design Requirements
+# Design Requirements & Architecture
 
-**Project Name:** Navigators  
-**SIH Problem Statement ID:** SIH26168  
+## 1. System Overview
+The Navigators IDR system is composed of an advanced Python-based Navigation Engine executing an Extended Kalman Filter (EKF) and Temporal Convolutional Network (TCN) pipeline to maintain accurate GNSS-denied navigation.
 
----
+## 2. Core Components
 
-## 1. System Architecture
+### 2.1 Sensor Preprocessing
+- **Inputs:** 3-axis Accelerometer, 3-axis Gyroscope.
+- **Filtering:** Applies a Median filter (window=5) to remove spike noise, followed by a 4th-order low-pass Butterworth filter (cutoff=2.5 Hz) to isolate vehicle dynamics from high-frequency vibrations.
+- **Alignment:** Uses Principal Component Analysis (PCA) to align the smartphone's arbitrary coordinate frame to the vehicle's forward axis, alongside gravity estimation to determine Pitch and Roll.
 
-The system employs a 100% offline edge architecture focused entirely on edge inference to ensure real-time responsiveness and security when GNSS is denied. No backend or cloud dependency is allowed in the runtime.
+### 2.2 Deep Learning Velocity Model (TCN)
+- **Architecture:** Temporal Convolutional Network (TCN).
+- **Input:** 200-sample sliding window of aligned 6-DOF IMU data (approx. 20 seconds at 10Hz).
+- **Output:** 2D horizontal velocity vector ($v_{east}$, $v_{north}$).
+- **Deployment:** Exported as an ONNX model for high-performance, edge-optimized inference.
 
-### 1.1 Edge Engine (Smartphone / External IMU)
+### 2.3 Extended Kalman Filter (EKF)
+The central data fusion hub.
+- **State Vector ($x_{15 \times 1}$):** 
+  - Position ($x, y, z$)
+  - Velocity ($v_x, v_y, v_z$)
+  - Orientation (Roll, Pitch, Yaw)
+  - Accelerometer Bias ($b_{ax}, b_{ay}, b_{az}$)
+  - Gyroscope Bias ($b_{gx}, b_{gy}, b_{gz}$)
+- **Process Model:** Integrates raw IMU data using the strapdown inertial navigation equations.
+- **Measurement Model:** Fuses absolute GNSS fixes when available. When GNSS is denied, it fuses the AI-predicted 2D velocity as a highly-weighted pseudo-measurement.
 
-- **Sensor Interface:** Access raw data from smartphone sensors (Accelerometer, Gyroscope) at 10 Hz. Supports up to 200 Hz for external FOG-IMU.
-- **Preprocessing Module:** Employs non-linear median filtering and Butterworth low-pass filtering to isolate and remove physical shocks (e.g., potholes) without distorting kinematic data. Calculates phone-to-vehicle alignment.
-- **AI Inference Engine:** A lightweight neural network (Temporal Convolutional Network or LSTM) trained with rigorous data augmentations (noise injection, dynamic scaling). Designed to predict 2D velocity from windowed IMU data.
-- **Sensor Fusion (EKF):** A 15-state Extended Kalman Filter implemented entirely in JavaScript to optimally fuse AI-predicted velocities with GNSS readings (when available) directly on the edge.
-- **Kinematic Constraints Module:** Enforces Non-Holonomic Constraints (NHC) and Zero Velocity Updates (ZUPT) dynamically.
-- **Map Matching Module:** Snaps estimated diverging trajectories back to known road centerlines using Geometric and Probabilistic (HMM) offline mapping.
-- **UI/Visualizer:** Renders the estimated trajectory continuously without jumping or freezing inside a Progressive Web App (PWA).
+### 2.4 Constraints
+- **NHC (Non-Holonomic Constraints):** Applies pseudo-measurements assuming lateral velocity ($v_y \approx 0$) and vertical velocity ($v_z \approx 0$) are zero in the vehicle frame.
+- **ZUPT (Zero-Velocity Update):** Uses acceleration variance thresholds to detect stops. When triggered, forces velocity to zero and heavily constrains covariance growth.
 
-### 1.2 Processing Flow
+### 2.5 Map Matching
+- A geometric and topological engine that uses a local offline road network graph.
+- Uses distance and heading thresholds to snap the EKF's mathematical output to the most likely logical road segment.
 
-1. **GNSS Available:** GNSS + IMU → AI/ML filtering → Fusion (EKF) → Map matching → Position
-2. **GNSS Lost:** IMU → AI speed/motion estimation → Dead reckoning → NHC & ZUPT → Map matching → Position
-3. **GNSS Returns:** Dead reckoning → Re-acquisition → GNSS + INS fusion → Corrected continuous position
-
----
-
-## 2. Software Requirements
-
-- **AI/ML Framework:** PyTorch for training; ONNX Runtime Web for 100% offline edge deployment inside the browser.
-- **Data Processing:** Pandas, NumPy, SciPy for preprocessing and filtering.
-- **Navigation Engine:** Pure JavaScript implementation for EKF, NHC, ZUPT, and Map Matching to eliminate Python backend dependencies during deployment.
-
----
-
-## 3. Hardware Requirements
-
-- **Development:** Workstation or Cloud instance with GPU (NVIDIA) for training on the large IO-VNBD dataset.
-- **Deployment:** Modern smartphone (Android/iOS) with capable IMU, utilizing the CPU/NPU for WebAssembly inference, or dedicated edge hardware for external IMU integration.
+## 3. Data Flow
+1. Device Sensors -> API Endpoint (`POST /sensor/batch` or `/ws`).
+2. Data passes to `preprocessor.py`.
+3. Filtered data generates a 200-frame window.
+4. `tcn_model.py` evaluates the window, yielding $v_{AI}$.
+5. `ekf.py` integrates the raw IMU data, then updates via GNSS, NHC, ZUPT, and $v_{AI}$.
+6. `map_matching.py` snaps the EKF's position to the grid.
+7. System returns JSON payload with snapped coordinates and confidence metrics.
