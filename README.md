@@ -1,196 +1,41 @@
-# 🧭 Navigators — AI/ML Intelligent Dead Reckoning System
+# Navigators - Intelligent Dead Reckoning (IDR) System
 
-**SIH Problem Statement ID:** SIH26168 (S. No. 168)  
+**SIH Problem Statement ID:** SIH26168  
 **Organization:** Indian Space Research Organisation (ISRO)  
-**Team:** Navigators
 
----
+## Project Overview
 
-## 🎯 Problem Statement
+The Navigators IDR system solves the critical problem of GNSS (GPS/NavIC) denial in vehicle navigation. When a vehicle enters a tunnel, dense urban environment, or faces signal spoofing, traditional navigation fails. Our solution uses AI/ML on ubiquitous smartphone IMU sensors (accelerometer and gyroscope) to accurately estimate vehicle motion, fusing it with GNSS data via a 15-state Extended Kalman Filter (EKF) to provide uninterrupted, highly precise navigation.
 
-Conventional GPS/GNSS-based navigation fails in tunnels, underpasses, and dense urban environments. When satellite signals are blocked, vehicles lose positioning, causing navigation to freeze or jump erratically.
+## Key Features
 
-**Our solution:** An AI/ML-powered Intelligent Dead Reckoning (IDR) system that maintains seamless, accurate vehicle navigation using only smartphone IMU sensors during GNSS denial periods.
+- **100% Offline Edge Deployment:** The entire engine runs as a Progressive Web App (PWA) in WebAssembly and Javascript, requiring zero backend or internet connectivity.
+- **Deep Learning Velocity Estimation:** A Temporal Convolutional Network (TCN) trained on the IO-VNBD dataset predicts 2D velocity from noisy smartphone IMUs.
+- **Robust Signal Processing:** Non-linear median filters isolate and remove impulsive mechanical shocks (e.g., potholes) before they confuse the AI model.
+- **Advanced Sensor Fusion:** A 15-state EKF optimally fuses AI predictions with GNSS.
+- **Kinematic Constraints:** Non-Holonomic Constraints (NHC) and Zero Velocity Updates (ZUPT) limit exponential drift.
+- **Map Matching:** Geometric snapping corrects diverging inertial trajectories to known road networks.
 
----
+## Documentation
 
-## 🏗️ Architecture
+All core project documentation has been fully updated and can be found in the `Important Documents/` folder:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SMARTPHONE / EDGE DEVICE                     │
-│                                                                 │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐ │
-│  │  IMU      │───▶│ Buffer   │───▶│ AI Model │───▶│  Dead     │ │
-│  │  Sensors  │    │ Window   │    │ (ONNX)   │    │ Reckoning │ │
-│  └──────────┘    └──────────┘    └──────────┘    └─────┬─────┘ │
-│                                                        │       │
-│  ┌──────────┐    ┌──────────┐                          │       │
-│  │  GNSS    │───▶│  ZUPT    │──────────────────────────┘       │
-│  │  Receiver│    │  Detect  │                                  │
-│  └──────────┘    └──────────┘                                  │
-│                                                                 │
-│  ┌──────────┐    ┌──────────┐                                  │
-│  │ Offline  │───▶│  UI      │  ◀── Continuous position output  │
-│  │ Map      │    │  Render  │                                   │
-│  └──────────┘    └──────────┘                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+- **[Summary Document](Important%20Documents/Summary.md):** High-level overview of the problem, innovations, and deliverables.
+- **[Project Requirements Documentation](Important%20Documents/Project_Requirement_Documentation.md):** Official requirements, objectives, and extreme performance targets.
+- **[Design Requirements](Important%20Documents/Design_Requirement.md):** System architecture, processing flows, and hardware/software limits.
+- **[Detailed Project Guide](Important%20Documents/Detailed_Project_Guide.md):** Theoretical foundation and engineering architecture.
+- **[Implementation Plans & Progress](Important%20Documents/Implementation_Plans.md):** Phase-by-phase tracker of all work completed.
+- **[Research Document](Important%20Documents/Research.md):** Dataset analysis (IO-VNBD), state-of-the-art ML modeling, and filtering theory.
 
-1.  **AI Velocity Estimator:** A PyTorch-based Temporal Convolutional Network (TCN) trained to predict vehicle velocity vectors `[v_east, v_north]` from raw IMU data.
-2.  **Model Export (ONNX):** The trained PyTorch model is exported to an ONNX format for efficient cross-platform deployment.
-3.  **100% Offline Edge Engine (WebAssembly):** The `simulator` acts as a Progressive Web App (PWA). It uses `onnxruntime-web` to load the AI model directly into the mobile device's CPU.
-4.  **Local Dead Reckoning:** The PWA captures live `DeviceMotionEvent` (accelerometer/gyroscope), buffers the data, runs the neural network locally, and integrates the velocity to plot the vehicle's position on a map—**without any backend server or internet connection.**
-5.  **Constraints Engine:** Implements Zero Velocity Updates (ZUPT) to prevent drift when stationary.
-6.  **External IMU support:** Architecture-level
+## Running the Project
 
----
+### Edge Simulator (PWA)
+1. Start a local server: `python -m http.server 8000` inside the `simulator/` directory.
+2. Open `http://localhost:8000` to run the fully integrated offline JS engine (EKF + WebAssembly TCN).
 
-## 📁 Project Structure
-
-```
-Navigators-SIH/
-├── src/
-│   ├── data/               # Data loading & preprocessing
-│   │   ├── io_vnbd_loader.py   # IO-VNBD dataset parser
-│   │   ├── preprocessor.py     # IMU filtering, alignment, windowing
-│   │   └── synthetic_data.py   # Synthetic data for testing
-│   ├── models/             # AI/ML architectures
-│   │   ├── tcn_model.py        # Temporal Convolutional Network
-│   │   ├── lstm_model.py       # Bidirectional LSTM with attention
-│   │   └── trainer.py          # Training loop & checkpointing
-│   ├── navigation/         # Core navigation engine
-│   │   ├── ekf.py              # 15-state Extended Kalman Filter
-│   │   ├── dead_reckoning.py   # Dead reckoning engine
-│   │   ├── nhc.py              # Non-Holonomic Constraints
-│   │   ├── zupt.py             # Zero Velocity Update detection
-│   │   └── map_matching.py     # Road network snapping (Geometric/HMM)
-│   ├── edge/               # Edge deployment
-│   │   └── onnx_export.py      # PyTorch → ONNX export
-│   └── utils/              # Shared utilities
-│       ├── coordinates.py      # WGS84 ↔ ENU conversions
-│       └── metrics.py          # Drift %, ATE, CEP evaluation
-├── simulator/              # Web-based navigation demo
-│   ├── index.html              # UI layout
-│   ├── index.css               # Premium dark-mode styling
-│   └── app.js                  # Map visualization & telemetry
-├── scripts/                # Entry points
-│   ├── train.py                # Model training
-│   ├── evaluate.py             # Benchmarking
-│   └── simulate.py             # Full navigation simulation
-├── tests/                  # Unit & integration tests
-├── configs/
-│   └── default.yaml            # All hyperparameters
-├── requirements.txt
-└── setup.py
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Install Dependencies
-
+### Python Benchmarking & Training
 ```bash
-cd Navigators-SIH
 pip install -r requirements.txt
-```
-
-### 2. Run Navigation Simulation
-
-```bash
-python scripts/simulate.py
-```
-
-This generates synthetic sensor data, runs the full navigation pipeline (IMU → AI → EKF → DR → Map Match), and outputs results for the web simulator.
-
-### 3. Open the Web Simulator
-
-Open `simulator/index.html` in your browser. The simulator includes built-in demo data and auto-plays a navigation scenario showing:
-- Ground truth trajectory (cyan dashed line)
-- Estimated trajectory (green when GNSS available, orange during dead reckoning)
-- Real-time telemetry: speed, heading, position error, drift %, confidence
-
-### 4. Train the AI Model
-
-```bash
-# Train with synthetic data (no dataset needed)
 python scripts/train.py
-
-# Train with IO-VNBD dataset
-python scripts/train.py --dataset ./data/io_vnbd
-
-# Use LSTM instead of TCN
-python scripts/train.py --model lstm --epochs 50
+python scripts/benchmark.py
 ```
-
-### 5. Evaluate
-
-```bash
-python scripts/evaluate.py --checkpoint checkpoints/best_model.pt
-```
-
-### 6. Run Tests
-
-```bash
-python -m pytest tests/ -v
-```
-
----
-
-## 🎯 Performance Targets
-
-| Metric | Target | Description |
-|---|---|---|
-| DR Positional Drift | **< 10%** | Of distance traveled |
-| 50m GNSS-denied | **< 5m** drift | In under 1 minute |
-| 1km GNSS-denied | **< 100m** drift | At 60 km/h |
-| Update Rate | **10 Hz** | Smartphone IMU |
-| Edge Engine | **200 Hz** | External FOG-IMU |
-
----
-
-## 🧠 Key Technologies
-
-- **AI Model:** TCN (Temporal Convolutional Network) for lightweight edge inference, LSTM with attention as alternative
-- **Robust Training Pipeline:** Data augmentations including continuous noise, impulsive shock injection, speed variance, and heading misalignment to avoid overfitting.
-- **Sensor Fusion:** 15-state Extended Kalman Filter (position, velocity, orientation, biases). Implemented in both Python (for benchmarking) and native JavaScript (for 100% offline Edge PWA execution).
-- **Constraints:** Non-Holonomic Constraints (NHC, dynamically relaxed for turns) and ZUPT (zero velocity at stops).
-- **Map Matching:** Geometric snapping + HMM-based probabilistic road selection, fully offline.
-- **Signal Processing:** Non-linear median filtering combined with Butterworth low-pass to eliminate mechanical shocks from raw IMU data.
-- **Dataset:** IO-VNBD (58 hours, 4400 km, collected in UK/Nigeria/France)
-
----
-
-## 🔮 Future Work
-
-- **Real vehicle field validation:** ⚠️ Future work
-- **Native Android APK Migration:** Currently operating as a high-performance PWA in Safari/Chrome. Future work can wrap this in React Native/Flutter to bypass browser-specific sensor sampling caps.
-
----
-
-## 📊 Web Simulator Features
-
-- 🗺️ Full-screen dark-mode map with Leaflet.js
-- 📡 Real-time GNSS status with signal bars
-- 📈 Live telemetry: speed, heading, position error
-- 🎯 Drift ring gauge with target indicator
-- 🎮 Playback controls with speed adjustment
-- 🏠 Built-in demo data (works offline)
-
----
-
-## 📦 Edge Deployment
-
-Export trained model to ONNX for mobile deployment:
-
-```python
-from edge.onnx_export import export_to_onnx
-export_to_onnx(model, "model.onnx")
-```
-
----
-
-## 📄 License
-
-This project is developed for Smart India Hackathon 2026 (SIH26168).
