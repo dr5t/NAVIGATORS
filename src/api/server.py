@@ -20,6 +20,9 @@ from navigation.ekf import ExtendedKalmanFilter
 from navigation.dead_reckoning import DeadReckoningEngine
 from navigation.nhc import NonHolonomicConstraints
 from navigation.zupt import ZUPTDetector
+from navigation.map_matching import create_map_matcher, RoadNetwork
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
 
 app = FastAPI(title="Navigators IDR Backend")
 
@@ -59,6 +62,15 @@ class NavigationSession:
         self.window_buffer = []
         self.window_size = 200
         self.prev_gnss_available = False
+        
+        # Trajectory history for the API
+        self.trajectory = []
+        
+        # Create Map Matcher with a simple grid if no OSM data is provided
+        # In a real app, load real OSM data into RoadNetwork
+        self.road_network = RoadNetwork()
+        self.road_network.generate_grid_network()
+        self.map_matcher = create_map_matcher(method="geometric", road_network=self.road_network)
 
     def process_measurement(self, data: dict) -> dict:
         """Process a single measurement packet from client."""
@@ -151,25 +163,36 @@ class NavigationSession:
         pos = self.ekf.get_position()
         vel = self.ekf.get_velocity()
         
-        # Convert back to lat/lon for client Map
-        meters_per_deg_lat = 111320.0
-        meters_per_deg_lon = 111320.0 * np.cos(np.radians(self.ref_lat))
-        est_lat = self.ref_lat + pos[1] / meters_per_deg_lat
-        est_lon = self.ref_lon + pos[0] / meters_per_deg_lon
-
-        return {
+        # Map Matching
+        map_match = self.map_matcher.match(position=pos[:2], heading=self.ekf.get_heading())
+        est_lat = self.ref_lat + map_match.snapped_position[1] / meters_per_deg_lat
+        est_lon = self.ref_lon + map_match.snapped_position[0] / meters_per_deg_lon
+        
+        state_result = {
             "status": "active",
             "nav_mode": self.ekf.mode.value,
             "gnss_available": gnss_available,
             "estimated_lat": est_lat,
             "estimated_lon": est_lon,
-            "speed": np.linalg.norm(vel[:2]),
-            "heading": self.ekf.get_heading(),
-            "position_error": self.ekf.get_position_uncertainty(),
-            "dr_drift_percent": self.dr.get_drift_percentage() if self.dr.is_active else 0.0,
-            "zupt_active": is_stationary,
-            "confidence": self.dr.get_confidence() if self.dr.is_active else 1.0
+            "raw_lat": self.ref_lat + pos[1] / meters_per_deg_lat,
+            "raw_lon": self.ref_lon + pos[0] / meters_per_deg_lon,
+            "speed": float(np.linalg.norm(vel[:2])),
+            "heading": float(self.ekf.get_heading()),
+            "position_error": float(self.ekf.get_position_uncertainty()),
+            "dr_drift_percent": float(self.dr.get_drift_percentage()) if self.dr.is_active else 0.0,
+            "zupt_active": bool(is_stationary),
+            "confidence": float(self.dr.get_confidence()) if self.dr.is_active else 1.0,
+            "map_matched": map_match.confidence > 0.5
         }
+        
+        self.trajectory.append({
+            "timestamp": current_time,
+            "lat": est_lat,
+            "lon": est_lon,
+            "mode": self.ekf.mode.value
+        })
+        
+        return state_result
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -190,6 +213,102 @@ async def websocket_endpoint(websocket: WebSocket):
         print("[WS] Client disconnected")
     except Exception as e:
         print(f"[WS] Error: {e}")
+
+# Global state for REST API
+active_sessions: Dict[str, NavigationSession] = {}
+
+class SessionStartResponse(BaseModel):
+    session_id: str
+
+class SensorBatchRequest(BaseModel):
+    session_id: str
+    measurements: List[Dict[str, Any]]
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "Navigators IDR Backend"}
+
+@app.get("/status")
+def status_check():
+    return {
+        "active_sessions_count": len(active_sessions),
+        "ml_model_loaded": ml_model is not None
+    }
+
+@app.post("/session/start", response_model=SessionStartResponse)
+def start_session():
+    import uuid
+    session_id = str(uuid.uuid4())
+    active_sessions[session_id] = NavigationSession()
+    return {"session_id": session_id}
+
+@app.post("/session/stop")
+def stop_session(session_id: str):
+    if session_id in active_sessions:
+        del active_sessions[session_id]
+        return {"status": "stopped"}
+    return {"error": "session not found"}, 404
+
+@app.post("/sensor/batch")
+def process_batch(req: SensorBatchRequest):
+    if req.session_id not in active_sessions:
+        return {"error": "session not found"}, 404
+    
+    session = active_sessions[req.session_id]
+    results = []
+    for m in req.measurements:
+        results.append(session.process_measurement(m))
+    return {"processed_count": len(results), "last_state": results[-1] if results else None}
+
+@app.get("/navigation/state")
+def get_navigation_state(session_id: str):
+    if session_id not in active_sessions:
+        return {"error": "session not found"}, 404
+    
+    session = active_sessions[session_id]
+    if not session.initialized:
+        return {"status": "waiting_for_gnss"}
+        
+    pos = session.ekf.get_position()
+    vel = session.ekf.get_velocity()
+    heading = session.ekf.get_heading()
+    
+    meters_per_deg_lat = 111320.0
+    meters_per_deg_lon = 111320.0 * np.cos(np.radians(session.ref_lat))
+    raw_lat = session.ref_lat + pos[1] / meters_per_deg_lat
+    raw_lon = session.ref_lon + pos[0] / meters_per_deg_lon
+    
+    map_match = session.map_matcher.match(position=pos[:2], heading=heading)
+    est_lat = session.ref_lat + map_match.snapped_position[1] / meters_per_deg_lat
+    est_lon = session.ref_lon + map_match.snapped_position[0] / meters_per_deg_lon
+    
+    return {
+        "status": "active",
+        "nav_mode": session.ekf.mode.value,
+        "raw_lat": raw_lat,
+        "raw_lon": raw_lon,
+        "estimated_lat": est_lat,
+        "estimated_lon": est_lon,
+        "speed": float(np.linalg.norm(vel[:2])),
+        "heading": float(heading)
+    }
+
+@app.get("/navigation/trajectory")
+def get_trajectory(session_id: str):
+    if session_id not in active_sessions:
+        return {"error": "session not found"}, 404
+    return {"trajectory": active_sessions[session_id].trajectory}
+
+@app.get("/metrics")
+def get_metrics(session_id: str):
+    if session_id not in active_sessions:
+        return {"error": "session not found"}, 404
+    session = active_sessions[session_id]
+    return {
+        "position_error": float(session.ekf.get_position_uncertainty()),
+        "dr_drift_percent": float(session.dr.get_drift_percentage()) if session.dr.is_active else 0.0,
+        "total_trajectory_points": len(session.trajectory)
+    }
 
 # Serve the static simulator files
 # This must be mounted last so it doesn't override API routes
