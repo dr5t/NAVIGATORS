@@ -140,6 +140,8 @@ class ZUPTDetector {
 class OfflineEngine {
     constructor() {
         this.isCapturing = false;
+        this.navigationMode = 'vehicle';
+        this.stepLength = 0.7;
 
         // Sensor Data Buffer
         this.currentAccel = [0, 0, 0];
@@ -197,6 +199,7 @@ class OfflineEngine {
     }
 
     setLocalMap(localMap) {
+        const walkingPosition = this.walker?.position && this.localMap?.toLatLon(this.walker.position);
         this.localMap = localMap;
         this.roadNetwork.segments = [];
         for (const road of localMap.data.roads) {
@@ -205,6 +208,7 @@ class OfflineEngine {
         this.roadNetwork.buildSpatialHash();
         this.refLat = localMap.data.origin.lat;
         this.refLon = localMap.data.origin.lon;
+        if (walkingPosition) this.walker.position = localMap.toENU(...walkingPosition);
     }
 
     setGpsOutage(enabled) {
@@ -214,6 +218,7 @@ class OfflineEngine {
         this.currentGnss = null;
         this.lastGnssTime = -Infinity;
         if (enabled) {
+            this.walker?.loseGps();
             if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
             this.watchId = undefined;
             this.gnssStateMachine.state = 'DEAD_RECKONING';
@@ -233,14 +238,19 @@ class OfflineEngine {
             if (this.gpsOutage || !this.isCapturing || generation !== this.gnssGeneration) return;
             if (Date.now() - position.timestamp > 3000) return;
             this.lastGnssTime = performance.now() / 1000;
+            this.gpsError = '';
             this.currentGnss = {
+                timestamp: position.timestamp,
                 lat: position.coords.latitude, lon: position.coords.longitude,
                 accuracy: position.coords.accuracy, speed: position.coords.speed || 0,
                 heading: (position.coords.heading || 0) * Math.PI / 180,
+                speedKnown: Number.isFinite(position.coords.speed),
+                headingKnown: Number.isFinite(position.coords.heading),
             };
         }, error => {
             if (generation !== this.gnssGeneration) return;
             console.warn('[Edge Engine] GNSS:', error.message);
+            this.gpsError = error.message;
             this.currentGnss = null;
             this.lastGnssTime = -Infinity;
         }, { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
@@ -286,24 +296,28 @@ class OfflineEngine {
 
     async requestPermissionsAndStart() {
         this.lastError = '';
+        if (window.isSecureContext === false) { this.lastError = 'Open the app using HTTPS or localhost to allow phone location and motion access.'; return false; }
         if (!this.localMap) { this.lastError = 'The local road database is not ready. Reload and try again.'; return false; }
-        // iOS requires explicit permission for DeviceMotionEvent
-        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-            try {
-                const permission = await DeviceMotionEvent.requestPermission();
-                if (permission !== 'granted') {
+        if (this.navigationMode === 'walking' && (!Number.isFinite(this.stepLength) || this.stepLength < 0.3 || this.stepLength > 1.2)) {
+            this.lastError = 'Set your step length between 0.3 and 1.2 meters.';
+            return false;
+        }
+        // Request both permissions in the original button gesture on iOS.
+        try {
+            const requests = [];
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') requests.push(DeviceMotionEvent.requestPermission());
+            if (this.navigationMode === 'walking' && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') requests.push(DeviceOrientationEvent.requestPermission(true));
+            if ((await Promise.all(requests)).some(permission => permission !== 'granted')) {
                     this.lastError = 'Motion permission denied. Allow sensor access in browser settings and retry.';
                     return false;
-                }
-            } catch (e) {
+            }
+        } catch (e) {
                 console.error('Error requesting sensor permission:', e);
                 this.lastError = 'Motion access failed. Open this app over HTTPS or localhost and retry.';
                 return false;
-            }
         }
 
-        const modelLoaded = await this.initModel();
-        if (!modelLoaded) return false;
+        if (this.navigationMode !== 'walking' && !await this.initModel()) return false;
 
         this.startCapture();
         return true;
@@ -318,9 +332,11 @@ class OfflineEngine {
         this.lastGnssTime = -Infinity;
         this.lastMotionTime = -Infinity;
         this.gpsOutage = false;
+        this.gpsError = '';
         this.ekf = new ExtendedKalmanFilter();
         this.gnssStateMachine = new GnssStateMachine();
         this.zuptDetector.reset();
+        this.walker = this.navigationMode === 'walking' ? new PedestrianTracker(this.stepLength) : null;
         document.getElementById('btnGpsOutage').textContent = 'Simulate GNSS outage';
 
         // Reset buffers and timers
@@ -332,6 +348,11 @@ class OfflineEngine {
 
         // IMU Listeners
         this.handleMotion = (event) => {
+            if (this.walker) {
+                this.walker.motion(event.accelerationIncludingGravity, performance.now() / 1000);
+                this.lastMotionTime = this.walker.lastMotion;
+                return;
+            }
             if (!event.accelerationIncludingGravity || !event.rotationRate) return;
             const motionTime = performance.now() / 1000;
             const motionDt = Number.isFinite(this.lastMotionTime) ? motionTime - this.lastMotionTime : 0;
@@ -360,6 +381,12 @@ class OfflineEngine {
             }
         };
         window.addEventListener('devicemotion', this.handleMotion);
+        if (this.walker) {
+            this.handleOrientation = event => this.walker.orientation(event, performance.now() / 1000);
+            window.addEventListener('deviceorientationabsolute', this.handleOrientation);
+            window.addEventListener('deviceorientation', this.handleOrientation);
+            document.getElementById('modelValidation').textContent = 'Walking prototype · step length + absolute compass · no trained walking AI';
+        }
 
         this.startGnssWatch();
 
@@ -373,6 +400,10 @@ class OfflineEngine {
         this.gnssGeneration++;
         if (this.handleMotion) {
             window.removeEventListener('devicemotion', this.handleMotion);
+        }
+        if (this.handleOrientation) {
+            window.removeEventListener('deviceorientationabsolute', this.handleOrientation);
+            window.removeEventListener('deviceorientation', this.handleOrientation);
         }
         if (this.watchId !== undefined) {
             navigator.geolocation.clearWatch(this.watchId);
@@ -400,6 +431,7 @@ class OfflineEngine {
     }
 
     async processInferenceStep() {
+        if (this.walker) return this.processWalkingStep();
         const currentTime = performance.now() / 1000.0;
         const dt = currentTime - this.lastTime;
         this.lastTime = currentTime;
@@ -643,7 +675,8 @@ class OfflineEngine {
             updateNavMode(data.nav_mode);
             updateGnssStatus(data.gnss_available);
             if (data.nav_mode === 'reacq') document.getElementById('gnssStatusText').textContent = 'REACQUIRED';
-            updateSpeed(data.speed * 3.6, data.heading);
+            updateSpeed(Number.isFinite(data.speed) ? data.speed * 3.6 : null, data.heading);
+            document.getElementById('positionCoordinates').textContent = `${data.estimated_lat.toFixed(6)}, ${data.estimated_lon.toFixed(6)}`;
             updatePositionError(data.position_error);
             updateDrift(data.dr_drift_percent);
             updateConfidence(data.confidence);
@@ -661,6 +694,7 @@ class OfflineEngine {
 
                 const markerEl = state.vehicleMarker.getElement();
                 if (markerEl) {
+                    markerEl.querySelector('.vehicle-marker-inner').style.transform = Number.isFinite(data.heading) ? `rotate(${data.heading * 180 / Math.PI}deg)` : '';
                     const wrapper = markerEl.querySelector('.vehicle-marker') || markerEl;
                     if (data.nav_mode === 'dr') {
                         wrapper.classList.add('dr-active');
@@ -670,6 +704,36 @@ class OfflineEngine {
                 }
             }
         }
+    }
+
+    processWalkingStep() {
+        const now = performance.now() / 1000;
+        const walker = this.walker;
+        const fix = !this.gpsOutage && now - this.lastGnssTime <= 3 ? this.currentGnss : null;
+        if (fix) walker.fix(this.localMap.toENU(fix.lat, fix.lon), fix, now);
+        if (!fix || !walker.hasGps(now)) walker.loseGps();
+        if (!walker.position) {
+            this.updateUI({ status: 'waiting_for_gnss' });
+            document.getElementById('edgeStatus').textContent = this.gpsError || 'Walking · waiting for a GPS fix (accuracy ≤ 50 m)';
+            return false;
+        }
+        this.initialized = true;
+        this.gnssAvailable = walker.hasGps(now);
+        document.getElementById('btnGpsOutage').disabled = false;
+        const [lat, lon] = this.localMap.toLatLon(walker.position);
+        const sensorsReady = walker.hasHeading(now) && now - walker.lastMotion <= 1;
+        const status = !this.gnssAvailable && !sensorsReady ? 'Estimate paused · hold phone screen-up, top pointing forward; check motion and compass access'
+            : walker.mode === 'reacq' ? 'GPS returned · correcting the estimated position gradually'
+            : this.gnssAvailable ? 'GPS position · walk with phone screen-up, top pointing forward' : 'Estimated position · steps + compass; error grows without GPS';
+        document.getElementById('edgeStatus').textContent = status;
+        document.getElementById('componentStatus').textContent = `${walker.steps} detected steps · ${walker.stepLength.toFixed(2)} m per step · compass ${walker.hasHeading(now) ? 'ready' : 'unavailable'} · AI/EKF/vehicle constraints off`;
+        document.getElementById('mapStatus').textContent = this.localMap.contains(lat, lon)
+            ? 'Walking on local map · position is not forced onto a road' : 'Outside downloaded streets · coordinates continue; download this area before the next offline walk';
+        this.updateUI({ status: 'active', walking: true, session_hint: status, sensors_ready: sensorsReady,
+            nav_mode: walker.mode, gnss_available: this.gnssAvailable, estimated_lat: lat, estimated_lon: lon,
+            speed: walker.speed(now), heading: walker.hasHeading(now) || this.gnssAvailable ? walker.heading : null,
+            position_error: this.gnssAvailable ? walker.accuracy : null, confidence: null, dr_drift_percent: null });
+        return true;
     }
 }
 

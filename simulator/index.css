@@ -45,6 +45,18 @@ h1, h2, h3, p { margin: 0; } .icon-library { position: absolute; width: 0; heigh
 .replay-source > div { min-width: 0; }
 .replay-source .button { flex-shrink: 0; }
 .error { color: var(--accent-red) !important; }
+.navigation-settings, .map-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; padding: 16px; background: #fcfbf6; border: 1px solid var(--line); }
+.navigation-settings { margin-bottom: 18px; border-radius: 5px; }
+.navigation-settings label, .map-tools label { display: flex; flex-direction: column; gap: 7px; font-size: 10px; color: var(--text-secondary); }
+.navigation-settings select, .navigation-settings input, .map-tools select { min-height: 40px; padding: 8px; border: 1px solid #c8d1bf; border-radius: 3px; background: #fdfcf8; color: var(--text-primary); font: inherit; font-size: 12px; }
+.navigation-settings input { width: 90px; }
+.navigation-settings p { flex: 1; min-width: 180px; font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+.map-tools { border-width: 1px 0 0; gap: 10px; }
+.map-tools label { flex-direction: row; align-items: center; }
+#mapNetworkStatus { flex: 1; min-width: 140px; font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
+.coordinate-readout { grid-column: 1 / -1; padding-top: 16px; font-size: 10px; color: var(--text-secondary); }
+.coordinate-readout strong { display: block; margin-top: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 400; overflow-wrap: anywhere; }
+select:focus-visible { outline: 3px solid #bc6a43; outline-offset: 3px; }
 .experiment-table { min-width: 800px; }
 .table-scroll:focus-visible { outline: 2px solid var(--accent-orange); outline-offset: 3px; }
 #sessionHint { overflow-wrap: anywhere; }

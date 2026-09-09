@@ -64,6 +64,18 @@ try {
         }
         if (message.method === 'Runtime.exceptionThrown') exceptions.push(message.params.exceptionDetails);
         if (message.method === 'Network.requestWillBeSent') requests.push(message.params.request.url);
+        if (message.method === 'Fetch.requestPaused') {
+            const osm = message.params.request.url.includes('overpass-api.de');
+            const body = osm ? Buffer.from(JSON.stringify({ elements: [{ type: 'way', id: 1, tags: { name: 'Synthetic map test fixture' },
+                geometry: [{ lat: 13.0326, lon: 77.5582 }, { lat: 13.033, lon: 77.5582 }] }] })).toString('base64')
+                : 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXioAAAAASUVORK5CYII=';
+            send('Fetch.fulfillRequest', { requestId: message.params.requestId, responseCode: 200,
+                responseHeaders: [{ name: 'Content-Type', value: osm ? 'application/json' : 'image/png' },
+                    { name: 'Access-Control-Allow-Origin', value: '*' }], body }).catch(error => {
+                // Removing the online layer can cancel a tile before its mock response arrives.
+                if (!error.message.includes('Invalid InterceptionId')) exceptions.push(error.message);
+            });
+        }
     });
     const send = (method, params = {}) => new Promise((resolve, reject) => {
         const requestId = ++id;
@@ -158,6 +170,32 @@ try {
     await until(() => evaluate("document.getElementById('replayNotice').classList.contains('error')"), 'Invalid trajectory did not show an error');
     assert.equal(await evaluate('state.replayName'), 'saved-example.json');
     console.log('Trajectory import: saved playback loads; raw recordings are rejected without losing the current trajectory.');
+    const evaluated = process.env.REPLAY_TRAJECTORY
+        ? JSON.parse(await readFile(process.env.REPLAY_TRAJECTORY, 'utf8')) : JSON.parse(trajectory);
+    if (!process.env.REPLAY_TRAJECTORY) {
+        evaluated.metadata = { source: 'replay.py', configuration: { ai: false, ekf: false, nhc: false, zupt: false, map_matching: false },
+            dataset: { metadata: { provenance: 'synthetic test fixture' } } };
+        evaluated.data.timestamps = evaluated.data.timestamps.map(time => time + 5);
+        evaluated.data.true_lat_lon[0] = null;
+        for (const key of ['position_error', 'confidence', 'dr_drift_percent', 'zupt_active']) evaluated.data[key][0] = null;
+    }
+    await importReport('evaluated_trajectory.json', JSON.stringify(evaluated), 'replayFile');
+    await until(() => evaluate("state.replayName === 'evaluated_trajectory.json'"), 'Evaluated trajectory failed to import');
+    assert.match(await evaluate("document.getElementById('replayNotice').textContent"), /synthetic test fixture/);
+    const missingIndex = evaluated.data.true_lat_lon.findIndex(point => point === null);
+    assert.ok(missingIndex >= 0, 'Test trajectory must exercise missing GPS references');
+    await evaluate(`seekFrame(${missingIndex})`);
+    assert.equal(await evaluate('state.truthMarker.options.opacity'), 0);
+    for (const id of ['posErrorValue', 'confidenceValue', 'driftValue']) {
+        assert.equal(await evaluate(`document.getElementById('${id}').textContent`), '—');
+    }
+    assert.equal(await evaluate("document.getElementById('statusAI').textContent"), 'Off');
+    assert.equal(await evaluate("document.getElementById('statusEKF').textContent"), 'Off');
+    assert.ok((await evaluate("document.getElementById('timeLabel').textContent")).startsWith(evaluated.data.timestamps[missingIndex].toFixed(1)));
+    await click('#btnPlay');
+    await delay(250);
+    await click('#btnPause');
+    console.log('Evaluated replay: original timestamps, disabled components, and missing reference/metrics render correctly.');
 
     await select('experiments');
     assert.equal(await evaluate("document.querySelectorAll('#experimentRows tr').length"), 7);
@@ -215,6 +253,41 @@ try {
     assert.equal(exceptions.length, 0, JSON.stringify(exceptions));
     assert.deepEqual(requests.filter(url => /^https?:/.test(url) && !url.startsWith(origin + '/')), []);
     console.log('Mobile 390×844: all views fit, field guide opens, and navigation remains usable.');
+    await evaluate(`Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
+        watchPosition: callback => { window.walkingFix = callback; return 17; }, clearWatch: () => {} } })`);
+    await click('#btnStartLive');
+    await until(() => evaluate('offlineEngine.isCapturing && !!offlineEngine.walker'), 'Walking engine did not start');
+    assert.equal(await evaluate('offlineEngine.session'), null, 'Walking must not load the vehicle model');
+    await evaluate(`window.walkingFix({ timestamp: Date.now(), coords: { latitude: 13.0326, longitude: 77.5582, accuracy: 4, speed: null, heading: null } }); offlineEngine.runInferenceLoop()`);
+    assert.equal(await evaluate("document.querySelector('#navModeIndicator .mode-label').textContent"), 'GPS · WALKING');
+    await click('#btnGpsOutage');
+    const moved = await evaluate(`(async () => {
+        const walker = offlineEngine.walker, before = [...walker.position], start = performance.now() / 1000;
+        for (let i = 0; i < 100; i++) {
+            walker.orientation({ absolute: true, alpha: 270, beta: 0, gamma: 0 }, start + i / 50);
+            walker.motion({ x: 0, y: 0, z: 9.81 + 3 * Math.sin(i / 50 * 4 * Math.PI) }, start + i / 50);
+        }
+        await offlineEngine.runInferenceLoop();
+        return walker.position[0] - before[0];
+    })()`);
+    assert.ok(moved > 1, 'Controlled steps must move the estimate east while GPS is disabled');
+    assert.match(await evaluate("document.getElementById('positionCoordinates').textContent"), /13\.032600, 77\.558/);
+    await click('#btnStartLive');
+    console.log('Walking browser flow: GPS initializes immediately; sensor steps move the estimate during outage without loading AI.');
+
+    // Controlled provider responses exercise requests and caching without using public servers.
+    await send('Fetch.enable', { patterns: [{ urlPattern: 'https://tile.openstreetmap.org/*' }, { urlPattern: 'https://overpass-api.de/*' }] });
+    await evaluate("document.getElementById('mapSource').value = 'online'; window.updateMapSource()");
+    await until(() => evaluate('state.map.hasLayer(state.onlineTiles) && !!document.querySelector(".leaflet-tile-loaded")'), 'Online map tiles did not render');
+    await click('#btnSaveArea');
+    await until(() => evaluate("document.getElementById('mapNetworkStatus').textContent.includes('Area saved')"), 'Area download failed');
+    assert.equal(await evaluate("state.localMap.data.roads[0].name"), 'Synthetic map test fixture');
+    await send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
+    await until(() => evaluate('!state.map.hasLayer(state.onlineTiles) && state.map.hasLayer(state.localMap.layer)'), 'Offline fallback did not activate');
+    await send('Page.reload', { ignoreCache: true });
+    await until(() => evaluate("state.localMap?.data.roads[0].name === 'Synthetic map test fixture'"), 'Downloaded streets did not survive offline reload');
+    assert.equal(exceptions.length, 0, JSON.stringify(exceptions));
+    console.log('Map integration: online tiles, area download, automatic offline fallback, and saved-area offline reload passed with controlled provider fixtures.');
     console.log(`Screenshots saved to ${screenshots}; imported metrics are test fixtures only.`);
 } finally {
     socket?.close();

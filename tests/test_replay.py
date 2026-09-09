@@ -9,12 +9,13 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 sys.path.insert(0, str(ROOT))
-from evaluation.recording import Recording, load_recording, outage_mask, METERS_PER_DEGREE
+from evaluation.recording import Recording, load_recording, outage_mask, enu, METERS_PER_DEGREE
 from evaluation.replay import ABLATIONS, run_replay, metrics
 from evaluation.preprocessing import CausalFilter, prepare_features
 from data.data_loader import validate_training_splits
 from navigation.ekf import ExtendedKalmanFilter, NavigationMode
 from scripts.verify_onnx import compare_outputs
+from replay import save_browser_trajectory
 
 
 @pytest.fixture
@@ -88,6 +89,38 @@ def test_ablations_switch_actual_components(recording, road_map):
         assert bool(report['timings']['map_matching']['count']) == config.map_matching
         assert report['machine']['label'] == 'Development-machine benchmark'
     assert not np.allclose(outputs['A'][1][150:300, :2], outputs['B'][1][150:300, :2])
+
+
+@pytest.mark.parametrize('mode', ['A', 'G'])
+def test_browser_export_preserves_estimates_and_missing_measurements(recording, road_map, tmp_path, mode):
+    missing = (recording.timestamps >= 4) & (recording.timestamps < 5)
+    recording.valid[missing] = False
+    recording.gnss[missing] = np.nan
+    recording.fresh[325:330] = False
+    report, estimates, modes, allowed = run(recording, mode, road_map)
+    path = tmp_path / 'trajectory.json'
+    save_browser_trajectory(path, recording, estimates, modes, allowed, report)
+    payload = json.loads(path.read_text())
+    data, metadata = payload['data'], payload['metadata']
+    indices = np.flatnonzero(np.isfinite(estimates).all(axis=1))
+    np.testing.assert_allclose(enu(data['estimated_lat_lon'], report['origin']), estimates[indices, :2], atol=1e-8)
+    np.testing.assert_array_equal(data['timestamps'], recording.timestamps[indices])
+    np.testing.assert_array_equal(data['gnss_available'], allowed[indices])
+    np.testing.assert_allclose(data['speed_estimated'], np.linalg.norm(estimates[indices, 2:4], axis=1))
+    assert data['nav_mode'] == [modes[i] for i in indices]
+    assert data['timestamps'][0] > 0  # Calibration omitted; original trip clock retained.
+    for j, i in enumerate(indices):
+        scored = bool(recording.valid[i] and recording.fresh[i])
+        assert (data['true_lat_lon'][j] is not None) == scored
+        assert (data['position_error'][j] is not None) == scored
+        if scored:
+            expected = np.linalg.norm(estimates[i, :2] - enu(recording.gnss[i, :2], report['origin']))
+            assert data['position_error'][j] == pytest.approx(expected)
+    for key in ['confidence', 'dr_drift_percent', 'zupt_active']:
+        assert data[key] == [None] * len(indices)
+    assert metadata['configuration'] == report['configuration']
+    assert metadata['evaluation_metrics'] == report['metrics']
+    assert metadata['dataset']['metadata']['provenance'] == 'synthetic test fixture'
 
 
 def test_outage_bounds_are_seconds_and_never_silently_truncated(recording):

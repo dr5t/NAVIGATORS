@@ -9,7 +9,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'src'))
-from evaluation.recording import load_recording, sha256
+from evaluation.recording import load_recording, sha256, enu, METERS_PER_DEGREE
 from evaluation.replay import ABLATIONS, VelocityModel, run_replay
 
 
@@ -39,6 +39,36 @@ def save_trajectory(path, recording, estimates, modes, allowed):
                          'heading_rad', 'mode', 'gnss_allowed'])
         for t, row, mode, gps in zip(recording.timestamps, estimates, modes, allowed):
             writer.writerow([t, *[float(v) if np.isfinite(v) else '' for v in row], mode, int(gps)])
+
+
+def save_browser_trajectory(path, recording, estimates, modes, allowed, report):
+    indices = np.flatnonzero(np.isfinite(estimates).all(axis=1))
+    rows = estimates[indices]
+    origin = report['origin']
+    positions = np.column_stack((origin[0] + rows[:, 1] / METERS_PER_DEGREE,
+        origin[1] + rows[:, 0] / (METERS_PER_DEGREE * np.cos(np.deg2rad(origin[0])))))
+    scored = recording.valid[indices] & recording.fresh[indices]
+    reference = recording.gnss[indices, :2]
+    errors = np.linalg.norm(rows[:, :2] - enu(reference, origin), axis=1)
+    payload = {
+        'metadata': {**report, 'source': 'replay.py', 'evaluation_metrics': report['metrics'],
+            'metrics': {'ate_rmse': report['metrics']['whole_trip']['position_rmse_m']}},
+        'data': {
+            'timestamps': recording.timestamps[indices].tolist(),
+            'estimated_lat_lon': positions.tolist(),
+            'true_lat_lon': [point.tolist() if valid else None for point, valid in zip(reference, scored)],
+            'speed_estimated': np.linalg.norm(rows[:, 2:4], axis=1).tolist(),
+            'heading_estimated': rows[:, 4].tolist(),
+            'gnss_available': allowed[indices].tolist(),
+            'nav_mode': [modes[i] for i in indices],
+            'position_error': [float(error) if valid else None for error, valid in zip(errors, scored)],
+            # These quantities are not retained per sample by the replay engine.
+            'confidence': [None] * len(indices),
+            'dr_drift_percent': [None] * len(indices),
+            'zupt_active': [None] * len(indices),
+        },
+    }
+    path.write_text(json.dumps(payload, allow_nan=False) + '\n')
 
 
 def main(argv=None):
@@ -75,6 +105,7 @@ def main(argv=None):
                 ROOT / 'src/evaluation/preprocessing.py', ROOT / 'src/navigation/ekf.py',
                 ROOT / 'src/navigation/map_matching.py', ROOT / 'src/navigation/zupt.py']}
             save_trajectory(args.output / f'{args.dataset.stem}_{key}_trajectory.csv', recording, estimates, modes, allowed)
+            save_browser_trajectory(args.output / f'{args.dataset.stem}_{key}_trajectory.json', recording, estimates, modes, allowed, report)
             score = report['metrics']['outage']
             print(f'\n{key} — {config.name} (outage reference samples: {score["reference_samples"]})')
             for label, metric in [('Final position error', 'final_position_error_m'), ('Mean position error', 'mean_position_error_m'),

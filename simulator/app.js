@@ -43,19 +43,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     initMap();
     initControls();
     try {
-        state.localMap = await LocalMap.load();
-        state.localMap.draw(state.map);
-        const origin = state.localMap.data.origin;
-        document.getElementById('mapCoordinates').textContent = `${Math.abs(origin.lat).toFixed(4)}° ${origin.lat >= 0 ? "N" : "S"} / ${Math.abs(origin.lon).toFixed(4)}° ${origin.lon >= 0 ? "E" : "W"}`;
-        document.getElementById('roadCount').textContent = `${state.localMap.data.roads.length.toLocaleString()} roads · stored on this device`;
-        window.offlineEngine.setLocalMap(state.localMap);
-        document.getElementById('mapStatus').textContent = `Local OSM map · ${state.localMap.data.roads.length} roads`;
+        installLocalMap(await LocalMap.load());
     } catch (error) {
         document.getElementById('mapStatus').textContent = error.message;
         document.getElementById('btnStartLive').disabled = true;
     }
     loadSimulationData();
 });
+
+function installLocalMap(localMap) {
+    state.localMap?.layer?.remove();
+    state.localMap = localMap;
+    localMap.draw(state.map);
+    const origin = localMap.data.origin;
+    document.getElementById('mapCoordinates').textContent = `${Math.abs(origin.lat).toFixed(4)}° ${origin.lat >= 0 ? 'N' : 'S'} / ${Math.abs(origin.lon).toFixed(4)}° ${origin.lon >= 0 ? 'E' : 'W'}`;
+    document.getElementById('roadCount').textContent = `${localMap.data.roads.length.toLocaleString()} roads · stored on this device`;
+    window.offlineEngine.setLocalMap(localMap);
+    document.getElementById('mapStatus').textContent = `Local OSM map · ${localMap.data.roads.length} roads`;
+    window.updateMapSource?.();
+}
 
 function initMap() {
     state.map = L.map('map', {
@@ -180,7 +186,7 @@ function initControls() {
     document.getElementById('btnExportTimings').addEventListener('click', () => {
         const engine = window.offlineEngine;
         const report = { ...engine.profiler.report(), model_contract: engine.modelContract,
-            observed_imu_rate_hz: engine.observedImuRate ?? null, source: 'live browser engine' };
+            observed_imu_rate_hz: engine.observedImuRate ?? null, source: 'live browser engine', navigation_mode: engine.navigationMode };
         const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url;
@@ -205,9 +211,15 @@ function initControls() {
             document.getElementById('playbackControls').style.opacity = '';
             document.getElementById('playbackControls').style.pointerEvents = '';
             window.showStandby?.();
+            document.getElementById('travelMode').disabled = false;
+            document.getElementById('stepLength').disabled = false;
             btn.hidden = state.view !== 'console';
         } else {
             window.selectWorkspace?.('console');
+            window.offlineEngine.navigationMode = document.getElementById('travelMode').value;
+            window.offlineEngine.stepLength = Number(document.getElementById('stepLength').value);
+            document.getElementById('travelMode').disabled = true;
+            document.getElementById('stepLength').disabled = true;
             btn.disabled = true;
             btn.setAttribute('aria-busy', 'true');
             btn.textContent = 'Loading local engine…';
@@ -228,8 +240,9 @@ function initControls() {
                 btn.textContent = 'Stop Engine';
                 btn.classList.add('running');
                 statusEl.textContent = 'Running Locally';
-                document.getElementById('sessionHint').textContent = 'Calibrating phone sensors';
+                document.getElementById('sessionHint').textContent = window.offlineEngine.navigationMode === 'walking' ? 'Waiting for GPS · hold the phone screen-up with its top forward' : 'Calibrating phone sensors';
                 state.truthMarker.setOpacity(0);
+                state.vehicleMarker.setOpacity(0);
 
                 // Clear map trajectories for live run
                 state.truthLine.setLatLngs([]);
@@ -244,6 +257,8 @@ function initControls() {
                 statusEl.textContent = window.offlineEngine.lastError || 'Unable to start. Check motion and location permissions, then retry.';
                 statusEl.style.color = 'var(--accent-red)';
                 document.getElementById('sessionHint').textContent = statusEl.textContent;
+                document.getElementById('travelMode').disabled = false;
+                document.getElementById('stepLength').disabled = false;
             }
         }
     });
@@ -320,8 +335,7 @@ function onDataLoaded() {
     timeline.max = data.data.timestamps.length - 1;
 
     // Center map on trajectory
-    const firstLat = data.data.true_lat_lon[0][0];
-    const firstLon = data.data.true_lat_lon[0][1];
+    const [firstLat, firstLon] = data.data.estimated_lat_lon[0];
     const covered = state.localMap?.contains(firstLat, firstLon);
     if (covered) {
         state.map.setView([firstLat, firstLon], 16);
@@ -351,16 +365,14 @@ function markGnssDeniedZones() {
     const data = state.data.data;
     let zoneStart = null;
 
-    for (let i = 0; i < data.gnss_available.length; i++) {
-        if (!data.gnss_available[i] && zoneStart === null) {
+    for (let i = 0; i <= data.gnss_available.length; i++) {
+        if (i < data.gnss_available.length && !data.gnss_available[i] && zoneStart === null) {
             zoneStart = i;
-        } else if (data.gnss_available[i] && zoneStart !== null) {
+        } else if ((i === data.gnss_available.length || data.gnss_available[i]) && zoneStart !== null) {
             // Create zone polygon
             const coords = [];
-            for (let j = zoneStart; j <= i; j++) {
-                if (data.true_lat_lon[j]) {
-                    coords.push([data.true_lat_lon[j][0], data.true_lat_lon[j][1]]);
-                }
+            for (let j = zoneStart; j < i; j++) {
+                coords.push(data.estimated_lat_lon[j]);
             }
             if (coords.length > 1) {
                 const zone = L.polyline(coords, {
@@ -443,8 +455,7 @@ function updateFrame(index) {
     const data = state.data.data;
     if (index < 0 || index >= data.timestamps.length) return;
 
-    const trueLat = data.true_lat_lon[index][0];
-    const trueLon = data.true_lat_lon[index][1];
+    const reference = data.true_lat_lon[index];
     const estLat = data.estimated_lat_lon[index][0];
     const estLon = data.estimated_lat_lon[index][1];
     const gnssOk = data.gnss_available[index];
@@ -459,10 +470,18 @@ function updateFrame(index) {
 
     // --- Update Map ---
     // Add coordinates to trajectories
-    state.truthCoords.push([trueLat, trueLon]);
+    state.truthCoords.push(reference);
     state.estimatedCoords.push([estLat, estLon]);
 
-    state.truthLine.setLatLngs(state.truthCoords);
+    // Break the reference trail at missing fixes rather than drawing across GPS gaps.
+    const segments = [];
+    let segment = [];
+    for (const point of state.truthCoords) {
+        if (!point) { segment = []; continue; }
+        if (!segment.length) segments.push(segment);
+        segment.push(point);
+    }
+    state.truthLine.setLatLngs(segments);
     state.estimatedLine.setLatLngs(state.estimatedCoords);
 
     // Change estimated line color based on mode
@@ -476,7 +495,8 @@ function updateFrame(index) {
 
     // Update markers
     state.vehicleMarker.setLatLng([estLat, estLon]).setOpacity(1);
-    state.truthMarker.setLatLng([trueLat, trueLon]).setOpacity(1);
+    state.truthMarker.setOpacity(reference ? 1 : 0);
+    if (reference) state.truthMarker.setLatLng(reference);
 
     // Update vehicle marker appearance
     const markerEl = state.vehicleMarker.getElement();
@@ -496,6 +516,7 @@ function updateFrame(index) {
     updateNavMode(navMode);
     updateGnssStatus(gnssOk);
     updateSpeed(speed * 3.6, heading); // Convert m/s to km/h
+    document.getElementById('positionCoordinates').textContent = `${estLat.toFixed(6)}, ${estLon.toFixed(6)}`;
     updatePositionError(posError);
     updateDrift(driftPct);
     updateConfidence(confidence);
@@ -503,8 +524,9 @@ function updateFrame(index) {
 
     // Timeline
     document.getElementById('timeline').value = index;
-    const elapsed = timestamp - data.timestamps[0];
-    const duration = data.timestamps.at(-1) - data.timestamps[0];
+    const start = state.data.metadata.source === 'replay.py' ? 0 : data.timestamps[0];
+    const elapsed = timestamp - start;
+    const duration = data.timestamps.at(-1) - start;
     document.getElementById('timeLabel').textContent = `${elapsed.toFixed(1)} / ${duration.toFixed(1)}s`;
     document.getElementById('timeline').setAttribute('aria-valuetext', `${elapsed.toFixed(1)} of ${duration.toFixed(1)} seconds`);
 }
@@ -555,14 +577,20 @@ function updateGnssStatus(available) {
 }
 
 function updateSpeed(speedKmh, headingRad) {
-    document.getElementById('speedValue').textContent = speedKmh.toFixed(1);
+    document.getElementById('speedValue').textContent = Number.isFinite(speedKmh) ? speedKmh.toFixed(1) : '—';
 
     const headingDeg = ((headingRad * 180 / Math.PI) % 360 + 360) % 360;
-    document.getElementById('headingValue').textContent = `${headingDeg.toFixed(0)}°`;
+    document.getElementById('headingValue').textContent = Number.isFinite(headingRad) ? `${headingDeg.toFixed(0)}°` : '—';
 }
 
 function updatePositionError(error) {
     const errorEl = document.getElementById('posErrorValue');
+    if (!Number.isFinite(error)) {
+        errorEl.textContent = '—';
+        errorEl.style.color = '';
+        document.getElementById('posErrorBar').style.width = '0%';
+        return;
+    }
     errorEl.textContent = error.toFixed(1);
 
     // Color based on severity
@@ -583,6 +611,12 @@ function updateDrift(driftPct) {
     const valueEl = document.getElementById('driftValue');
     const ringEl = document.getElementById('driftRingFill');
     const badge = document.getElementById('driftBadge');
+    if (!Number.isFinite(driftPct)) {
+        valueEl.textContent = badge.textContent = '—';
+        valueEl.style.color = badge.style.color = '';
+        ringEl.style.strokeDashoffset = 326.73;
+        return;
+    }
 
     valueEl.textContent = driftPct.toFixed(1);
 
@@ -613,6 +647,12 @@ function updateDrift(driftPct) {
 function updateConfidence(confidence) {
     const bar = document.getElementById('confidenceBar');
     const value = document.getElementById('confidenceValue');
+    if (!Number.isFinite(confidence)) {
+        value.textContent = '—';
+        value.style.color = '';
+        bar.style.width = '0%';
+        return;
+    }
 
     const pct = Math.max(0, Math.min(100, confidence * 100));
     bar.style.width = `${pct}%`;

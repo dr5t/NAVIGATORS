@@ -1,9 +1,9 @@
 // Bump the version whenever a bundled asset, model, or downloaded map changes.
-const CACHE_NAME = 'navigators-idr-offline-v6';
+const CACHE_NAME = 'navigators-idr-offline-v8';
 const ASSETS = [
     './', './index.html', './index.css', './app.js', './workspace.js', './local_map.js',
     './offline_engine.js', './device_profiler.js', './engine/preprocessing.js', './model.contract.json', './data_recorder.js', './manifest.json', './icon.svg',
-    './engine/matrix.js', './engine/ekf.js', './engine/map_matcher.js', './engine/alignment.js',
+    './engine/matrix.js', './engine/ekf.js', './engine/map_matcher.js', './engine/alignment.js', './engine/pedestrian.js',
     './model.onnx', './model.onnx.data', './data/simulation.json', './data/road_network.json',
     './vendor/leaflet/leaflet.css', './vendor/leaflet/leaflet.js',
     './vendor/leaflet/images/layers.png', './vendor/leaflet/images/layers-2x.png',
@@ -42,6 +42,7 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     if (url.origin !== self.location.origin) {
+        if (url.origin === 'https://tile.openstreetmap.org' || url.origin === 'https://overpass-api.de') return;
         event.respondWith(Promise.resolve(new Response('External requests are disabled', { status: 403 })));
         return;
     }

@@ -18,7 +18,7 @@ function fitLocalArea() {
 }
 
 window.showStandby = (clearTrack = false) => {
-    for (const id of ['speedValue', 'headingValue', 'posErrorValue', 'driftValue', 'confidenceValue', 'driftBadge']) {
+    for (const id of ['speedValue', 'headingValue', 'posErrorValue', 'driftValue', 'confidenceValue', 'driftBadge', 'positionCoordinates']) {
         byId(id).textContent = '—';
         byId(id).style.color = '';
     }
@@ -78,11 +78,12 @@ window.selectWorkspace = view => {
     byId('performanceWorkspace').hidden = view !== 'performance';
     byId('playbackControls').hidden = view !== 'replay';
     byId('replaySource').hidden = view !== 'replay';
+    byId('navigationSettings').hidden = view !== 'console';
     byId('metricsCard').hidden = view !== 'replay';
     byId('btnStartLive').hidden = view !== 'console' && !window.offlineEngine.isCapturing && byId('btnStartLive').getAttribute('aria-busy') !== 'true';
     byId('sourceLabel').textContent = view === 'replay' ? (state.replayName ? 'SAVED TRAJECTORY' : 'SAVED EXAMPLE') : 'LIVE SENSORS';
     byId('telemetrySource').textContent = view === 'replay' ? 'Saved values' : 'Live session';
-    byId('positionMetricLabel').textContent = view === 'replay' ? 'Reference position error' : 'Position uncertainty';
+    byId('positionMetricLabel').textContent = view === 'replay' ? 'Reference position error' : byId('travelMode').value === 'walking' ? 'GPS accuracy' : 'Position uncertainty';
     byId('driftMetricLabel').textContent = view === 'replay' ? 'Saved DR drift' : 'Estimated drift';
     if (view === 'console' || view === 'replay') {
         state.map.invalidateSize();
@@ -96,6 +97,19 @@ window.selectWorkspace = view => {
 };
 
 window.updateConsoleTelemetry = data => {
+    if (data.walking) {
+        byId('sessionHint').textContent = data.session_hint;
+        byId('statusIMU').textContent = data.sensors_ready ? 'Steps + compass' : 'Check sensors';
+        for (const id of ['statusAI', 'statusEKF', 'statusConstraints', 'statusMap']) {
+            byId(id).textContent = 'Off · walking';
+            byId(id).className = '';
+        }
+        byId('positionMetricLabel').textContent = 'GPS accuracy';
+        byId('navModeIndicator').querySelector('.mode-label').textContent = data.nav_mode === 'dr' ? 'ESTIMATED · GPS LOST' : data.nav_mode === 'reacq' ? 'REACQUISITION' : 'GPS · WALKING';
+        byId('gnssDescription').textContent = data.gnss_available ? 'Following GPS fixes.' : 'No GPS fix. Steps and compass estimate your position.';
+        document.querySelectorAll('.run-sequence li').forEach(item => item.classList.toggle('active', item.dataset.stage === (data.nav_mode === 'gnss_ins' ? 'normal' : data.nav_mode)));
+        return;
+    }
     if (data.status && data.status !== 'active') {
         const waiting = data.status === 'waiting_for_imu';
         byId('sessionHint').textContent = waiting ? 'Waiting for motion samples · allow sensors on a supported phone'
@@ -116,7 +130,11 @@ window.updateConsoleTelemetry = data => {
     if (!saved) {
         byId('sessionHint').textContent = data.nav_mode === 'dr' ? 'GPS denied · navigation continues' : data.nav_mode === 'reacq' ? 'Fresh fix · converging smoothly' : 'Local sensors · session running';
     }
-    const components = saved ? {
+    const config = saved && state.data.metadata.source === 'replay.py' ? state.data.metadata.configuration : null;
+    const components = config ? {
+        statusIMU: 'Recorded', statusAI: config.ai ? 'Configured' : 'Off', statusEKF: config.ekf ? 'Configured' : 'Off',
+        statusConstraints: config.zupt ? 'NHC + ZUPT' : config.nhc ? 'NHC' : 'Off', statusMap: config.map_matching ? 'Configured' : 'Off',
+    } : saved ? {
         statusIMU: 'Saved', statusAI: 'Saved', statusEKF: 'Saved', statusConstraints: data.zupt_active ? 'ZUPT saved' : 'Saved', statusMap: 'Saved',
     } : {
         statusIMU: 'Active', statusAI: data.ai_error ? 'Error' : data.ai_active ? 'Active' : data.zupt_active ? 'Paused' : 'Buffering',
@@ -183,6 +201,33 @@ window.refreshDeviceTimings = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    byId('travelMode').addEventListener('change', () => {
+        const walking = byId('travelMode').value === 'walking';
+        byId('stepLengthControl').hidden = byId('walkingHelp').hidden = !walking;
+        byId('positionMetricLabel').textContent = walking ? 'GPS accuracy' : 'Position uncertainty';
+        document.querySelector('[data-stage="normal"] small').textContent = walking ? 'Follow GPS fixes' : 'Initialize & calibrate';
+        document.querySelector('[data-stage="dr"] small').textContent = walking ? 'Steps + compass' : 'Continue with IMU + AI';
+    });
+    byId('travelMode').dispatchEvent(new Event('change'));
+    byId('mapSource').addEventListener('change', () => window.updateMapSource());
+    window.addEventListener('online', () => window.updateMapSource());
+    window.addEventListener('offline', () => window.updateMapSource());
+    byId('btnSaveArea').addEventListener('click', async () => {
+        const button = byId('btnSaveArea'), notice = byId('mapNetworkStatus');
+        button.disabled = true;
+        notice.textContent = 'Downloading a 2 km square around the map center…';
+        try {
+            if (!navigator.onLine) throw new Error('Reconnect to download streets first.');
+            const center = state.map.getCenter().wrap();
+            const localMap = await LocalMap.download(center.lat, center.lng);
+            if (window.offlineEngine.isCapturing && window.offlineEngine.navigationMode !== 'walking') throw new Error('Stop the vehicle engine before replacing its map.');
+            const cache = await caches.open('navigators-map-data-v1');
+            await cache.put('./data/road_network.json', new Response(JSON.stringify(localMap.data), { headers: { 'Content-Type': 'application/json' } }));
+            installLocalMap(localMap);
+            notice.textContent = 'Area saved on this device · offline view uses downloaded streets';
+        } catch (error) { notice.textContent = `Area not saved: ${error.message}`; }
+        finally { button.disabled = false; }
+    });
     document.querySelectorAll('[data-view]').forEach(button => {
         button.title = workspaceViews[button.dataset.view][0];
         button.addEventListener('click', () => window.selectWorkspace(button.dataset.view));
@@ -195,20 +240,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!loaded) return;
             const data = loaded.payload?.data;
             const count = data?.timestamps?.length;
-            const numeric = ['timestamps', 'speed_estimated', 'heading_estimated', 'position_error', 'confidence', 'dr_drift_percent'];
-            const fields = [...numeric, 'true_lat_lon', 'estimated_lat_lon', 'gnss_available', 'nav_mode', 'zupt_active'];
+            const numeric = ['timestamps', 'speed_estimated', 'heading_estimated'];
+            const optional = ['position_error', 'confidence', 'dr_drift_percent'];
+            const fields = [...numeric, ...optional, 'true_lat_lon', 'estimated_lat_lon', 'gnss_available', 'nav_mode', 'zupt_active'];
             if (!count || fields.some(key => !Array.isArray(data[key]) || data[key].length !== count)) {
-                throw new Error('Choose a simulator trajectory JSON with estimated positions. Use replay.py to evaluate raw phone recordings.');
+                throw new Error('Choose a *_trajectory.json exported by replay.py or a simulator trajectory. Evaluate raw recordings with replay.py first.');
             }
             for (let i = 0; i < count; i++) {
                 if (numeric.some(key => !Number.isFinite(data[key][i])) ||
+                    optional.some(key => data[key][i] !== null && !Number.isFinite(data[key][i])) ||
                     (i > 0 && data.timestamps[i] <= data.timestamps[i - 1]) ||
                     !['gnss_ins', 'dr', 'reacq'].includes(data.nav_mode[i]) ||
-                    typeof data.gnss_available[i] !== 'boolean' || typeof data.zupt_active[i] !== 'boolean' ||
+                    typeof data.gnss_available[i] !== 'boolean' || (data.zupt_active[i] !== null && typeof data.zupt_active[i] !== 'boolean') ||
                     data.speed_estimated[i] < 0 || data.position_error[i] < 0 || data.dr_drift_percent[i] < 0 ||
                     data.confidence[i] < 0 || data.confidence[i] > 1 ||
                     ['true_lat_lon', 'estimated_lat_lon'].some(key => {
                         const point = data[key][i];
+                        if (key === 'true_lat_lon' && point === null) return false;
                         return !Array.isArray(point) || point.length !== 2 || !point.every(Number.isFinite) || Math.abs(point[0]) > 85 || Math.abs(point[1]) > 180;
                     })) throw new Error(`Invalid trajectory values at frame ${i + 1}.`);
             }
@@ -219,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
             onDataLoaded();
             window.selectWorkspace('replay');
             notice.classList.remove('error');
-            notice.textContent = `${loaded.name} · ${count.toLocaleString()} frames · ${(data.timestamps.at(-1) - data.timestamps[0]).toFixed(1)} seconds · provenance unverified`;
+            const metadata = state.data.metadata;
+            notice.textContent = `${loaded.name} · ${count.toLocaleString()} frames · ${(data.timestamps.at(-1) - data.timestamps[0]).toFixed(1)} seconds · ${metadata.dataset?.metadata?.provenance || 'provenance unverified'}. ${metadata.reference || 'Saved trajectory; not live accuracy.'}`;
         } catch (error) {
             notice.classList.add('error');
             notice.textContent = `Import failed: ${error.message}`;
@@ -287,3 +336,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.refreshDeviceTimings();
     setInterval(() => { if (state.view === 'performance') window.refreshDeviceTimings(); }, 1000);
 });
+
+window.updateMapSource = (failed = false) => {
+    if (!state.localMap) return;
+    const online = byId('mapSource').value === 'online' && navigator.onLine && !failed;
+    if (online) {
+        if (!state.onlineTiles) {
+            state.onlineTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+            }).on('tileerror', () => window.updateMapSource(true));
+        }
+        state.localMap.layer.remove();
+        state.onlineTiles.addTo(state.map);
+    } else {
+        state.onlineTiles?.remove();
+        state.localMap.layer.addTo(state.map).bringToBack();
+    }
+    byId('mapNetworkStatus').textContent = online ? 'Online streets · save this area before disconnecting'
+        : failed ? 'Online map unavailable · showing downloaded streets' : 'Offline streets · downloaded area only';
+};

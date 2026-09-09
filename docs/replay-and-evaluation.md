@@ -35,6 +35,7 @@ Output in `results/replay/`:
 
 - `trip_07_results.json`: configuration, input/model/map/source hashes, calibration, mode transitions, component invocation counts, timings, and metrics for the whole navigated trip, outage, and recovery.
 - `trip_07_A_trajectory.csv` through `G`: timestamped ENU position/velocity, heading, mode, and GPS availability. Calibration rows have blank estimates.
+- `trip_07_A_trajectory.json` through `G`: open these in **Saved playback → Open trajectory**. Calibration rows are omitted, trip timestamps are preserved, and unavailable references, confidence, drift, and per-frame ZUPT status remain null. The files retain recording provenance and evaluation configuration.
 - `trip_07_ablation.csv`: comparable outage metrics and explicit blocked statuses/reasons.
 
 The default mode is G. A missing or incompatible model blocks C–G; an invalid map blocks G. The CLI returns nonzero if any requested experiment is blocked. `--allow-legacy-model` permits explicitly diagnostic runs of old checkpoints; it does not validate their preprocessing or training provenance.
@@ -125,4 +126,18 @@ Open `http://localhost:8000`. The interface has four views:
 - **Experiments**: import a `*_results.json` replay report to compare A–G. Imports remain on the device. Empty/blocked results have no invented numbers, and configurations from different recordings/outage intervals are rejected as incomparable.
 - **Device timings**: inspect actual timing samples, export them, reset the sample window, or import a measured ONNX parity report.
 
-The field guide is available from the navigation sidebar, including its compact phone layout. The new interface and its scripts are cached with the offline package; reconnect and reload once to install an updated service worker before presenting offline.
+The field guide is available from the navigation sidebar, including its compact phone layout. The interface and its scripts are cached with the offline package; reconnect and reload once to install an updated service worker before presenting offline.
+
+## Walking with online and offline maps
+
+Choose **Walking · GPS + steps** and start the engine on a phone over trusted HTTPS (or localhost on that device). Allow location, motion, and compass permissions. GPS initializes the marker immediately without the vehicle model's alignment phase. Hold the phone screen-up, with its physical top pointing forward, tilted less than 45 degrees. Keep the page visible; background sensor delivery is not guaranteed.
+
+Choose **Online streets** for the online OSM basemap. At the area you intend to walk, press **Save area offline** while connected. This saves street geometry for a 2 km square around the current map center, replacing the previous user-downloaded area. Wait for the saved-area confirmation and the offline application readiness message, then reload before disconnecting. If internet connectivity or tile loading fails, the view uses saved streets automatically. Outside that area the app can still report coordinates, but offline street coverage is unavailable. Browser storage can be cleared or evicted; verify the offline view before starting.
+
+Online tiles use the standard OSM service for interactive viewing. Offline downloads retrieve road geometry through Overpass; they do not bulk-download standard tiles, in accordance with the [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/).
+
+Internet loss and GPS loss are separate. With GPS available, location updates continue regardless of internet connectivity. With GPS unavailable for more than three seconds (or **Simulate GNSS outage** enabled), walking mode estimates displacement from detected steps and absolute compass heading. The default step length is 0.70 m; set your own average distance per step before starting. Latitude and longitude are converted using the existing map projection. Recovery applies at most 2 m correction per new fix and requires at least five fixes near the estimate before returning to normal GPS tracking.
+
+This is a pedestrian dead-reckoning prototype, not a trained walking AI. Phone handling can create false steps, magnetic interference can bias heading, and step-length error accumulates. Relative orientation is not treated as north; absent or stale compass/motion data pauses sensor-based displacement. Walking mode does not apply vehicle EKF/NHC/ZUPT or force positions onto roads. It reports GPS accuracy only while fixes are available and leaves unmeasured confidence/drift blank. No real walking accuracy has been established. The Python replay configurations remain vehicle-oriented experiments; importing their outputs does not evaluate this new walking tracker.
+
+Absolute orientation handling follows the [W3C orientation coordinate convention](https://www.w3.org/TR/orientation-event/). Browser and physical-phone support must be checked on the target device.
