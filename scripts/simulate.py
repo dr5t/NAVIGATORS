@@ -217,13 +217,13 @@ def run_simulation(
         results["nav_mode"].append(ekf.mode.value)
         results["speed_true"].append(float(np.linalg.norm(true_velocities[i])))
         results["speed_estimated"].append(float(np.linalg.norm(vel_nav[:2])))
-        results["heading_true"].append(float(true_headings[i]))
-        results["heading_estimated"].append(float(heading))
-        results["position_error"].append(float(pos_error))
-        results["confidence"].append(float(1.0 - min(1.0, pos_error / 50.0)))
-        results["zupt_active"].append(bool(is_stationary))
+        results["heading_true"].append(true_headings[i])
+        results["heading_estimated"].append(heading)
+        results["position_error"].append(pos_error)
+        results["confidence"].append(1.0 - min(1.0, pos_error / 50.0))
+        results["zupt_active"].append(is_stationary)
         results["dr_drift_percent"].append(
-            float(dr.get_drift_percentage()) if dr.is_active else 0.0
+            dr.get_drift_percentage() if dr.is_active else 0.0
         )
 
     # --- Compute final metrics ---
