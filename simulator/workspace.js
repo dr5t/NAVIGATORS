@@ -61,39 +61,62 @@ window.selectWorkspace = view => {
         return;
     }
     const previous = state.view;
-    pause();
-    state.view = view;
-    document.querySelectorAll('[data-view]').forEach(button => {
-        button.classList.toggle('selected', button.dataset.view === view);
-        if (button.dataset.view === view) button.setAttribute('aria-current', 'page');
-        else button.removeAttribute('aria-current');
-    });
-    const [name, title, eyebrow, description] = workspaceViews[view];
-    byId('breadcrumbView').textContent = name;
-    byId('pageTitle').replaceChildren(document.createTextNode(title), Object.assign(document.createElement('span'), { textContent: '.' }));
-    byId('pageEyebrow').textContent = eyebrow;
-    byId('pageDescription').textContent = description;
-    byId('navigationWorkspace').hidden = view === 'experiments' || view === 'performance';
-    byId('experimentsWorkspace').hidden = view !== 'experiments';
-    byId('performanceWorkspace').hidden = view !== 'performance';
-    byId('playbackControls').hidden = view !== 'replay';
-    byId('replaySource').hidden = view !== 'replay';
-    byId('navigationSettings').hidden = view !== 'console';
-    byId('metricsCard').hidden = view !== 'replay';
-    byId('btnStartLive').hidden = view !== 'console' && !window.offlineEngine.isCapturing && byId('btnStartLive').getAttribute('aria-busy') !== 'true';
-    byId('sourceLabel').textContent = view === 'replay' ? (state.replayName ? 'SAVED TRAJECTORY' : 'SAVED EXAMPLE') : 'LIVE SENSORS';
-    byId('telemetrySource').textContent = view === 'replay' ? 'Saved values' : 'Live session';
-    byId('positionMetricLabel').textContent = view === 'replay' ? 'Reference position error' : byId('travelMode').value === 'walking' ? 'GPS accuracy' : 'Position uncertainty';
-    byId('driftMetricLabel').textContent = view === 'replay' ? 'Saved DR drift' : 'Estimated drift';
-    if (view === 'console' || view === 'replay') {
-        state.map.invalidateSize();
-        if (view === 'replay') {
-            byId('sessionHint').textContent = state.replayName || 'Illustrative trajectory · not a live experiment';
-            byId('btnGpsOutage').disabled = true;
-            if (state.data && previous !== 'replay') onDataLoaded();
-        } else if (!window.offlineEngine.isCapturing && previous !== 'console') window.showStandby(true);
+    if (previous === view) return;
+
+    const performSwitch = () => {
+        pause();
+        state.view = view;
+        document.querySelectorAll('[data-view]').forEach(button => {
+            button.classList.toggle('selected', button.dataset.view === view);
+            if (button.dataset.view === view) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
+        });
+        const [name, title, eyebrow, description] = workspaceViews[view];
+        byId('breadcrumbView').textContent = name;
+        byId('pageTitle').replaceChildren(document.createTextNode(title), Object.assign(document.createElement('span'), { textContent: '.' }));
+        byId('pageEyebrow').textContent = eyebrow;
+        byId('pageDescription').textContent = description;
+        byId('navigationWorkspace').hidden = view === 'experiments' || view === 'performance';
+        byId('experimentsWorkspace').hidden = view !== 'experiments';
+        byId('performanceWorkspace').hidden = view !== 'performance';
+        byId('playbackControls').hidden = view !== 'replay';
+        byId('replaySource').hidden = view !== 'replay';
+        byId('navigationSettings').hidden = view !== 'console';
+        byId('metricsCard').hidden = view !== 'replay';
+        byId('btnStartLive').hidden = view !== 'console' && !window.offlineEngine.isCapturing && byId('btnStartLive').getAttribute('aria-busy') !== 'true';
+        byId('sourceLabel').textContent = view === 'replay' ? (state.replayName ? 'SAVED TRAJECTORY' : 'SAVED EXAMPLE') : 'LIVE SENSORS';
+        byId('telemetrySource').textContent = view === 'replay' ? 'Saved values' : 'Live session';
+        byId('positionMetricLabel').textContent = view === 'replay' ? 'Reference position error' : byId('travelMode').value === 'walking' ? 'GPS accuracy' : 'Position uncertainty';
+        byId('driftMetricLabel').textContent = view === 'replay' ? 'Saved DR drift' : 'Estimated drift';
+        if (view === 'console' || view === 'replay') {
+            state.map.invalidateSize();
+            if (view === 'replay') {
+                byId('sessionHint').textContent = state.replayName || 'Illustrative trajectory · not a live experiment';
+                byId('btnGpsOutage').disabled = true;
+                if (state.data && previous !== 'replay') onDataLoaded();
+            } else if (!window.offlineEngine.isCapturing && previous !== 'console') window.showStandby(true);
+        }
+        if (view === 'performance') window.refreshDeviceTimings();
+    };
+
+    // Fast switch if it's the initial load or loading overlay doesn't exist
+    if (previous === undefined || !window.setLoadingState) {
+        performSwitch();
+        return;
     }
-    if (view === 'performance') window.refreshDeviceTimings();
+
+    // Play loading animation
+    window.setLoadingState(0, "LOADING MODULE", "READY");
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        window.setLoadingState(progress, "LOADING MODULE", "READY");
+        if (progress >= 100) {
+            clearInterval(interval);
+            // Switch UI immediately when progress hits 100% so it's ready when the overlay fades out (800ms transition)
+            performSwitch();
+        }
+    }, 40); // 400ms loading + 800ms lock/fade animation = ~1.2s total wait before user sees the new screen
 };
 
 window.updateConsoleTelemetry = data => {
@@ -425,8 +448,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         btnStart.addEventListener('click', () => {
-            localStorage.setItem('startupAcknowledged', 'true');
-            startupModal.close();
+            btnStart.classList.add('btn-accepted-anim');
+            btnStart.textContent = 'Accepted ✓';
+            setTimeout(() => {
+                localStorage.setItem('startupAcknowledged', 'true');
+                startupModal.close();
+                btnStart.classList.remove('btn-accepted-anim');
+                btnStart.textContent = 'Accept & Continue';
+            }, 600);
         });
 
         btnSkip.addEventListener('click', () => {
