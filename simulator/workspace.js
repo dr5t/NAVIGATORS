@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle consent modal
     const startupModal = byId('startupModal');
     if (startupModal) {
-        const chkAgree = byId('chkAgree');
+        const chkAgree = byId('acceptTerms');
         const btnStart = byId('btnStart');
         const btnSkip = byId('btnSkip');
 

@@ -105,11 +105,10 @@
         <h2 id="startupTitle">We respect your hardware.</h2>
         <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">This edge-application processes location and IMU data locally. We use local storage for offline maps.</p>
         <div class="consent-checkbox">
-            <label class="custom-checkbox">
-                <input type="checkbox" id="chkAgree">
-                <span class="checkmark"></span>
-                <span>I accept the <a href="terms.html" target="_blank" style="color: var(--accent-orange); text-decoration: none;">Terms & Conditions</a></span>
-            </label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="acceptTerms" style="accent-color: var(--accent-orange); width: 16px; height: 16px; cursor: pointer;">
+                <label for="acceptTerms" style="cursor: pointer;">I accept the <a href="terms.html" target="_blank" style="color: var(--accent-orange); text-decoration: none;">Terms & Conditions</a></label>
+            </div>
         </div>
         <div class="button-group" style="margin-top: 2rem; gap: 1rem;">
             <button id="btnStart" class="button primary" disabled style="width: 100%;">Accept & Continue</button>
