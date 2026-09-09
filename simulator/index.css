@@ -11,7 +11,8 @@ body { margin: 0; background: var(--bg-primary); color: var(--text-primary); fon
 button, input { font: inherit; } button, a, label.upload-label { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; } button:disabled { cursor: not-allowed; opacity: .45; }
 button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, .upload-label:focus-within { outline: 3px solid #bc6a43; outline-offset: 4px; }
-button { transition: background .15s, border-color .15s; }
+button { transition: background .15s, border-color .15s, transform .1s ease; }
+button:active { transform: scale(0.96); }
 [hidden], .hidden { display: none !important; }
 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 h1, h2, h3, p { margin: 0; } .icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -103,7 +104,7 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
 /* Custom Checkbox */
 .custom-checkbox { display: flex; align-items: center; position: relative; padding-left: 32px; cursor: pointer; font-size: 14px; user-select: none; color: var(--text-primary); }
 .custom-checkbox input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
-.checkmark { position: absolute; top: 50%; left: 0; transform: translateY(-50%); height: 20px; width: 20px; background-color: transparent; border: 2px solid var(--text-tertiary); border-radius: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.checkmark { position: absolute; top: 50%; left: 0; transform: translateY(-50%); height: 20px; width: 20px; background-color: transparent; border: 2px solid #b6bbaa; border-radius: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .custom-checkbox:hover input ~ .checkmark { border-color: var(--accent-orange); }
 .custom-checkbox input:checked ~ .checkmark { background-color: var(--accent-orange); border-color: var(--accent-orange); }
 .checkmark:after { content: ""; position: absolute; display: none; }
