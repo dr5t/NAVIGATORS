@@ -46,6 +46,11 @@
         <div class="sidebar-bottom">
             <button class="guide-link" id="btnGuide"><svg><use href="#i-help"/></svg>Demo field guide<span>↗</span></button>
             <div class="project-signature"><span class="project-dot"></span><div>SIH 2026<small>SIH26168 · ISRO problem statement</small></div></div>
+            <div class="legal-links">
+                <a href="terms.html">Terms</a> · 
+                <a href="cookies.html">Cookies</a> · 
+                <a href="security.html">Security</a>
+            </div>
         </div>
     </aside>
 
@@ -94,6 +99,23 @@
         </main>
     </div>
     <dialog id="guideDialog" aria-labelledby="guideTitle"><div class="dialog-heading"><span class="tiny-label">DEMO FIELD GUIDE</span><button id="btnCloseGuide" class="icon-button" aria-label="Close demo guide">×</button></div><h2 id="guideTitle">Three moments.<br>One continuous position.</h2><ol><li><strong>Start with a fix.</strong><p>Choose Walking and allow location, motion, and compass access. Hold the phone screen-up with its top forward. GPS initializes your position; steps and compass estimate movement during loss. Vehicle mode requires calibration and its AI buffer.</p></li><li><strong>Take the signal away.</strong><p>Choose Online streets, then Save area offline (a 2 km square around the map center). Wait for offline files to be ready, reload once, disconnect internet, and select Simulate GNSS outage. Navigation continues locally.</p></li><li><strong>Bring GPS back.</strong><p>Select Restore GPS. Reacquisition brings the estimate back gradually. Export device timings after the run.</p></li></ol><p class="guide-note">Android installation: open the secure app URL in Chrome, choose the ⋮ menu → Add to Home screen → Install. Keep the app open while recording.</p><p class="guide-note">Use saved playback for an illustrative trajectory. Real accuracy claims require a recorded, evaluated trip.</p></dialog>
+    
+    <dialog id="consentDialog" aria-labelledby="consentTitle">
+        <div class="dialog-heading"><span class="tiny-label">PRIVACY & SENSORS</span></div>
+        <h2 id="consentTitle">We respect your hardware.</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.5;">This edge-application processes location and IMU data locally. We use local storage for offline maps.</p>
+        <div class="consent-checkbox">
+            <label class="custom-checkbox">
+                <input type="checkbox" id="chkAcceptTerms">
+                <span class="checkmark"></span>
+                <span>I accept the <a href="terms.html" target="_blank" style="color: var(--accent-orange); text-decoration: none;">Terms & Conditions</a></span>
+            </label>
+        </div>
+        <div class="button-group" style="margin-top: 2rem; gap: 1rem;">
+            <button id="btnAcceptCookies" class="button primary" disabled style="width: 100%;">Accept & Continue</button>
+            <button id="btnRejectCookies" class="button secondary" style="width: 100%;">Reject All</button>
+        </div>
+    </dialog>
     <script src="engine/matrix.js"></script>
     <script src="engine/ekf.js"></script>
     <script src="engine/map_matcher.js"></script>

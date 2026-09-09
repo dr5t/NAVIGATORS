@@ -362,6 +362,32 @@ document.addEventListener('DOMContentLoaded', () => {
     renderExperiments();
     window.refreshDeviceTimings();
     setInterval(() => { if (state.view === 'performance') window.refreshDeviceTimings(); }, 1000);
+    
+    const consentDialog = byId('consentDialog');
+    if (consentDialog) {
+        const btnAcceptCookies = byId('btnAcceptCookies');
+        const btnRejectCookies = byId('btnRejectCookies');
+        const chkAcceptTerms = byId('chkAcceptTerms');
+
+        if (!localStorage.getItem('consentAccepted')) {
+            consentDialog.showModal();
+        }
+
+        chkAcceptTerms.addEventListener('change', () => {
+            btnAcceptCookies.disabled = !chkAcceptTerms.checked;
+        });
+
+        btnAcceptCookies.addEventListener('click', () => {
+            localStorage.setItem('consentAccepted', 'true');
+            consentDialog.close();
+        });
+
+        btnRejectCookies.addEventListener('click', () => {
+            localStorage.setItem('consentAccepted', 'false');
+            consentDialog.close();
+            // Optional: You could clear map caches here if strictly enforcing no local storage
+        });
+    }
 });
 
 window.updateMapSource = (failed = false) => {

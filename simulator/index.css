@@ -94,3 +94,19 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
     .brand>span:last-child { display: none; }
 }
 @media(prefers-reduced-motion:reduce) { *, *:before, *:after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+/* Legal Links */
+.legal-links { display: flex; gap: 8px; font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); margin-top: 12px; }
+.legal-links a { color: inherit; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.2s ease; }
+.legal-links a:hover { color: var(--accent-orange); }
+
+/* Custom Checkbox */
+.custom-checkbox { display: flex; align-items: center; position: relative; padding-left: 32px; cursor: pointer; font-size: 14px; user-select: none; color: var(--text-primary); }
+.custom-checkbox input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.checkmark { position: absolute; top: 50%; left: 0; transform: translateY(-50%); height: 20px; width: 20px; background-color: transparent; border: 2px solid var(--text-tertiary); border-radius: 4px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.custom-checkbox:hover input ~ .checkmark { border-color: var(--accent-orange); }
+.custom-checkbox input:checked ~ .checkmark { background-color: var(--accent-orange); border-color: var(--accent-orange); }
+.checkmark:after { content: ""; position: absolute; display: none; }
+.custom-checkbox input:checked ~ .checkmark:after { display: block; }
+.custom-checkbox .checkmark:after { left: 6px; top: 2px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); animation: check 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes check { 0% { height: 0; width: 0; opacity: 0; } 100% { height: 10px; width: 5px; opacity: 1; } }

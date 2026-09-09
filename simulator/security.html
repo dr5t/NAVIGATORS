@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security | Navigators IDR</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <style>
+        body { padding: 4rem 2rem; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+        h1 { font-family: var(--font-display); color: var(--text-primary); margin-bottom: 2rem; }
+        h2 { font-family: var(--font-display); color: var(--text-primary); margin-top: 3rem; font-size: 1.5rem; }
+        p, li { color: var(--text-secondary); margin-bottom: 1rem; }
+        a { color: var(--accent-orange); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Return to App</a>
+    <h1>Security Architecture</h1>
+
+    <h2>Edge-AI Security Model</h2>
+    <p>Navigators IDR is built around the concept of <strong>Edge Intelligence</strong>. This provides significant security advantages over traditional cloud-based navigation systems.</p>
+
+    <h2>1. Data Minimization</h2>
+    <p>We do not track, stream, or log your live location to external servers. All processing required to estimate your trajectory is performed directly inside your browser using our WebAssembly-powered ONNX AI model.</p>
+
+    <h2>2. Offline Operations</h2>
+    <p>Because the application relies heavily on IMU data (accelerometer/gyroscope) rather than external API calls, it functions without an internet connection. Once the OpenStreetMap data is cached locally on your device, you can sever all external network connections and the application will remain fully functional and secure.</p>
+
+    <h2>3. Transparency</h2>
+    <p>The code governing sensor extraction (`data_recorder.js`) and fusion (`offline_engine.js`) operates transparently in your browser. No obfuscation is applied to the core engine scripts.</p>
+
+    <h2>4. Web Security Sandboxing</h2>
+    <p>Our application operates entirely within the strict security sandbox of modern web browsers. It requires explicit HTTPS connections to even request access to your sensors, ensuring your data cannot be intercepted via a man-in-the-middle attack during initial loading.</p>
+</body>
+</html>

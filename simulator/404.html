@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found | Navigators IDR</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <style>
+        body { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            text-align: center; 
+            padding: 2rem;
+            background-color: var(--bg-primary);
+        }
+        h1 { 
+            font-family: var(--font-display); 
+            font-size: 6rem; 
+            color: var(--accent-orange); 
+            margin: 0; 
+            letter-spacing: -0.05em;
+        }
+        p { 
+            color: var(--text-secondary); 
+            font-size: 1.25rem; 
+            margin-bottom: 2rem; 
+        }
+        .btn-home {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn-home:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-tertiary);
+        }
+    </style>
+</head>
+<body>
+    <h1>404</h1>
+    <p>Signal lost. The page you are looking for is off the map.</p>
+    <a href="index.html" class="btn-home">Return to Navigation Console</a>
+</body>
+</html>
