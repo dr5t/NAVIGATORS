@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="icon.svg">
 </head>
 <body class="legal-body">
-    <a href="./" onclick="event.preventDefault(); window.location.replace('./');" class="back-link">← Return to App</a>
+    <a href="./" onclick="if (document.referrer && document.referrer.includes(window.location.host)) { event.preventDefault(); window.history.back(); }" class="back-link">← Return to App</a>
     <h1>Cookie Policy</h1>
 
     <p>Last updated: September 2026</p>

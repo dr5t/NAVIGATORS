@@ -262,11 +262,22 @@ function initControls() {
                 document.getElementById('playbackControls').style.pointerEvents = 'none';
             } else {
                 btn.textContent = 'Retry engine';
-                statusEl.textContent = window.offlineEngine.lastError || 'Unable to start. Check motion and location permissions, then retry.';
+                const errMsg = window.offlineEngine.lastError || 'Unable to start. Check motion and location permissions, then retry.';
+                statusEl.textContent = errMsg;
                 statusEl.style.color = 'var(--accent-red)';
                 document.getElementById('sessionHint').textContent = statusEl.textContent;
                 document.getElementById('travelMode').disabled = false;
                 document.getElementById('stepLength').disabled = false;
+                
+                if (window.setLoadingState) {
+                    window.setLoadingState(0, "ERROR: " + errMsg);
+                    const arc = document.getElementById('compassProgressArc');
+                    if (arc) arc.style.stroke = 'var(--accent-red)';
+                    setTimeout(() => {
+                        window.setLoadingState(100, "FAILED TO START", "FAILED TO START");
+                        if (arc) arc.style.stroke = '';
+                    }, 4000);
+                }
             }
         }
     });
