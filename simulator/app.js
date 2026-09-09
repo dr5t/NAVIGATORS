@@ -40,6 +40,21 @@ const state = {
 // Initialization
 // ========================================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // Mode Switch: ?mode=mobile vs ?mode=dashboard (default)
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode') || 'dashboard';
+    document.body.classList.add(`${mode}-mode`);
+    
+    if (mode === 'dashboard') {
+        // Dashboard needs to connect to WebSocket as a viewer
+        connectDashboardToWebSocket();
+    } else {
+        // Mobile mode needs to connect to WebSocket as a sensor source
+        if (window.dataRecorder) {
+            window.dataRecorder.connectToServer(window.location.host).catch(e => console.error("WS error:", e));
+        }
+    }
+
     initMap();
     initControls();
     try {
@@ -49,6 +64,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('btnStartLive').disabled = true;
     }
     loadSimulationData();
+});
+
+function connectDashboardToWebSocket() {
+    const wsUrl = window.location.protocol === 'https:' ? `wss://${window.location.host}/ws?role=dashboard` : `ws://${window.location.host}/ws?role=dashboard`;
+    const ws = new WebSocket(wsUrl);
+    ws.onopen = () => console.log('[Dashboard] Connected to telemetry broadcast.');
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'telemetry') {
+            updateDashboardTelemetry(data.payload);
+        }
+    };
+    ws.onclose = () => setTimeout(connectDashboardToWebSocket, 2000);
+}
+
+function updateDashboardTelemetry(payload) {
+    if (payload.raw) {
+        document.getElementById('sourceLabel').textContent = 'LIVE FROM MOBILE';
+        // You could update speed and heading here directly from the raw IMU/GNSS
+    }
+}
+
+// Training Logic
+let trainingPollInterval = null;
+
+async function startTraining() {
+    try {
+        const res = await fetch('/training/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({epochs: 20})
+        });
+        const data = await res.json();
+        if (data.error) {
+            alert(data.error);
+        } else {
+            if (!trainingPollInterval) {
+                trainingPollInterval = setInterval(pollTrainingStatus, 2000);
+            }
+        }
+    } catch (e) {
+        console.error("Failed to start training:", e);
+    }
+}
+
+async function pollTrainingStatus() {
+    try {
+        const res = await fetch('/training/status');
+        const data = await res.json();
+        
+        document.getElementById('trainStatusLabel').textContent = data.status;
+        
+        if (!data.is_training && data.status !== "Idle" && data.status !== "Loading Data...") {
+            clearInterval(trainingPollInterval);
+            trainingPollInterval = null;
+        }
+    } catch (e) {
+        console.error("Failed to poll training status:", e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnTrain = document.getElementById('btnStartTraining');
+    if (btnTrain) btnTrain.addEventListener('click', startTraining);
 });
 
 function installLocalMap(localMap) {
@@ -210,6 +289,9 @@ function initControls() {
 
         if (window.offlineEngine.isCapturing) {
             window.offlineEngine.stopCapture();
+            if (window.dataRecorder && window.dataRecorder.isRecording) {
+                window.dataRecorder.stopRecording();
+            }
             btn.textContent = 'Start Offline Engine';
             btn.style.color = '';
             btn.classList.remove('running');
@@ -238,6 +320,9 @@ function initControls() {
             let success = false;
             try {
                 success = await window.offlineEngine.requestPermissionsAndStart();
+                if (success && window.dataRecorder && !window.dataRecorder.isRecording) {
+                    await window.dataRecorder.requestPermissionsAndStart();
+                }
             } catch (error) {
                 window.offlineEngine.lastError = error.message;
             } finally {
@@ -282,47 +367,7 @@ function initControls() {
         }
     });
 
-    // Data Recording Controls
-    let recordingTimerInterval = null;
-    document.getElementById('btnRecordTrip').addEventListener('click', async () => {
-        const btn = document.getElementById('btnRecordTrip');
-        const indicator = document.getElementById('recordingIndicator');
-        const timerText = document.getElementById('recordingTimer');
-
-        if (window.dataRecorder && window.dataRecorder.isRecording) {
-            window.dataRecorder.stopRecordingAndDownload();
-            document.querySelector('#recorderControls p').textContent = 'Recording saved. Use replay.py to evaluate the trip.';
-            btn.textContent = 'Record Trip Data';
-            indicator.style.display = 'none';
-            if (recordingTimerInterval) clearInterval(recordingTimerInterval);
-        } else if (window.dataRecorder) {
-            btn.disabled = true;
-            btn.textContent = 'Requesting...';
-            let success = false;
-            try {
-                success = await window.dataRecorder.requestPermissionsAndStart();
-            } catch (error) {
-                document.querySelector('#recorderControls p').textContent = `Recording could not start: ${error.message}`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Record Trip Data';
-            }
-            if (success) {
-                document.querySelector('#recorderControls p').textContent = 'Capturing phone sensors locally. Stop to save the recording.';
-                btn.textContent = 'Stop & Save Trip';
-                indicator.style.display = 'flex';
-                timerText.textContent = '00:00';
-
-                const startTime = Date.now();
-                recordingTimerInterval = setInterval(() => {
-                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                    const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-                    const s = (elapsed % 60).toString().padStart(2, '0');
-                    timerText.textContent = `${m}:${s}`;
-                }, 1000);
-            }
-        }
-    });
+    // Data Recording UI removed (automatically handles background sync via Start Engine)
 }
 
 // ========================================================

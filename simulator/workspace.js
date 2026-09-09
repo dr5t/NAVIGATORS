@@ -232,6 +232,14 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
         overlay.classList.remove('fade-out');
         overlay.classList.add('active');
         document.getElementById('compassContainer').classList.remove('compass-locked');
+
+        // Enforce max 4s loading time
+        if (window._loadingTimeout) clearTimeout(window._loadingTimeout);
+        window._loadingTimeout = setTimeout(() => {
+            if (document.getElementById('loadingProgressText').textContent !== '100%') {
+                window.setLoadingState(100, 'Forced complete', finalMessage);
+            }
+        }, 4000);
     }
 
     percent = Math.min(100, Math.max(0, percent));

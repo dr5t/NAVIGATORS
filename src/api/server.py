@@ -26,7 +26,9 @@ from typing import List, Optional, Dict, Any
 
 app = FastAPI(title="Navigators IDR Backend")
 from api.recordings import router as recordings_router
+from api.training import router as training_router
 app.include_router(recordings_router)
+app.include_router(training_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -216,25 +218,79 @@ class NavigationSession:
         
         return state_result
 
+class ConnectionManager:
+    def __init__(self):
+        self.mobile_ws: Optional[WebSocket] = None
+        self.dashboard_viewers: List[WebSocket] = []
+        self.session: Optional[NavigationSession] = None
+
+    async def connect_mobile(self, websocket: WebSocket):
+        await websocket.accept()
+        if self.mobile_ws:
+            try:
+                await self.mobile_ws.close()
+            except: pass
+        self.mobile_ws = websocket
+        self.session = NavigationSession()
+        print("[WS] Mobile client connected. Re-initialized NavigationSession.")
+
+    async def connect_dashboard(self, websocket: WebSocket):
+        await websocket.accept()
+        self.dashboard_viewers.append(websocket)
+        print(f"[WS] Dashboard connected. Total viewers: {len(self.dashboard_viewers)}")
+
+    def disconnect_mobile(self):
+        self.mobile_ws = None
+        print("[WS] Mobile client disconnected.")
+
+    def disconnect_dashboard(self, websocket: WebSocket):
+        if websocket in self.dashboard_viewers:
+            self.dashboard_viewers.remove(websocket)
+        print(f"[WS] Dashboard disconnected. Total viewers: {len(self.dashboard_viewers)}")
+
+    async def broadcast_telemetry(self, raw_data: dict, estimated_state: dict):
+        payload = {
+            "type": "telemetry",
+            "payload": {
+                "raw": raw_data,
+                "estimated": estimated_state
+            }
+        }
+        dead_viewers = []
+        for viewer in self.dashboard_viewers:
+            try:
+                await viewer.send_json(payload)
+            except:
+                dead_viewers.append(viewer)
+        for viewer in dead_viewers:
+            self.disconnect_dashboard(viewer)
+
+ws_manager = ConnectionManager()
+
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    session = NavigationSession()
-    print("[WS] Client connected")
-    try:
-        while True:
-            data_text = await websocket.receive_text()
-            data = json.loads(data_text)
-            
-            result = session.process_measurement(data)
-            
-            # Send back the result
-            await websocket.send_json(result)
-            
-    except WebSocketDisconnect:
-        print("[WS] Client disconnected")
-    except Exception as e:
-        print(f"[WS] Error: {e}")
+async def websocket_endpoint(websocket: WebSocket, role: str = "dashboard"):
+    if role == "mobile":
+        await ws_manager.connect_mobile(websocket)
+        try:
+            while True:
+                data_text = await websocket.receive_text()
+                data = json.loads(data_text)
+                if ws_manager.session:
+                    result = ws_manager.session.process_measurement(data)
+                    await websocket.send_json(result)
+                    await ws_manager.broadcast_telemetry(data, result)
+        except WebSocketDisconnect:
+            ws_manager.disconnect_mobile()
+        except Exception as e:
+            print(f"[WS] Mobile Error: {e}")
+            ws_manager.disconnect_mobile()
+    else:
+        await ws_manager.connect_dashboard(websocket)
+        try:
+            while True:
+                await websocket.receive_text() # Keep alive
+        except WebSocketDisconnect:
+            ws_manager.disconnect_dashboard(websocket)
 
 # Global state for REST API
 active_sessions: Dict[str, NavigationSession] = {}

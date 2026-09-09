@@ -294,3 +294,26 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
     .speed-control { justify-content: space-between; }
     .replay-source { flex-direction: column; align-items: stretch; }
 }
+
+/* Mobile Recording Mode */
+body.mobile-mode .sidebar { display: none !important; }
+body.mobile-mode .workspace { margin-left: 0 !important; }
+body.mobile-mode #app-header { display: none !important; }
+body.mobile-mode .page-heading { display: none !important; }
+body.mobile-mode .console-grid { display: none !important; }
+body.mobile-mode .outage-console { display: none !important; }
+body.mobile-mode .bottom-grid { grid-template-columns: 1fr; }
+body.mobile-mode .pipeline-panel { display: none !important; }
+body.mobile-mode .recorder-panel { display: block; border: 0; background: transparent; padding: 20px; margin-top: 50px; }
+body.mobile-mode .recorder-panel .section-header h2 { font-size: 24px; }
+body.mobile-mode .recorder-panel p { font-size: 16px; max-width: none; }
+body.mobile-mode #btnRecordTrip { width: 100%; min-height: 50px; font-size: 16px; margin-top: 20px; }
+
+/* Dashboard Mode */
+body.dashboard-mode .pc-sync { display: none; } /* PC sync code input is not needed on the PC itself */
+
+/* Dashboard additions */
+body.dashboard-mode .training-panel { display: block !important; }
+body.dashboard-mode .recorder-panel { display: none !important; }
+body.dashboard-mode .pipeline-panel { display: none !important; }
+

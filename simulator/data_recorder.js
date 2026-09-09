@@ -25,6 +25,41 @@ class DataRecorder {
         };
         
         this.startTime = 0;
+        
+        // Live Telemetry (Mac Dashboard)
+        this.ws = null;
+        this.wsConnected = false;
+        this.telemetryInterval = null;
+    }
+
+    async connectToServer(host) {
+        if (this.ws) this.ws.close();
+        const wsUrl = `ws://${host}/ws?role=mobile`;
+        const secureWsUrl = window.location.protocol === 'https:' ? `wss://${host}/ws?role=mobile` : wsUrl;
+        console.log(`[Sensor] Connecting to ${secureWsUrl}...`);
+        
+        return new Promise((resolve, reject) => {
+            try {
+                this.ws = new WebSocket(secureWsUrl);
+                this.ws.onopen = () => {
+                    console.log('[Sensor] WebSocket Connected');
+                    this.wsConnected = true;
+                    resolve(true);
+                };
+                this.ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    // Pass message to global handler if exists
+                    if (window.handleServerMessage) window.handleServerMessage(data);
+                };
+                this.ws.onclose = () => {
+                    console.log('[Sensor] WebSocket Disconnected');
+                    this.wsConnected = false;
+                };
+                this.ws.onerror = (e) => reject(e);
+            } catch (e) {
+                reject(e);
+            }
+        });
     }
 
     async requestPermissionsAndStart() {
@@ -131,6 +166,27 @@ class DataRecorder {
                 { enableHighAccuracy: true, maximumAge: 0 }
             );
         }
+
+        // 4. Live Telemetry
+        this.telemetryInterval = setInterval(() => {
+            if (this.wsConnected && this.ws.readyState === WebSocket.OPEN) {
+                const gnssPayload = this.currentGnssTimestamp && (Date.now()/1000 - this.currentGnssTimestamp < 3) ? {
+                    lat: this.currentGnss[0],
+                    lon: this.currentGnss[1],
+                    alt: this.currentGnss[2],
+                    speed: this.currentGnss[3],
+                    heading: this.currentGnss[4],
+                    accuracy: this.currentGnss[5]
+                } : null;
+                
+                this.ws.send(JSON.stringify({
+                    timestamp: Date.now() / 1000.0,
+                    accel: this.currentAccel,
+                    gyro: this.currentGyro,
+                    gnss: gnssPayload
+                }));
+            }
+        }, 100);
     }
 
     recordFrame() {
@@ -145,7 +201,7 @@ class DataRecorder {
         this.buffer.gnss_timestamps.push(fresh ? this.currentGnssTimestamp : null);
     }
 
-    stopRecordingAndDownload() {
+    stopRecording() {
         if (!this.isRecording) return;
         this.isRecording = false;
         
@@ -159,39 +215,19 @@ class DataRecorder {
         if (this.watchId !== undefined) {
             navigator.geolocation.clearWatch(this.watchId);
         }
+        if (this.telemetryInterval) {
+            clearInterval(this.telemetryInterval);
+        }
         
         console.log(`[Data Recorder] Stopped. Captured ${this.buffer.timestamps.length} frames.`);
         
         const duration = (Date.now() - this.startTime) / 1000.0;
+        
+        // Update metadata for final frame count
+        this.metadata.duration_sec = duration;
+        this.metadata.num_frames = this.buffer.timestamps.length;
+        
         window.recordingSync.finish(this.syncTrip);
-        
-        // Format final payload
-        const payload = {
-            metadata: {
-                ...this.metadata,
-                duration_sec: duration,
-                num_frames: this.buffer.timestamps.length,
-            },
-            data: this.buffer
-        };
-        
-        // Trigger file download
-        const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const dateStr = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `trip_${dateStr}.json`;
-        
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 100);
     }
 }
 

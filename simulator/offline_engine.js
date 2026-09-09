@@ -428,11 +428,25 @@ class OfflineEngine {
         };
         window.addEventListener('devicemotion', this.handleMotion);
         if (this.walker) {
-            this.handleOrientation = event => this.walker.orientation(event, performance.now() / 1000);
-            window.addEventListener('deviceorientationabsolute', this.handleOrientation);
-            window.addEventListener('deviceorientation', this.handleOrientation);
+            this.handleWalkerOrientation = event => this.walker.orientation(event, performance.now() / 1000);
+            window.addEventListener('deviceorientationabsolute', this.handleWalkerOrientation);
+            window.addEventListener('deviceorientation', this.handleWalkerOrientation);
             document.getElementById('modelValidation').textContent = 'Walking prototype · step length + absolute compass · no trained walking AI';
         }
+
+        // Global compass listener for all modes
+        this.handleOrientation = (event) => {
+            if (event.webkitCompassHeading !== undefined) {
+                // iOS
+                this.currentCompassHeading = event.webkitCompassHeading * Math.PI / 180;
+            } else if (event.absolute && event.alpha !== null) {
+                // Android standard: alpha is CCW from East? Actually, absolute alpha is CCW from North.
+                // 360 - alpha gives clockwise from North (standard navigation heading)
+                this.currentCompassHeading = (360 - event.alpha) * Math.PI / 180;
+            }
+        };
+        window.addEventListener('deviceorientationabsolute', this.handleOrientation);
+        window.addEventListener('deviceorientation', this.handleOrientation);
 
         this.startGnssWatch();
 
@@ -446,6 +460,10 @@ class OfflineEngine {
         this.gnssGeneration++;
         if (this.handleMotion) {
             window.removeEventListener('devicemotion', this.handleMotion);
+        }
+        if (this.handleWalkerOrientation) {
+            window.removeEventListener('deviceorientationabsolute', this.handleWalkerOrientation);
+            window.removeEventListener('deviceorientation', this.handleWalkerOrientation);
         }
         if (this.handleOrientation) {
             window.removeEventListener('deviceorientationabsolute', this.handleOrientation);
@@ -642,6 +660,14 @@ class OfflineEngine {
             const vel = this.ekf.getVelocity();
             const stepDist = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]) * dt;
             this.drDistanceTraveled = (this.drDistanceTraveled || 0) + stepDist;
+
+            // Use the compass to ensure heading does not hallucinate
+            if (this.currentCompassHeading !== undefined) {
+                // sigma grows slightly with time since we trust absolute compass less than GNSS,
+                // but we trust it much more than integrated drifting gyro!
+                const compassSigma = Math.min(1.0, 0.3 + this.drDuration * 0.01);
+                this.ekf.updateCompass(this.currentCompassHeading, compassSigma);
+            }
         }
 
         ekfMs += performance.now() - ekfStart;

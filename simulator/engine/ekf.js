@@ -195,6 +195,39 @@ class ExtendedKalmanFilter {
         }
     }
 
+    updateCompass(heading_rad, sigma_rad = 0.5) {
+        let H = Matrix.zeros(1, this.STATE_DIM);
+        H[0][8] = 1.0;
+
+        let R = [[sigma_rad * sigma_rad]];
+
+        let z = [[heading_rad]];
+        
+        let yaw_err = (heading_rad - this.x[8][0] + Math.PI) % (2.0*Math.PI);
+        if (yaw_err < 0) yaw_err += 2*Math.PI;
+        yaw_err -= Math.PI;
+
+        let y = [[yaw_err]];
+
+        let H_T = Matrix.transpose(H);
+        let S = Matrix.add(Matrix.mul(Matrix.mul(H, this.P), H_T), R);
+        let S_inv = [[1.0 / S[0][0]]];
+
+        let K = Matrix.mul(Matrix.mul(this.P, H_T), S_inv);
+
+        this.x = Matrix.add(this.x, Matrix.mul(K, y));
+        
+        // Normalize heading state
+        this.x[8][0] = (this.x[8][0] + Math.PI) % (2.0*Math.PI);
+        if (this.x[8][0] < 0) this.x[8][0] += 2*Math.PI;
+        this.x[8][0] -= Math.PI;
+
+        let I_KH = Matrix.sub(Matrix.eye(this.STATE_DIM), Matrix.mul(K, H));
+        let K_R_KT = Matrix.mul(Matrix.mul(K, R), Matrix.transpose(K));
+        this.P = Matrix.add(Matrix.mul(Matrix.mul(I_KH, this.P), Matrix.transpose(I_KH)), K_R_KT);
+        this._enforceSymmetry();
+    }
+
     updateGnss(gnss_pos, gnss_vel = null) {
         const priorX = this.x.map(row => [...row]);
         const priorP = this.P.map(row => [...row]);
