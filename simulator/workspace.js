@@ -363,29 +363,29 @@ document.addEventListener('DOMContentLoaded', () => {
     window.refreshDeviceTimings();
     setInterval(() => { if (state.view === 'performance') window.refreshDeviceTimings(); }, 1000);
     
-    const consentDialog = byId('consentDialog');
-    if (consentDialog) {
-        const btnAcceptCookies = byId('btnAcceptCookies');
-        const btnRejectCookies = byId('btnRejectCookies');
-        const chkAcceptTerms = byId('chkAcceptTerms');
+    // Handle consent modal
+    const startupModal = byId('startupModal');
+    if (startupModal) {
+        const chkAgree = byId('chkAgree');
+        const btnStart = byId('btnStart');
+        const btnSkip = byId('btnSkip');
 
-        if (!localStorage.getItem('consentAccepted')) {
-            consentDialog.showModal();
+        if (!localStorage.getItem('startupAcknowledged')) {
+            startupModal.showModal();
         }
 
-        chkAcceptTerms.addEventListener('change', () => {
-            btnAcceptCookies.disabled = !chkAcceptTerms.checked;
+        chkAgree.addEventListener('change', () => {
+            btnStart.disabled = !chkAgree.checked;
         });
 
-        btnAcceptCookies.addEventListener('click', () => {
-            localStorage.setItem('consentAccepted', 'true');
-            consentDialog.close();
+        btnStart.addEventListener('click', () => {
+            localStorage.setItem('startupAcknowledged', 'true');
+            startupModal.close();
         });
 
-        btnRejectCookies.addEventListener('click', () => {
-            localStorage.setItem('consentAccepted', 'false');
-            consentDialog.close();
-            // Optional: You could clear map caches here if strictly enforcing no local storage
+        btnSkip.addEventListener('click', () => {
+            localStorage.setItem('startupAcknowledged', 'false');
+            startupModal.close();
         });
     }
 });
