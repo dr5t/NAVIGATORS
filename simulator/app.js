@@ -71,6 +71,14 @@ function initMap() {
         attributionControl: true,
     });
 
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            if (state.map) {
+                state.map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+            }
+        });
+    }
+
     L.control.zoom({ position: 'bottomright' }).addTo(state.map);
     L.control.scale({ position: 'bottomleft', imperial: false }).addTo(state.map);
 

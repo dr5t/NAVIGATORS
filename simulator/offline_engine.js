@@ -452,7 +452,7 @@ class OfflineEngine {
         // In NORMAL or REACQUISITION, we strictly use GNSS
         // In DEGRADED, we use it but it might be jumping
         // In DEAD_RECKONING, we completely ignore it.
-        if ((currentGnssState === 'NORMAL' || currentGnssState === 'DEGRADED' || currentGnssState === 'REACQUISITION') && gnss && gnss.accuracy <= 50) {
+        if ((currentGnssState === 'NORMAL' || currentGnssState === 'DEGRADED' || currentGnssState === 'REACQUISITION') && gnss && gnss.accuracy <= 2000) {
             hasGoodGNSS = true;
             speed = gnss.speed;
         }
@@ -472,7 +472,7 @@ class OfflineEngine {
         const alignedAccel = this.aligner.rotate(this.currentAccel);
         const alignedGyro = this.aligner.rotate(this.currentGyro);
 
-        if (hasGoodGNSS && gnss.accuracy <= 20 && !this.initialized) {
+        if (hasGoodGNSS && gnss.accuracy <= 2000 && !this.initialized) {
             // The fix initializes position within the downloaded map's reference frame.
             const initial = this.localMap.toENU(gnss.lat, gnss.lon);
             this.ekf.x[0][0] = initial[0];
