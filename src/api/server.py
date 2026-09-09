@@ -25,6 +25,8 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
 app = FastAPI(title="Navigators IDR Backend")
+from api.recordings import router as recordings_router
+app.include_router(recordings_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -82,10 +84,13 @@ class NavigationSession:
         # Trajectory history for the API
         self.trajectory = []
         
-        # Create Map Matcher with a simple grid if no OSM data is provided
-        # In a real app, load real OSM data into RoadNetwork
+        # Load real OSM data into RoadNetwork
         self.road_network = RoadNetwork()
-        self.road_network.generate_grid_network()
+        try:
+            self.road_network.load_osm_network("data/road_network.json")
+        except FileNotFoundError:
+            print("[Server] Could not find data/road_network.json, falling back to synthetic grid")
+            self.road_network.generate_grid_network()
         self.map_matcher = create_map_matcher(method="geometric", road_network=self.road_network)
 
     def process_measurement(self, data: dict) -> dict:
@@ -145,14 +150,13 @@ class NavigationSession:
         if not self.initialized:
             return {"status": "waiting_for_gnss"}
 
+        meters_per_deg_lat = 111320.0
+        meters_per_deg_lon = 111320.0 * np.cos(np.radians(self.ref_lat))
+
         # State transitions based on GNSS
         if gnss_available and gnss is not None:
             if not self.prev_gnss_available and self.dr.is_active:
                 self.dr.stop()
-            
-            # Simple conversion: 1 deg lat = ~111km
-            meters_per_deg_lat = 111320.0
-            meters_per_deg_lon = 111320.0 * np.cos(np.radians(self.ref_lat))
             
             dn = (gnss["lat"] - self.ref_lat) * meters_per_deg_lat
             de = (gnss["lon"] - self.ref_lon) * meters_per_deg_lon
@@ -195,11 +199,11 @@ class NavigationSession:
             "raw_lat": self.ref_lat + pos[1] / meters_per_deg_lat,
             "raw_lon": self.ref_lon + pos[0] / meters_per_deg_lon,
             "speed": float(np.linalg.norm(vel[:2])),
-            "heading": float(self.ekf.get_heading()),
-            "position_error": float(self.ekf.get_position_uncertainty()),
-            "dr_drift_percent": float(self.dr.get_drift_percentage()) if self.dr.is_active else 0.0,
-            "zupt_active": bool(is_stationary),
-            "confidence": float(self.dr.get_confidence()) if self.dr.is_active else 1.0,
+            "heading": self.ekf.get_heading(),
+            "position_error": self.ekf.get_position_uncertainty(),
+            "dr_drift_percent": self.dr.get_drift_percentage() if self.dr.is_active else 0.0,
+            "zupt_active": is_stationary,
+            "confidence": self.dr.get_confidence() if self.dr.is_active else 1.0,
             "map_matched": map_match.confidence > 0.5
         }
         
@@ -308,7 +312,7 @@ def get_navigation_state(session_id: str):
         "estimated_lat": est_lat,
         "estimated_lon": est_lon,
         "speed": float(np.linalg.norm(vel[:2])),
-        "heading": float(heading)
+        "heading": heading
     }
 
 @app.get("/navigation/trajectory")
@@ -323,8 +327,8 @@ def get_metrics(session_id: str):
         return {"error": "session not found"}, 404
     session = active_sessions[session_id]
     return {
-        "position_error": float(session.ekf.get_position_uncertainty()),
-        "dr_drift_percent": float(session.dr.get_drift_percentage()) if session.dr.is_active else 0.0,
+        "position_error": session.ekf.get_position_uncertainty(),
+        "dr_drift_percent": session.dr.get_drift_percentage() if session.dr.is_active else 0.0,
         "total_trajectory_points": len(session.trajectory)
     }
 

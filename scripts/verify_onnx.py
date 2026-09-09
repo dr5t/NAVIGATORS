@@ -2,6 +2,7 @@
 """Measure PyTorch/ONNX parity on identical windows from a supplied phone recording."""
 import argparse
 import json
+import re
 from pathlib import Path
 import shutil
 import sys
@@ -24,7 +25,7 @@ def compare_outputs(pytorch, onnx, atol=1e-5, rtol=1e-4):
             'atol': atol, 'rtol': rtol, 'max_absolute_difference': float(difference.max()),
             'mean_absolute_difference': float(difference.mean()),
             'max_relative_difference': float(np.max(difference / np.maximum(np.abs(pytorch), 1e-12))),
-            'output_scalars': int(pytorch.size)}
+            'output_scalars': pytorch.size}
 
 
 def verify(args):
@@ -56,7 +57,7 @@ def verify(args):
         candidate = Path(directory) / args.onnx.name if args.export else args.onnx
         if args.export:
             # Export the checkpoint's recorded architecture on a real input window.
-            torch.onnx.export(model, torch.from_numpy(windows[:1]), str(candidate),
+            torch.onnx.export(model, (torch.from_numpy(windows[:1]),), str(candidate),
                               input_names=['imu_window'], output_names=['velocity'],
                               opset_version=18, dynamo=False, external_data=False,
                               dynamic_axes={'imu_window': {0: 'batch'}, 'velocity': {0: 'batch'}})
@@ -67,7 +68,7 @@ def verify(args):
         timer = perf_counter()
         session = ort.InferenceSession(str(candidate), options, providers=['CPUExecutionProvider'])
         startup_ms = (perf_counter() - timer) * 1000
-        ort_outputs = np.stack([session.run(None, {session.get_inputs()[0].name: w[None]})[0][0] for w in windows])
+        ort_outputs = np.stack([np.asarray(session.run(None, {session.get_inputs()[0].name: w[None]})[0])[0] for w in windows])
         report = {**compare_outputs(pt_outputs, ort_outputs, args.atol, args.rtol),
                   'dataset': str(args.dataset.resolve()), 'dataset_sha256': recording.digest,
                   'provenance': recording.metadata['provenance'],
@@ -80,10 +81,16 @@ def verify(args):
                   'claim_scope': 'Numerical export parity only; does not establish navigation accuracy or real recording provenance'}
         if report['passed'] and args.export:
             shutil.copyfile(candidate, args.onnx)
+            onnx_hash = sha256(args.onnx)
             artifact = {**stats, 'checkpoint_sha256': report['checkpoint_sha256'],
-                        'onnx_sha256': sha256(args.onnx), 'output_order': ['east', 'north'],
+                        'onnx_sha256': onnx_hash, 'output_order': ['east', 'north'],
                         'external_data': False}
             args.onnx.with_suffix('.contract.json').write_text(json.dumps(artifact, indent=2) + '\n')
+            if args.onnx.resolve() == ROOT / 'simulator/model.onnx':
+                worker = ROOT / 'simulator/sw.js'
+                contract_hash = sha256(args.onnx.with_suffix('.contract.json'))
+                version = onnx_hash[:12] + '-' + contract_hash[:8]
+                worker.write_text(re.sub(r"const CACHE_NAME = '[^']+';", f"const CACHE_NAME = 'navigators-idr-offline-{version}';", worker.read_text(), count=1))
         report['onnx_sha256'] = sha256(args.onnx if report['passed'] else candidate)
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=2, allow_nan=False) + '\n')

@@ -56,6 +56,11 @@ h1, h2, h3, p { margin: 0; } .icon-library { position: absolute; width: 0; heigh
 #mapNetworkStatus { flex: 1; min-width: 140px; font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
 .coordinate-readout { grid-column: 1 / -1; padding-top: 16px; font-size: 10px; color: var(--text-secondary); }
 .coordinate-readout strong { display: block; margin-top: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 400; overflow-wrap: anywhere; }
+.pc-sync { margin-top: 18px; width: 100%; }
+.pc-sync label { display: block; margin: 14px 0 7px; }
+.pc-sync input { width: 100%; min-height: 40px; padding: 8px; background: #fdfcf8; border: 1px solid var(--line); border-radius: 3px; }
+.pc-sync .button-group { flex-wrap: wrap; gap: 8px; }
+.pc-sync p { max-width: none; }
 select:focus-visible { outline: 3px solid #bc6a43; outline-offset: 3px; }
 .experiment-table { min-width: 800px; }
 .table-scroll:focus-visible { outline: 2px solid var(--accent-orange); outline-offset: 3px; }

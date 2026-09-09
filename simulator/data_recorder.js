@@ -67,6 +67,13 @@ class DataRecorder {
         this.currentGnssTimestamp = null;
         this.recordingEpoch = Date.now() / 1000;
         this.recordingClock = performance.now() / 1000;
+        this.metadata = {
+            schema_version: 2, provenance: 'phone sensor capture (self-reported by recorder)', gyro_order: 'xyz',
+            navigation_mode: window.offlineEngine.isCapturing ? window.offlineEngine.navigationMode : document.getElementById('travelMode').value,
+            user_agent: navigator.userAgent, start_time: this.recordingEpoch,
+            columns: { accel: 'x, y, z (m/s^2)', gyro: 'x, y, z (rad/s)', orient: 'alpha, beta, gamma (deg)', gnss: 'lat, lon, alt, speed, heading, accuracy' },
+        };
+        this.syncTrip = window.recordingSync.start(this.buffer, this.metadata);
 
         // 1. Device Motion (IMU)
         this.handleMotion = (event) => {
@@ -156,23 +163,14 @@ class DataRecorder {
         console.log(`[Data Recorder] Stopped. Captured ${this.buffer.timestamps.length} frames.`);
         
         const duration = (Date.now() - this.startTime) / 1000.0;
+        window.recordingSync.finish(this.syncTrip);
         
         // Format final payload
         const payload = {
             metadata: {
-                schema_version: 2,
-                provenance: 'phone sensor capture (self-reported by recorder)',
-                gyro_order: 'xyz',
-                user_agent: navigator.userAgent,
-                start_time: this.startTime / 1000.0,
+                ...this.metadata,
                 duration_sec: duration,
                 num_frames: this.buffer.timestamps.length,
-                columns: {
-                    accel: "x, y, z (m/s^2)",
-                    gyro: "x, y, z (rad/s)",
-                    orient: "alpha, beta, gamma (deg)",
-                    gnss: "lat, lon, alt, speed, heading, accuracy"
-                }
             },
             data: this.buffer
         };

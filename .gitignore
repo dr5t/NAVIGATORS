@@ -1,0 +1,4 @@
+.phone-dev/
+__pycache__/
+*.pyc
+data/phone_recordings/

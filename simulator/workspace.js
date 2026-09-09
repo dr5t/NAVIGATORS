@@ -201,6 +201,33 @@ window.refreshDeviceTimings = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    byId('btnPairPC').addEventListener('click', async () => {
+        const button = byId('btnPairPC');
+        button.disabled = true;
+        try { await window.recordingSync.pair(byId('pcPairingCode').value.trim()); }
+        catch (error) { window.recordingSync.status(error.message); }
+        finally { button.disabled = false; }
+    });
+    byId('btnSyncPC').addEventListener('click', () => window.recordingSync.flush());
+    byId('btnUpdateApp').addEventListener('click', async () => {
+        try {
+            if (offlineEngine.isCapturing || dataRecorder.isRecording) throw new Error('Stop navigation and recording before updating.');
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (!registration) throw new Error('Install the offline package first.');
+            window.recordingSync.status('Checking the PC for an updated application…');
+            await registration.update();
+            const worker = registration.installing || registration.waiting;
+            if (worker) await new Promise((resolve, reject) => {
+                const check = () => {
+                    if (worker.state === 'activated') resolve();
+                    if (worker.state === 'redundant') reject(new Error('Update failed; the previous offline app is retained.'));
+                };
+                worker.addEventListener('statechange', check);
+                check();
+            });
+            location.reload();
+        } catch (error) { window.recordingSync.status(error.message); }
+    });
     byId('travelMode').addEventListener('change', () => {
         const walking = byId('travelMode').value === 'walking';
         byId('stepLengthControl').hidden = byId('walkingHelp').hidden = !walking;

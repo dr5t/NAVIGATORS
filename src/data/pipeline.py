@@ -127,6 +127,8 @@ def process_trip(filepath, out_path, calibration_seconds=5, aligned=False):
     from evaluation.recording import load_recording, gnss_velocity
     from evaluation.preprocessing import prepare_features, PREPROCESSING_ID
     recording = load_recording(filepath)
+    if recording.metadata.get('navigation_mode') == 'walking':
+        raise ValueError('Walking recordings require a pedestrian training frontend; do not train the vehicle model on them.')
     features, first, rotation = prepare_features(recording, calibration_seconds, aligned)
     targets = np.full((len(features), 2), np.nan, dtype=np.float32)
     for i in range(first, len(recording.timestamps)):
