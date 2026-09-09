@@ -271,15 +271,49 @@ class OfflineEngine {
                 !contract.mean.every(Number.isFinite) || !contract.std.every(v => Number.isFinite(v) && v > 0) ||
                 JSON.stringify(contract.output_order) !== '["east","north"]') throw new Error('Invalid model input/output contract');
             this.windowSize = contract.window_size;
-            const modelBytes = new Uint8Array(await (await fetch('./model.onnx')).arrayBuffer());
+            if (window.setLoadingState) window.setLoadingState(40, "DOWNLOADING AI VELOCITY MODEL");
+
+            const response = await fetch('./model.onnx');
+            if (!response.ok) throw new Error('Failed to fetch model.onnx');
+            
+            const contentLength = response.headers.get('content-length');
+            // Provide a fallback total if content-length is missing
+            const totalBytes = contentLength ? parseInt(contentLength, 10) : 5000000;
+            let loadedBytes = 0;
+            
+            const reader = response.body.getReader();
+            const chunks = [];
+            while(true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                loadedBytes += value.length;
+                if (window.setLoadingState) {
+                    const progress = 40 + (loadedBytes / totalBytes) * 20;
+                    window.setLoadingState(Math.min(60, progress), "DOWNLOADING AI VELOCITY MODEL");
+                }
+            }
+            
+            const modelBytes = new Uint8Array(loadedBytes);
+            let position = 0;
+            for(let chunk of chunks) {
+                modelBytes.set(chunk, position);
+                position += chunk.length;
+            }
+
             const external = contract.external_data ? new Uint8Array(await (await fetch('./model.onnx.data')).arrayBuffer()) : null;
             this.profiler.modelBytes = modelBytes.byteLength + (external?.byteLength || 0);
+            
+            if (window.setLoadingState) window.setLoadingState(60, "COMPILING WEBASSEMBLY ENGINE");
             console.log("[Edge AI] Loading ONNX Model into WebAssembly...");
             // Load the model exported to the simulator folder
+            // Small delay to allow the UI to render the 60% state before blocking synchronous compilation
+            await new Promise(r => setTimeout(r, 50));
             this.session = await ort.InferenceSession.create(modelBytes, {
                 executionProviders: ['wasm'],
                 externalData: external ? [{ path: 'model.onnx.data', data: external }] : [],
             });
+            if (window.setLoadingState) window.setLoadingState(80, "INITIALIZING NAVIGATION ENGINE");
             this.profiler.startupMs = performance.now() - startup;
             document.getElementById('modelValidation').textContent = contract.preprocessing === 'legacy-unverified'
                 ? 'Diagnostic model · real-data validation unavailable' : 'Causal model loaded · validate accuracy on held-out trips';
@@ -288,6 +322,7 @@ class OfflineEngine {
             return true;
         } catch (e) {
             console.error("[Edge AI] Failed to load ONNX model:", e);
+            if (window.setLoadingState) window.setLoadingState(0, "ERROR: FAILED TO LOAD MODEL");
             this.modelLoading = false;
             this.lastError = 'Failed to load local model: ' + e.message;
             return false;
@@ -295,11 +330,13 @@ class OfflineEngine {
     }
 
     async requestPermissionsAndStart() {
+        if (window.setLoadingState) window.setLoadingState(0, "INITIALIZING SENSORS");
         this.lastError = '';
-        if (window.isSecureContext === false) { this.lastError = 'Open the app using HTTPS or localhost to allow phone location and motion access.'; return false; }
-        if (!this.localMap) { this.lastError = 'The local road database is not ready. Reload and try again.'; return false; }
+        if (window.isSecureContext === false) { this.lastError = 'Open the app using HTTPS or localhost to allow phone location and motion access.'; if (window.setLoadingState) window.setLoadingState(0, "ERROR: INSECURE CONTEXT"); return false; }
+        if (!this.localMap) { this.lastError = 'The local road database is not ready. Reload and try again.'; if (window.setLoadingState) window.setLoadingState(0, "ERROR: MAP NOT READY"); return false; }
         if (this.navigationMode === 'walking' && (!Number.isFinite(this.stepLength) || this.stepLength < 0.3 || this.stepLength > 1.2)) {
             this.lastError = 'Set your step length between 0.3 and 1.2 meters.';
+            if (window.setLoadingState) window.setLoadingState(0, "ERROR: INVALID STEP LENGTH");
             return false;
         }
         // Request both permissions in the original button gesture on iOS.
@@ -309,17 +346,26 @@ class OfflineEngine {
             if (this.navigationMode === 'walking' && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') requests.push(DeviceOrientationEvent.requestPermission(true));
             if ((await Promise.all(requests)).some(permission => permission !== 'granted')) {
                     this.lastError = 'Motion permission denied. Allow sensor access in browser settings and retry.';
+                    if (window.setLoadingState) window.setLoadingState(0, "ERROR: PERMISSION DENIED");
                     return false;
             }
         } catch (e) {
                 console.error('Error requesting sensor permission:', e);
                 this.lastError = 'Motion access failed. Open this app over HTTPS or localhost and retry.';
+                if (window.setLoadingState) window.setLoadingState(0, "ERROR: PERMISSION FAILED");
                 return false;
         }
 
+        if (window.setLoadingState) window.setLoadingState(20, "CALIBRATING IMU");
+        await new Promise(r => setTimeout(r, 200));
+
         if (this.navigationMode !== 'walking' && !await this.initModel()) return false;
 
+        if (window.setLoadingState) window.setLoadingState(95, "LOADING OFFLINE MAP");
+        await new Promise(r => setTimeout(r, 100));
+
         this.startCapture();
+        if (window.setLoadingState) window.setLoadingState(100, "NAVIGATION READY");
         return true;
     }
 

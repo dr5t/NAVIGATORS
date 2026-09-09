@@ -116,6 +116,47 @@
             <button id="btnSkip" class="button secondary" style="width: 100%;">Reject All</button>
         </div>
     </dialog>
+    <div id="compassLoadingOverlay" aria-hidden="true">
+        <div class="compass-container" id="compassContainer">
+            <svg class="compass-svg" viewBox="0 0 200 200">
+                <!-- Background rings -->
+                <circle cx="100" cy="100" r="95" class="compass-bg-ring"/>
+                <circle cx="100" cy="100" r="70" class="compass-bg-ring"/>
+                
+                <!-- Rotating outer layer with ticks and labels -->
+                <g class="layer-outer">
+                    <!-- Ticks will be generated in JS, but here are some static ones for structure -->
+                    <path d="M 100 5 L 100 12 M 100 195 L 100 188 M 5 100 L 12 100 M 195 100 L 188 100" class="compass-tick-outer" />
+                    <!-- Labels -->
+                    <text x="100" y="24" class="compass-label compass-label-n">N</text>
+                    <text x="100" y="176" class="compass-label">S</text>
+                    <text x="24" y="100" class="compass-label">W</text>
+                    <text x="176" y="100" class="compass-label">E</text>
+                </g>
+
+                <!-- Inner calibration ring -->
+                <g class="layer-inner">
+                    <circle cx="100" cy="100" r="45" class="compass-bg-ring" stroke-dasharray="10 15" stroke-width="1.5" />
+                    <circle cx="100" cy="100" r="35" class="compass-bg-ring" stroke-dasharray="2 6" stroke-width="3" />
+                </g>
+
+                <!-- Central Needle -->
+                <g class="compass-needle" id="compassNeedle">
+                    <path d="M 96 100 L 100 45 L 104 100 Z" />
+                    <path d="M 96 100 L 100 155 L 104 100 Z" fill="#334036" />
+                </g>
+                <circle cx="100" cy="100" r="6" class="compass-needle-base" />
+
+                <!-- Progress Arc (circumference = 2 * PI * 95 = 596.9) -->
+                <circle cx="100" cy="100" r="95" class="compass-progress-ring" id="compassProgressArc" stroke-dasharray="597" stroke-dashoffset="597"/>
+            </svg>
+        </div>
+        <div class="loading-status-container">
+            <div id="loadingProgressText">0%</div>
+            <div id="loadingStatusText">INITIALIZING SENSORS</div>
+        </div>
+    </div>
+
     <script src="engine/matrix.js"></script>
     <script src="engine/ekf.js"></script>
     <script src="engine/map_matcher.js"></script>

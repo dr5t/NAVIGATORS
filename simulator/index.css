@@ -110,3 +110,55 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
 .custom-checkbox input:checked ~ .checkmark:after { display: block; }
 .custom-checkbox .checkmark:after { left: 6px; top: 2px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); animation: check 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 @keyframes check { 0% { height: 0; width: 0; opacity: 0; } 100% { height: 10px; width: 5px; opacity: 1; } }
+
+/* COMPASS LOADING OVERLAY */
+#compassLoadingOverlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #151a17; /* Dark theme */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #e3e8de; font-family: var(--font-mono); font-size: 11px;
+    opacity: 0; pointer-events: none; visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+#compassLoadingOverlay.active { opacity: 1; pointer-events: all; visibility: visible; }
+#compassLoadingOverlay.fade-out { opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
+
+.compass-container {
+    position: relative; width: 280px; height: 280px; margin-bottom: 40px;
+}
+.compass-svg { width: 100%; height: 100%; display: block; }
+
+/* SVG Elements */
+.compass-bg-ring { stroke: #2a332d; fill: none; stroke-width: 2; }
+.compass-progress-ring { stroke: var(--accent-orange); fill: none; stroke-width: 4; stroke-linecap: round; transform-origin: center; transform: rotate(-90deg); transition: stroke-dashoffset 0.1s linear; }
+.compass-tick-outer { stroke: #455248; stroke-width: 1.5; }
+.compass-tick-inner { stroke: #334036; stroke-width: 1; }
+.compass-label { fill: #829385; font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: middle; font-family: var(--font-main); }
+.compass-label-n { fill: var(--accent-orange); }
+
+/* Rotating groups */
+.layer-outer { transform-origin: center; animation: spin-slow 60s linear infinite; }
+.layer-inner { transform-origin: center; animation: spin-slow-reverse 45s linear infinite; }
+.compass-needle { transform-origin: center; fill: var(--accent-orange); animation: needle-search 4s ease-in-out infinite alternate; }
+.compass-needle-base { fill: #e3e8de; }
+
+/* Status Text */
+.loading-status-container { text-align: center; letter-spacing: 1.5px; }
+#loadingProgressText { font-size: 32px; font-weight: 300; margin-bottom: 8px; color: #fff; letter-spacing: -1px; }
+#loadingStatusText { color: #829385; }
+
+/* Animations */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+    @keyframes spin-slow-reverse { 100% { transform: rotate(-360deg); } }
+    @keyframes needle-search { 0% { transform: rotate(-25deg); } 50% { transform: rotate(40deg); } 100% { transform: rotate(15deg); } }
+}
+
+/* Locked state */
+.compass-locked .layer-outer { animation: none; transform: rotate(0deg); transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.compass-locked .layer-inner { animation: none; transform: rotate(0deg); transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.compass-locked .compass-needle { animation: none; transform: rotate(0deg); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.compass-locked .compass-progress-ring { stroke: var(--accent-green); transition: stroke 0.4s ease; }
+.compass-locked .compass-label-n { fill: var(--accent-green); transition: fill 0.4s ease; }
+.compass-locked .compass-needle { fill: var(--accent-green); transition: fill 0.4s ease; }
+

@@ -200,6 +200,40 @@ window.refreshDeviceTimings = () => {
         : 'No navigation steps measured yet. Start the engine and complete calibration to collect timings.';
 };
 
+window.setLoadingState = (percent, message) => {
+    const overlay = document.getElementById('compassLoadingOverlay');
+    if (!overlay) return;
+    
+    // Show overlay if not active
+    if (!overlay.classList.contains('active')) {
+        overlay.classList.remove('fade-out');
+        overlay.classList.add('active');
+        document.getElementById('compassContainer').classList.remove('compass-locked');
+    }
+
+    percent = Math.min(100, Math.max(0, percent));
+    
+    // Update text
+    document.getElementById('loadingProgressText').textContent = Math.round(percent) + '%';
+    if (message) document.getElementById('loadingStatusText').textContent = message;
+
+    // Update arc
+    const arc = document.getElementById('compassProgressArc');
+    const circumference = 597; // 2 * PI * 95
+    const offset = circumference - (percent / 100) * circumference;
+    if (arc) arc.style.strokeDashoffset = offset;
+
+    // Lock and hide at 100%
+    if (percent >= 100) {
+        document.getElementById('loadingStatusText').textContent = 'NAVIGATION READY';
+        document.getElementById('compassContainer').classList.add('compass-locked');
+        setTimeout(() => {
+            overlay.classList.remove('active');
+            overlay.classList.add('fade-out');
+        }, 800); // Wait for lock animation to settle before fading out
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     byId('btnPairPC').addEventListener('click', async () => {
         const button = byId('btnPairPC');
