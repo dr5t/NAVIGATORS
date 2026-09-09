@@ -361,7 +361,21 @@ document.addEventListener('DOMContentLoaded', () => {
     byId('btnFollow').addEventListener('click', () => {
         state.followPosition = !state.followPosition;
         byId('btnFollow').setAttribute('aria-pressed', String(state.followPosition));
-        if (state.followPosition && state.estimatedCoords.length) state.map.panTo(state.estimatedCoords.at(-1));
+        if (state.followPosition) {
+            if (state.estimatedCoords.length) {
+                state.map.panTo(state.estimatedCoords.at(-1));
+            } else if ('geolocation' in navigator) {
+                // Request real-time location via browser API if no engine path exists
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        const currentZoom = state.map.getZoom();
+                        state.map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(currentZoom, 17));
+                    },
+                    err => console.warn('Geolocation error:', err),
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            }
+        }
     });
     const dialog = byId('guideDialog');
     byId('btnGuide').addEventListener('click', () => dialog.showModal());
