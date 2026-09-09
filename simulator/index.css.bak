@@ -213,84 +213,30 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
 
 /* Mobile Native Layout */
 @media (max-width: 800px) {
-    /* Base structural changes */
     .sidebar { 
-        position: fixed; 
-        bottom: 0;
-        top: auto;
+        position: relative; 
         width: 100%; 
         height: auto; 
-        padding: 8px 16px 20px; 
+        padding: 16px; 
         flex-direction: row; 
-        justify-content: space-around; 
+        justify-content: space-between; 
         align-items: center; 
         z-index: 1000;
-        border-top: 1px solid #454c41;
-        box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
     }
-    .workspace-label, .sidebar-note, .sidebar-bottom, .brand { display: none; }
-    .workspace-nav { 
-        flex-direction: row; 
-        width: 100%; 
-        justify-content: space-around; 
-        gap: 4px;
-    }
-    .nav-link { 
-        padding: 8px 12px; 
-        flex-direction: column; 
-        gap: 4px; 
-        font-size: 10px; 
-        text-align: center;
-        background: transparent !important;
-        border: none !important;
-    }
-    .nav-link svg { width: 22px; height: 22px; margin: 0 auto; }
-    .nav-link.selected { color: #dfa580; background: transparent !important; }
+    .workspace-label, .sidebar-note, .sidebar-bottom { display: none; }
+    .workspace-nav { flex-direction: row; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .nav-link { padding: 8px 12px; white-space: nowrap; }
     .nav-key { display: none; }
-    
-    .workspace { margin-left: 0; padding-bottom: 90px; }
-    #app-header { padding: 12px 16px; height: auto; flex-direction: column; align-items: flex-start; gap: 8px; }
+    .workspace { margin-left: 0; padding-bottom: 30px; }
+    #app-header { padding: 0 16px; height: auto; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
     .header-meta { flex-wrap: wrap; gap: 10px; }
-    
     #app-main { padding: 16px 12px; }
-    .page-heading { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .page-heading button { width: 100%; }
-    
-    .console-grid, .bottom-grid { grid-template-columns: 1fr; border-radius: 6px; }
-    .console-grid { overflow: visible; border: none; background: transparent; gap: 16px; }
-    .map-panel, .telemetry-panel { border: 1px solid var(--line); border-radius: 6px; background: #fdfcf8; }
-    .map-surface { min-height: 250px; border-bottom: none; }
-    .map-footer { border-top: 1px solid var(--line); }
-    
-    /* Grids & Cards */
-    .metrics-grid, .runtime-facts, .quality-pair, .performance-cards { grid-template-columns: 1fr 1fr; gap: 12px; }
-    .speed-readout strong { font-size: 38px; }
-    .quality-value { font-size: 20px; }
-    
-    /* Outage console */
-    .outage-console { flex-direction: column; align-items: stretch; padding: 16px; }
-    .outage-copy { flex-direction: column; align-items: flex-start; gap: 8px; }
-    .outage-button { width: 100%; }
-    .run-sequence { grid-template-columns: 1fr; gap: 10px; border-top: 1px solid #d9ddce; padding-top: 16px; padding-left: 0; }
+    .page-heading { flex-direction: column; align-items: flex-start; }
+    .console-grid { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .map-surface { min-height: 250px; }
+    .metrics-grid, .runtime-facts, .quality-pair, .performance-cards { grid-template-columns: 1fr 1fr; }
+    .outage-console { flex-direction: column; align-items: stretch; }
+    .run-sequence { grid-template-columns: 1fr; gap: 10px; border-left: 1px solid #d9ddce; border-top: none; padding-left: 20px; }
     .run-sequence i { display: none; }
-    
-    /* Loading Compass overlay */
-    .compass-container {
-        width: 200px;
-        height: 200px;
-        margin-bottom: 30px;
-    }
-    #loadingProgressText {
-        font-size: 32px;
-    }
-
-    /* Reports & Legal Pages */
-    .report-workspace { padding: 16px; }
-    .report-toolbar { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .legal-body { padding: 2rem 1.5rem; }
-    
-    /* Overlays/Modals */
-    .playback-controls { flex-direction: column; align-items: stretch; }
-    .speed-control { justify-content: space-between; }
-    .replay-source { flex-direction: column; align-items: stretch; }
 }
