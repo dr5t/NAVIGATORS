@@ -7,8 +7,8 @@
     --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-main); font-size: 14px; -webkit-font-smoothing: antialiased; }
-button, input { font: inherit; } button, a, label.upload-label { -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: var(--bg-primary); color: var(--text-primary); font-family: var(--font-main); font-size: 14px; -webkit-font-smoothing: antialiased; -webkit-user-select: none; user-select: none; overscroll-behavior-y: none; }
+button, input, select, label { font: inherit; touch-action: manipulation; } button, a, label.upload-label { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; } button:disabled { cursor: not-allowed; opacity: .45; }
 button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, .upload-label:focus-within { outline: 3px solid #bc6a43; outline-offset: 4px; }
 button { transition: background .15s, border-color .15s, transform .1s ease; }
@@ -210,3 +210,33 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
 .legal-body a:hover { text-decoration: underline; }
 .back-link { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; }
 
+
+/* Mobile Native Layout */
+@media (max-width: 800px) {
+    .sidebar { 
+        position: relative; 
+        width: 100%; 
+        height: auto; 
+        padding: 16px; 
+        flex-direction: row; 
+        justify-content: space-between; 
+        align-items: center; 
+        z-index: 1000;
+    }
+    .workspace-label, .sidebar-note, .sidebar-bottom { display: none; }
+    .workspace-nav { flex-direction: row; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .nav-link { padding: 8px 12px; white-space: nowrap; }
+    .nav-key { display: none; }
+    .workspace { margin-left: 0; padding-bottom: 30px; }
+    #app-header { padding: 0 16px; height: auto; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+    .header-meta { flex-wrap: wrap; gap: 10px; }
+    #app-main { padding: 16px 12px; }
+    .page-heading { flex-direction: column; align-items: flex-start; }
+    .console-grid { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .map-surface { min-height: 250px; }
+    .metrics-grid, .runtime-facts, .quality-pair, .performance-cards { grid-template-columns: 1fr 1fr; }
+    .outage-console { flex-direction: column; align-items: stretch; }
+    .run-sequence { grid-template-columns: 1fr; gap: 10px; border-left: 1px solid #d9ddce; border-top: none; padding-left: 20px; }
+    .run-sequence i { display: none; }
+}
