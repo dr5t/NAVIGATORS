@@ -200,7 +200,7 @@ window.refreshDeviceTimings = () => {
         : 'No navigation steps measured yet. Start the engine and complete calibration to collect timings.';
 };
 
-window.setLoadingState = (percent, message) => {
+window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') => {
     const overlay = document.getElementById('compassLoadingOverlay');
     if (!overlay) return;
     
@@ -225,7 +225,7 @@ window.setLoadingState = (percent, message) => {
 
     // Lock and hide at 100%
     if (percent >= 100) {
-        document.getElementById('loadingStatusText').textContent = 'NAVIGATION READY';
+        document.getElementById('loadingStatusText').textContent = finalMessage;
         document.getElementById('compassContainer').classList.add('compass-locked');
         setTimeout(() => {
             overlay.classList.remove('active');
@@ -404,9 +404,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnStart = byId('btnStart');
         const btnSkip = byId('btnSkip');
 
-        if (!localStorage.getItem('startupAcknowledged')) {
-            startupModal.showModal();
-        }
+        const runInitialLoading = async () => {
+            window.setLoadingState(0, "INITIALIZING WORKSPACE", "WORKSPACE READY");
+            await new Promise(r => setTimeout(r, 400));
+            window.setLoadingState(40, "LOADING OFFLINE DATA", "WORKSPACE READY");
+            await new Promise(r => setTimeout(r, 400));
+            window.setLoadingState(80, "CONNECTING TO SENSORS", "WORKSPACE READY");
+            await new Promise(r => setTimeout(r, 400));
+            window.setLoadingState(100, "WORKSPACE READY", "WORKSPACE READY");
+            
+            // Wait for the overlay to fade out before showing the modal
+            setTimeout(() => {
+                startupModal.showModal();
+            }, 1200);
+        };
+        runInitialLoading();
 
         chkAgree.addEventListener('change', () => {
             btnStart.disabled = !chkAgree.checked;
