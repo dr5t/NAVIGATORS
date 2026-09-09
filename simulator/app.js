@@ -16,6 +16,9 @@ const state = {
     map: null,
     data: null,
     playing: false,
+    view: 'console',
+    followPosition: true,
+    playbackTime: 0,
     currentIndex: 0,
     playbackSpeed: 2,
     animationFrame: null,
@@ -42,6 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         state.localMap = await LocalMap.load();
         state.localMap.draw(state.map);
+        const origin = state.localMap.data.origin;
+        document.getElementById('mapCoordinates').textContent = `${Math.abs(origin.lat).toFixed(4)}° ${origin.lat >= 0 ? "N" : "S"} / ${Math.abs(origin.lon).toFixed(4)}° ${origin.lon >= 0 ? "E" : "W"}`;
+        document.getElementById('roadCount').textContent = `${state.localMap.data.roads.length.toLocaleString()} roads · stored on this device`;
         window.offlineEngine.setLocalMap(state.localMap);
         document.getElementById('mapStatus').textContent = `Local OSM map · ${state.localMap.data.roads.length} roads`;
     } catch (error) {
@@ -55,13 +61,16 @@ function initMap() {
     state.map = L.map('map', {
         center: [28.6139, 77.2090],
         zoom: 15,
-        zoomControl: true,
+        zoomControl: false,
         attributionControl: true,
     });
 
+    L.control.zoom({ position: 'bottomright' }).addTo(state.map);
+    L.control.scale({ position: 'bottomleft', imperial: false }).addTo(state.map);
+
     // Ground truth trajectory line
     state.truthLine = L.polyline([], {
-        color: '#00E5FF',
+        color: '#6c8884',
         weight: 3,
         opacity: 0.6,
         dashArray: '8, 6',
@@ -70,7 +79,7 @@ function initMap() {
 
     // Estimated trajectory line
     state.estimatedLine = L.polyline([], {
-        color: '#76FF03',
+        color: '#4c7b59',
         weight: 3,
         opacity: 0.9,
         lineCap: 'round',
@@ -91,12 +100,13 @@ function initMap() {
     state.vehicleMarker = L.marker([28.6139, 77.2090], {
         icon: vehicleIcon,
         zIndexOffset: 1000,
+        opacity: 0,
     }).addTo(state.map);
 
     // Truth marker (small dot)
     const truthIcon = L.divIcon({
         className: '',
-        html: '<div style="width:8px;height:8px;background:#00E5FF;border-radius:50%;border:2px solid #0a0e1a;box-shadow:0 0 8px #00E5FF;"></div>',
+        html: '<div style="width:8px;height:8px;background:#6c8884;border-radius:50%;border:2px solid #f5f4ef;"></div>',
         iconSize: [8, 8],
         iconAnchor: [4, 4],
     });
@@ -104,6 +114,7 @@ function initMap() {
     state.truthMarker = L.marker([28.6139, 77.2090], {
         icon: truthIcon,
         zIndexOffset: 999,
+        opacity: 0,
     }).addTo(state.map);
 }
 
@@ -120,10 +131,9 @@ function initControls() {
 
     const timeline = document.getElementById('timeline');
     timeline.addEventListener('input', (e) => {
-        if (state.data && !window.liveSensorClient?.isCapturing) {
-            const pct = parseFloat(e.target.value);
-            state.currentIndex = Math.floor((pct / 100) * (state.data.data.timestamps.length - 1));
-            updateFrame(state.currentIndex);
+        if (state.data && !window.offlineEngine.isCapturing && state.view === 'replay') {
+            pause();
+            seekFrame(Math.min(state.data.data.timestamps.length - 1, Math.max(0, Math.round(Number(e.target.value)))));
         }
     });
 
@@ -159,10 +169,14 @@ function initControls() {
         if (engine.setGpsOutage(!engine.gpsOutage)) {
             document.getElementById('btnGpsOutage').textContent = engine.gpsOutage
                 ? 'Restore GPS' : 'Simulate GNSS outage';
+            document.getElementById('btnGpsOutage').setAttribute('aria-pressed', String(engine.gpsOutage));
         }
     });
 
-    document.getElementById('btnResetTimings').addEventListener('click', () => window.offlineEngine.profiler.reset());
+    document.getElementById('btnResetTimings').addEventListener('click', () => {
+        window.offlineEngine.profiler.reset();
+        window.refreshDeviceTimings?.();
+    });
     document.getElementById('btnExportTimings').addEventListener('click', () => {
         const engine = window.offlineEngine;
         const report = { ...engine.profiler.report(), model_contract: engine.modelContract,
@@ -184,18 +198,38 @@ function initControls() {
             window.offlineEngine.stopCapture();
             btn.textContent = 'Start Offline Engine';
             btn.style.color = '';
+            btn.classList.remove('running');
             statusEl.textContent = 'Engine stopped';
             document.getElementById('componentStatus').textContent = 'IMU / AI / EKF / NHC / map matching: stopped';
             document.getElementById('btnGpsOutage').disabled = true;
             document.getElementById('playbackControls').style.opacity = '';
             document.getElementById('playbackControls').style.pointerEvents = '';
+            window.showStandby?.();
+            btn.hidden = state.view !== 'console';
         } else {
+            window.selectWorkspace?.('console');
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+            btn.textContent = 'Loading local engine…';
+            statusEl.closest('details').open = true;
+            statusEl.style.color = '';
+            document.getElementById('sessionHint').textContent = 'Loading model and requesting sensor access';
             statusEl.textContent = 'Initializing Edge AI...';
-            const success = await window.offlineEngine.requestPermissionsAndStart();
+            let success = false;
+            try {
+                success = await window.offlineEngine.requestPermissionsAndStart();
+            } catch (error) {
+                window.offlineEngine.lastError = error.message;
+            } finally {
+                btn.disabled = false;
+                btn.removeAttribute('aria-busy');
+            }
             if (success) {
                 btn.textContent = 'Stop Engine';
-                btn.style.color = 'var(--accent-red)';
+                btn.classList.add('running');
                 statusEl.textContent = 'Running Locally';
+                document.getElementById('sessionHint').textContent = 'Calibrating phone sensors';
+                state.truthMarker.setOpacity(0);
 
                 // Clear map trajectories for live run
                 state.truthLine.setLatLngs([]);
@@ -206,8 +240,10 @@ function initControls() {
                 document.getElementById('playbackControls').style.opacity = '0.3';
                 document.getElementById('playbackControls').style.pointerEvents = 'none';
             } else {
-                statusEl.textContent = 'Init Failed';
+                btn.textContent = 'Retry engine';
+                statusEl.textContent = window.offlineEngine.lastError || 'Unable to start. Check motion and location permissions, then retry.';
                 statusEl.style.color = 'var(--accent-red)';
+                document.getElementById('sessionHint').textContent = statusEl.textContent;
             }
         }
     });
@@ -221,15 +257,27 @@ function initControls() {
 
         if (window.dataRecorder && window.dataRecorder.isRecording) {
             window.dataRecorder.stopRecordingAndDownload();
+            document.querySelector('#recorderControls p').textContent = 'Recording saved. Use replay.py to evaluate the trip.';
             btn.textContent = 'Record Trip Data';
             indicator.style.display = 'none';
             if (recordingTimerInterval) clearInterval(recordingTimerInterval);
         } else if (window.dataRecorder) {
+            btn.disabled = true;
             btn.textContent = 'Requesting...';
-            const success = await window.dataRecorder.requestPermissionsAndStart();
+            let success = false;
+            try {
+                success = await window.dataRecorder.requestPermissionsAndStart();
+            } catch (error) {
+                document.querySelector('#recorderControls p').textContent = `Recording could not start: ${error.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Record Trip Data';
+            }
             if (success) {
+                document.querySelector('#recorderControls p').textContent = 'Capturing phone sensors locally. Stop to save the recording.';
                 btn.textContent = 'Stop & Save Trip';
                 indicator.style.display = 'flex';
+                timerText.textContent = '00:00';
 
                 const startTime = Date.now();
                 recordingTimerInterval = setInterval(() => {
@@ -238,8 +286,6 @@ function initControls() {
                     const s = (elapsed % 60).toString().padStart(2, '0');
                     timerText.textContent = `${m}:${s}`;
                 }, 1000);
-            } else {
-                btn.textContent = 'Record Trip Data';
             }
         }
     });
@@ -251,17 +297,15 @@ function initControls() {
 async function loadSimulationData() {
     try {
         const response = await fetch('data/simulation.json');
-        if (!response.ok) {
-            console.log('No simulation data found. Generating inline demo data...');
-            state.data = generateDemoData();
-        } else {
-            state.data = await response.json();
-        }
-        onDataLoaded();
+        const data = response.ok ? await response.json() : generateDemoData();
+        if (state.replayName) return;
+        state.data = data;
+        if (state.view === 'replay') onDataLoaded();
     } catch (e) {
+        if (state.replayName) return;
         console.log('Loading demo data...');
         state.data = generateDemoData();
-        onDataLoaded();
+        if (state.view === 'replay') onDataLoaded();
     }
 }
 
@@ -270,7 +314,6 @@ function onDataLoaded() {
     const meta = data.metadata;
 
     console.log(`[Simulator] Loaded ${data.data.timestamps.length} frames`);
-    console.log(`[Simulator] Duration: ${meta.total_duration?.toFixed(1)}s, Distance: ${meta.total_distance?.toFixed(0)}m`);
 
     // Set timeline range
     const timeline = document.getElementById('timeline');
@@ -280,28 +323,28 @@ function onDataLoaded() {
     const firstLat = data.data.true_lat_lon[0][0];
     const firstLon = data.data.true_lat_lon[0][1];
     const covered = state.localMap?.contains(firstLat, firstLon);
-    if (covered) state.map.setView([firstLat, firstLon], 16);
+    if (covered) {
+        state.map.setView([firstLat, firstLon], 16);
+        document.getElementById('mapStatus').textContent = 'Local OSM map · saved trajectory';
+    }
     else if (state.localMap) document.getElementById('mapStatus').textContent = 'Local OSM map ready · saved replay is outside this area';
 
     // Mark GNSS denied zones on the map
+    state.gnssZones.forEach(zone => state.map.removeLayer(zone));
+    state.gnssZones = [];
     markGnssDeniedZones();
 
     // Update metrics display
-    if (meta.metrics) {
-        document.getElementById('ateRmse').textContent = `${meta.metrics.ate_rmse?.toFixed(1)}m`;
-        document.getElementById('cep50').textContent = `${meta.metrics.cep50?.toFixed(1)}m`;
-        document.getElementById('cep95').textContent = `${meta.metrics.cep95?.toFixed(1)}m`;
-    }
-    if (meta.total_distance) {
-        document.getElementById('totalDistance').textContent = `${meta.total_distance.toFixed(0)}m`;
+    for (const [id, value] of Object.entries({ ateRmse: meta.metrics?.ate_rmse, cep50: meta.metrics?.cep50,
+        cep95: meta.metrics?.cep95, totalDistance: meta.total_distance })) {
+        document.getElementById(id).textContent = Number.isFinite(value) && value >= 0 ? `${value.toFixed(1)}m` : '—';
     }
 
-    // Show initial frame
-    updateFrame(0);
+    // Saved examples are paused until the user starts playback.
+    seekFrame(0);
 
     // Keep the downloaded area visible when the saved replay covers another city.
-    if (covered) setTimeout(play, 500);
-    else if (state.localMap) state.map.fitBounds([state.localMap.toLatLon(state.localMap.bounds.slice(0, 2)), state.localMap.toLatLon(state.localMap.bounds.slice(2))]);
+    if (!covered) state.localMap?.centerView(state.map);
 }
 
 function markGnssDeniedZones() {
@@ -321,7 +364,7 @@ function markGnssDeniedZones() {
             }
             if (coords.length > 1) {
                 const zone = L.polyline(coords, {
-                    color: '#FF1744',
+                    color: '#b5483b',
                     weight: 8,
                     opacity: 0.2,
                     lineCap: 'butt',
@@ -337,7 +380,9 @@ function markGnssDeniedZones() {
 // Playback Control
 // ========================================================
 function play() {
-    if (!state.data || window.offlineEngine.isCapturing) return;
+    if (!state.data || window.offlineEngine.isCapturing || state.view !== 'replay' || state.playing) return;
+    if (state.currentIndex >= state.data.data.timestamps.length - 1) seekFrame(0);
+    state.playbackTime = state.data.data.timestamps[state.currentIndex];
     state.playing = true;
     document.getElementById('btnPlay').classList.add('hidden');
     document.getElementById('btnPause').classList.remove('hidden');
@@ -372,18 +417,12 @@ function animate() {
     const elapsed = (now - state.lastFrameTime) / 1000; // seconds
     state.lastFrameTime = now;
 
-    // Advance by playback speed
-    const dataRate = 10; // 10 Hz data
-    const framesToAdvance = Math.max(1, Math.round(elapsed * dataRate * state.playbackSpeed));
-
-    for (let i = 0; i < framesToAdvance; i++) {
-        if (state.currentIndex >= state.data.data.timestamps.length - 1) {
-            pause();
-            return;
-        }
-        state.currentIndex++;
-        updateFrame(state.currentIndex);
-    }
+    state.playbackTime += elapsed * state.playbackSpeed;
+    const timestamps = state.data.data.timestamps;
+    let next = state.currentIndex;
+    while (next + 1 < timestamps.length && timestamps[next + 1] <= state.playbackTime) next++;
+    if (next !== state.currentIndex) seekFrame(next);
+    if (next === timestamps.length - 1) { pause(); return; }
 
     state.animationFrame = requestAnimationFrame(animate);
 }
@@ -391,7 +430,16 @@ function animate() {
 // ========================================================
 // Frame Update
 // ========================================================
+function seekFrame(index) {
+    if (!state.data) return;
+    state.currentIndex = index;
+    state.truthCoords = state.data.data.true_lat_lon.slice(0, index);
+    state.estimatedCoords = state.data.data.estimated_lat_lon.slice(0, index);
+    updateFrame(index);
+}
+
 function updateFrame(index) {
+    if (!state.data) return;
     const data = state.data.data;
     if (index < 0 || index >= data.timestamps.length) return;
 
@@ -419,16 +467,16 @@ function updateFrame(index) {
 
     // Change estimated line color based on mode
     if (navMode === 'dr') {
-        state.estimatedLine.setStyle({ color: '#FF6D00', dashArray: '5, 8' });
+        state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '5, 8' });
     } else if (navMode === 'reacq') {
-        state.estimatedLine.setStyle({ color: '#FF6D00', dashArray: '2, 4' });
+        state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '2, 4' });
     } else {
-        state.estimatedLine.setStyle({ color: '#76FF03', dashArray: null });
+        state.estimatedLine.setStyle({ color: '#4c7b59', dashArray: null });
     }
 
     // Update markers
-    state.vehicleMarker.setLatLng([estLat, estLon]);
-    state.truthMarker.setLatLng([trueLat, trueLon]);
+    state.vehicleMarker.setLatLng([estLat, estLon]).setOpacity(1);
+    state.truthMarker.setLatLng([trueLat, trueLon]).setOpacity(1);
 
     // Update vehicle marker appearance
     const markerEl = state.vehicleMarker.getElement();
@@ -442,7 +490,7 @@ function updateFrame(index) {
     }
 
     // Pan map to follow vehicle
-    state.map.panTo([estLat, estLon], { animate: true, duration: 0.3 });
+    if (state.followPosition) state.map.panTo([estLat, estLon], { animate: false });
 
     // --- Update Telemetry ---
     updateNavMode(navMode);
@@ -451,10 +499,14 @@ function updateFrame(index) {
     updatePositionError(posError);
     updateDrift(driftPct);
     updateConfidence(confidence);
+    window.updateConsoleTelemetry?.({ source: 'saved', nav_mode: navMode, gnss_available: gnssOk, zupt_active: isZupt });
 
     // Timeline
     document.getElementById('timeline').value = index;
-    document.getElementById('timeLabel').textContent = `${timestamp.toFixed(1)}s`;
+    const elapsed = timestamp - data.timestamps[0];
+    const duration = data.timestamps.at(-1) - data.timestamps[0];
+    document.getElementById('timeLabel').textContent = `${elapsed.toFixed(1)} / ${duration.toFixed(1)}s`;
+    document.getElementById('timeline').setAttribute('aria-valuetext', `${elapsed.toFixed(1)} of ${duration.toFixed(1)} seconds`);
 }
 
 // ========================================================
@@ -494,11 +546,11 @@ function updateGnssStatus(available) {
     if (available) {
         text.textContent = 'LOCKED';
         text.style.color = 'var(--gnss-active)';
-        card.style.borderColor = 'rgba(118, 255, 3, 0.2)';
+        card.style.borderColor = '';
     } else {
         text.textContent = 'DENIED';
         text.style.color = 'var(--gnss-denied)';
-        card.style.borderColor = 'rgba(255, 23, 68, 0.3)';
+        card.style.borderColor = '';
     }
 }
 

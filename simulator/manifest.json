@@ -4,8 +4,8 @@
   "description": "Intelligent Dead Reckoning AI Navigation System",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0a0e1a",
-  "theme_color": "#00E5FF",
+  "background_color": "#f5f4ef",
+  "theme_color": "#232b26",
   "orientation": "portrait-primary",
   "icons": [
     {

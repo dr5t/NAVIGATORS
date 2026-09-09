@@ -109,3 +109,20 @@ node tests/browser_offline.mjs
 ```
 
 Tests cover all seven GPS-leakage gates, repeatability, causal filtering, epoch timestamps, stale fixes, corrupt recordings, split leakage, mean versus RMSE, angle wrapping, bounded recovery, and runtime profiling. The browser test runs actual local ONNX/WASM inference and recovery with controlled sensor inputs and networking disabled. These checks validate software behavior, not real-trip accuracy.
+
+## Demo workspace
+
+Serve `simulator/` locally and open the navigation workspace:
+
+```bash
+python3 -m http.server 8000 --directory simulator
+```
+
+Open `http://localhost:8000`. The interface has four views:
+
+- **Navigation**: local OSM map, live telemetry, sensor pipeline, recording, and the outage/recovery sequence. It opens in standby; no saved readings are presented as live sensor data. The map's follow toggle and fit-area button control the viewport.
+- **Saved playback**: play, pause, reset, and scrub the included illustrative trajectory. Playback follows its actual timestamps and selected speed. The included Delhi trajectory lies outside the Bengaluru map; the coverage message identifies that mismatch.
+- **Experiments**: import a `*_results.json` replay report to compare A–G. Imports remain on the device. Empty/blocked results have no invented numbers, and configurations from different recordings/outage intervals are rejected as incomparable.
+- **Device timings**: inspect actual timing samples, export them, reset the sample window, or import a measured ONNX parity report.
+
+The field guide is available from the navigation sidebar, including its compact phone layout. The new interface and its scripts are cached with the offline package; reconnect and reload once to install an updated service worker before presenting offline.

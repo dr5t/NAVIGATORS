@@ -1,7 +1,7 @@
 // Bump the version whenever a bundled asset, model, or downloaded map changes.
-const CACHE_NAME = 'navigators-idr-offline-v4';
+const CACHE_NAME = 'navigators-idr-offline-v6';
 const ASSETS = [
-    './', './index.html', './index.css', './app.js', './local_map.js',
+    './', './index.html', './index.css', './app.js', './workspace.js', './local_map.js',
     './offline_engine.js', './device_profiler.js', './engine/preprocessing.js', './model.contract.json', './data_recorder.js', './manifest.json', './icon.svg',
     './engine/matrix.js', './engine/ekf.js', './engine/map_matcher.js', './engine/alignment.js',
     './model.onnx', './model.onnx.data', './data/simulation.json', './data/road_network.json',

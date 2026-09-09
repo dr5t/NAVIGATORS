@@ -45,11 +45,15 @@ class LocalMap {
         return e >= this.bounds[0] && e <= this.bounds[2] && n >= this.bounds[1] && n <= this.bounds[3];
     }
 
+    centerView(map) {
+        map.setView([this.data.origin.lat, this.data.origin.lon], 15);
+    }
+
     draw(map) {
         const renderer = L.canvas({ padding: 0.5 });
         const layers = this.data.roads.map(road => {
             const line = L.polyline(road.points.map(p => this.toLatLon(p)), {
-                renderer, color: '#536780', weight: 3, opacity: 0.9,
+                renderer, color: '#8d9c83', weight: 2.4, opacity: 0.78,
             });
             const label = document.createElement('span');
             label.textContent = road.name || 'Unnamed road';
@@ -58,7 +62,7 @@ class LocalMap {
         });
         L.featureGroup(layers).addTo(map).bringToBack();
         map.attributionControl.addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · ODbL · Local road map');
-        map.fitBounds([this.toLatLon(this.bounds.slice(0, 2)), this.toLatLon(this.bounds.slice(2))]);
+        this.centerView(map);
     }
 }
 

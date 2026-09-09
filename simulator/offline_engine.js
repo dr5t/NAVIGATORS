@@ -279,24 +279,25 @@ class OfflineEngine {
         } catch (e) {
             console.error("[Edge AI] Failed to load ONNX model:", e);
             this.modelLoading = false;
-            alert("Failed to load Edge AI Model: " + e.message);
+            this.lastError = 'Failed to load local model: ' + e.message;
             return false;
         }
     }
 
     async requestPermissionsAndStart() {
-        if (!this.localMap) return false;
+        this.lastError = '';
+        if (!this.localMap) { this.lastError = 'The local road database is not ready. Reload and try again.'; return false; }
         // iOS requires explicit permission for DeviceMotionEvent
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 const permission = await DeviceMotionEvent.requestPermission();
                 if (permission !== 'granted') {
-                    alert('Sensor permission denied.');
+                    this.lastError = 'Motion permission denied. Allow sensor access in browser settings and retry.';
                     return false;
                 }
             } catch (e) {
                 console.error('Error requesting sensor permission:', e);
-                alert('Must be in HTTPS to request sensor permissions.');
+                this.lastError = 'Motion access failed. Open this app over HTTPS or localhost and retry.';
                 return false;
             }
         }
@@ -405,6 +406,7 @@ class OfflineEngine {
 
         if (currentTime - this.lastMotionTime > 1) {
             document.getElementById('edgeStatus').textContent = 'Waiting for IMU samples';
+            this.updateUI({ status: 'waiting_for_imu' });
             return;
         }
         // Snapshot fixes across asynchronous inference; never reuse stale GPS during an outage.
@@ -430,6 +432,7 @@ class OfflineEngine {
             // Documenting: update UI here if necessary to say "Calibrating..."
             document.getElementById('edgeStatus').textContent = "Calibrating Orientation...";
             document.getElementById('edgeStatus').style.color = "var(--accent-cyan)";
+            this.updateUI({ status: 'calibrating' });
             return; // Wait until aligned
         }
 
@@ -611,6 +614,10 @@ class OfflineEngine {
             speed: estimatedSpeed,
             heading: this.ekf.getHeading(),
             zupt_active: this.zuptActive,
+            ai_active: Boolean(aiVelocity),
+            ai_error: aiError,
+            nhc_active: estimatedSpeed >= 0.5,
+            map_matched: match.confidence > 0.8,
             position_error: Math.sqrt(posUncertainty),
             dr_drift_percent: driftPct,
             confidence: confidenceScore
@@ -619,11 +626,15 @@ class OfflineEngine {
     }
 
     updateUI(data) {
+        if (data.status !== 'active') window.updateConsoleTelemetry?.(data);
         // Hook into the existing app.js functions safely
         if (data.status === 'waiting_for_gnss') {
             if (typeof updateNavMode === 'function') {
-                updateNavMode('reacq');
                 updateGnssStatus(false);
+                document.getElementById('gnssStatusText').textContent = 'ACQUIRING';
+                const indicator = document.getElementById('navModeIndicator');
+                indicator.className = 'nav-mode-indicator';
+                indicator.querySelector('.mode-label').textContent = 'INITIALIZING';
             }
             return;
         }
@@ -636,6 +647,7 @@ class OfflineEngine {
             updatePositionError(data.position_error);
             updateDrift(data.dr_drift_percent);
             updateConfidence(data.confidence);
+            if (typeof window.updateConsoleTelemetry === 'function') window.updateConsoleTelemetry(data);
 
             if (typeof state !== 'undefined' && state.map) {
                 const estLat = data.estimated_lat;
@@ -643,8 +655,9 @@ class OfflineEngine {
 
                 state.estimatedCoords.push([estLat, estLon]);
                 state.estimatedLine.setLatLngs(state.estimatedCoords);
-                state.vehicleMarker.setLatLng([estLat, estLon]);
-                state.map.panTo([estLat, estLon], { animate: true, duration: 0.1 });
+                state.vehicleMarker.setLatLng([estLat, estLon]).setOpacity(1);
+                state.estimatedLine.setStyle({ color: data.nav_mode === 'dr' ? '#ba5b37' : '#4c7b59', dashArray: data.nav_mode === 'dr' ? '5, 6' : null });
+                if (state.followPosition) state.map.panTo([estLat, estLon], { animate: false });
 
                 const markerEl = state.vehicleMarker.getElement();
                 if (markerEl) {
