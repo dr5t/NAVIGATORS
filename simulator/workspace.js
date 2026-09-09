@@ -459,8 +459,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         btnSkip.addEventListener('click', () => {
-            localStorage.setItem('startupAcknowledged', 'false');
-            startupModal.close();
+            btnSkip.classList.remove('btn-shake-anim');
+            // Trigger reflow to restart animation if clicked multiple times
+            void btnSkip.offsetWidth;
+            btnSkip.classList.add('btn-shake-anim');
+            
+            const originalText = btnSkip.textContent;
+            btnSkip.textContent = 'Please accept T&C';
+            btnSkip.style.color = '#b45230'; // Highlight the text in orange/red
+            
+            setTimeout(() => {
+                btnSkip.textContent = 'Reject All';
+                btnSkip.style.color = '';
+            }, 1500);
         });
     }
 });
