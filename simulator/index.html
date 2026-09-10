@@ -21,6 +21,11 @@
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <div id="app-loader" class="app-loader">
+        <div class="loader-content">
+            <img src="loading_animation.gif" alt="Loading..." class="loader-gif">
+        </div>
+    </div>
     <a class="skip-link" href="#app-main">Skip to workspace</a>
     <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></symbol>
@@ -128,69 +133,8 @@
         </div>
     </dialog>
     <div id="compassLoadingOverlay" aria-hidden="true">
-        <div class="compass-container" id="compassContainer">
-            <svg class="compass-svg" viewBox="0 0 200 200">
-                <defs>
-                    <!-- Glowing filters -->
-                    <filter id="orangeGlow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                    <filter id="greenGlow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                    
-                    <!-- Metallic needle gradient -->
-                    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#4a5a4f"/>
-                        <stop offset="50%" stop-color="#728578"/>
-                        <stop offset="100%" stop-color="#2a332d"/>
-                    </linearGradient>
-                </defs>
-
-                <!-- Base Plate Layer -->
-                <g class="layer-base">
-                    <circle cx="100" cy="100" r="95" class="compass-bg-ring"/>
-                    <circle cx="100" cy="100" r="95" class="compass-bg-glow"/>
-                    <circle cx="100" cy="100" r="70" class="compass-bg-ring" stroke-dasharray="2 8" stroke-width="8" opacity="0.3"/>
-                </g>
-                
-                <!-- Rotating outer layer with ticks and labels -->
-                <g class="layer-outer">
-                    <circle cx="100" cy="100" r="85" stroke="#334036" stroke-width="1" fill="none" stroke-dasharray="1 4" />
-                    <!-- Ticks -->
-                    <path d="M 100 5 L 100 15 M 100 195 L 100 185 M 5 100 L 15 100 M 195 100 L 185 100" class="compass-tick-outer" />
-                    <path d="M 33 33 L 40 40 M 167 167 L 160 160 M 33 167 L 40 160 M 167 33 L 160 40" class="compass-tick-inner" />
-                    <!-- Labels -->
-                    <text x="100" y="26" class="compass-label compass-label-n">N</text>
-                    <text x="100" y="174" class="compass-label">S</text>
-                    <text x="26" y="100" class="compass-label">W</text>
-                    <text x="174" y="100" class="compass-label">E</text>
-                </g>
-
-                <!-- Inner calibration ring -->
-                <g class="layer-inner">
-                    <circle cx="100" cy="100" r="55" class="compass-bg-ring" stroke-dasharray="10 15" stroke-width="1.5" />
-                    <circle cx="100" cy="100" r="42" class="compass-bg-ring" stroke-dasharray="2 6" stroke-width="4" />
-                    <circle cx="100" cy="100" r="30" class="compass-bg-ring" stroke-dasharray="30 5" stroke-width="1" />
-                </g>
-
-                <!-- Central Floating Needle -->
-                <g class="layer-needle">
-                    <g class="compass-needle" id="compassNeedle">
-                        <path d="M 96 100 L 100 35 L 104 100 Z" />
-                        <path d="M 97 100 L 100 45 L 103 100 Z" fill="#fff" opacity="0.8" />
-                        <path d="M 96 100 L 100 165 L 104 100 Z" class="compass-needle-dark" />
-                        <path d="M 97 100 L 100 155 L 103 100 Z" fill="#111" />
-                    </g>
-                    <circle cx="100" cy="100" r="8" class="compass-needle-base" />
-                    <circle cx="100" cy="100" r="3" fill="#1a221d" />
-                </g>
-
-                <!-- Progress Arc (circumference = 2 * PI * 95 = 596.9) -->
-                <circle cx="100" cy="100" r="95" class="compass-progress-ring" id="compassProgressArc" stroke-dasharray="597" stroke-dashoffset="597"/>
-            </svg>
+        <div class="loader-content">
+            <img src="loading_animation.gif" alt="Loading..." class="loader-gif" style="width: 100px; height: auto;">
         </div>
         <div class="loading-status-container">
             <div id="loadingProgressText">0%</div>

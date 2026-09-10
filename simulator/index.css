@@ -70,7 +70,7 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
 @media(min-width:1550px) { .map-surface { min-height: 440px; }.telemetry-panel { padding: 23px; }.console-grid { grid-template-columns: minmax(0,1fr) 290px; }.quality-card { padding-top: 24px; }.velocity-card { padding: 27px 0; } }
 @media(max-width:1150px) { .sidebar { width: 190px; padding-left: 14px; padding-right: 14px; }.brand { font-size: 12px; }.brand-mark { font-size: 26px; }.workspace { margin-left: 190px; }#app-main { padding: 25px 24px 0; }#app-header { padding: 0 24px; }.console-grid { grid-template-columns: minmax(0,1fr) 230px; }.telemetry-panel { padding: 18px 16px; }.bottom-grid { grid-template-columns: 1fr; }.recorder-panel { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }.recorder-panel p { margin: 0; max-width: 240px; }.recorder-actions { margin: 0 0 0 auto; }.map-offline { display: none; }.performance-cards { grid-template-columns: repeat(2,1fr); }.report-toolbar { align-items: flex-start; flex-direction: column; } }
 @media(max-width:850px) { .sidebar { width: 76px; padding: 26px 10px; align-items: center; }.brand>span:last-child,.workspace-label,.sidebar-note,.nav-key,.sidebar-bottom { display: none; }.brand-mark { font-size: 29px; }.workspace-nav { margin-top: 50px; gap: 12px; width: 100%; }.nav-link { font-size: 0; padding: 14px 16px; gap: 0; }.nav-link svg { width: 20px; height: 20px; }.workspace { margin-left: 76px; }.console-grid { grid-template-columns: minmax(0,1fr) 215px; }.session-source>span:last-child { display: none; }.map-info { padding: 11px; left: 13px; bottom: 18px; }.map-info strong { font-size: 10px; }.map-follow { font-size: 9px; }.build-label { display: none; }.outage-copy { gap: 12px; }.outage-copy p { max-width: 220px; line-height: 1.6; }.outage-button { font-size: 10px; padding: 10px; }.section-index { display: none; }.run-sequence { gap: 8px; }.run-sequence i { display: none; }.run-sequence li { gap: 7px; }.run-sequence small { font-size: 8px; }.playback-controls { flex-wrap: wrap; }.timeline-container { flex-basis: 45%; }.speed-control { margin-left: auto; } }
-@media(max-width:620px) { .sidebar { position: sticky; top: 0; height: 62px; width: 100%; padding: 0 15px; flex-direction: row; justify-content: space-between; }.brand>span:last-child { display: block; font-size: 10px; }.brand small { display: none; }.brand-mark { font-size: 24px; }.brand-mark span { font-size: 20px; }.workspace-nav { flex-direction: row; width: auto; margin: 0; gap: 4px; }.nav-link { padding: 9px; }.nav-link svg { width: 19px; height: 19px; }.workspace { margin-left: 0; }#app-header { height: 46px; padding: 0 18px; }.breadcrumb { font-size: 10px; }.header-meta { gap: 0; }.local-badge { font-size: 9px; }#app-main { padding: 24px 16px 0; }.page-heading { align-items: flex-start; flex-wrap: wrap; gap: 18px; margin-bottom: 22px; }.eyebrow { font-size: 8px; letter-spacing: 1px; }h1 { font-size: 30px; }.page-heading p { font-size: 11px; }.page-heading .button { width: 100%; }.console-grid { grid-template-columns: 1fr; }.map-panel { border-right: 0; }.map-surface { min-height: 340px; }.map-footer { padding: 12px; }.map-message { padding-left: 12px; }.map-legend { gap: 12px; }.telemetry-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid var(--line); padding: 20px 16px; }.telemetry-heading { grid-column: 1/-1; margin: 0; }.velocity-card { margin: 0; padding: 0 0 0 15px; border: 0; border-left: 1px solid var(--line); grid-column: 2; grid-row: 2/4; }.speed-readout { margin: 20px 0; gap: 8px; }.speed-readout strong { font-size: 40px; }.quality-card { grid-column: 1/-1; padding-top: 15px; border-top: 1px solid var(--line); }.quality-pair { padding-top: 14px; }.gnss-card p { max-width: 150px; }.velocity-card .tiny-label { display: none; }.outage-console { padding: 18px 16px 0; }.outage-button { width: 100%; min-height: 42px; font-size: 11px; }.run-sequence { gap: 12px; }.run-sequence li { flex-direction: column; align-items: flex-start; gap: 9px; }.run-sequence strong { font-size: 9px; }.run-sequence small { line-height: 1.6; }.pipeline-panel,.recorder-panel { padding: 17px 15px; }.pipeline-nodes { gap: 7px; }.pipeline-nodes strong { font-size: 9px; }.pipeline-nodes small { font-size: 8px; }.recorder-panel { display: block; }.recorder-panel p { margin-top: 12px; }.recorder-actions { margin-top: 17px; }.workspace-footer { align-items: flex-start; font-size: 8px; gap: 14px; line-height: 1.5; }.workspace-footer>span:last-child { font-size: 7px; }.footer-dot { flex-shrink: 0; }.report-workspace { padding: 20px 16px; }.report-toolbar h2 { font-size: 23px; }.runtime-facts { grid-template-columns: 1fr 1fr; gap: 24px; }.performance-cards { gap: 10px; }.performance-card { padding: 16px 12px; }.performance-card strong { font-size: 24px; }.empty-insight { padding: 18px; }.report-footnote { font-size: 9px; }.session-strip { padding: 12px; }.nav-mode-indicator { font-size: 8px; }.session-source strong { font-size: 8px; }.playback-title { width: 100%; }.timeline-container { flex-basis: calc(100% - 150px); }.speed-control { width: 100%; justify-content: flex-end; }.metrics-grid { grid-template-columns: 1fr 1fr; } }
+@media(max-width:620px) { .sidebar { position: fixed; top: auto; bottom: 0; height: 64px; width: 100%; padding: 0 15px; padding-bottom: env(safe-area-inset-bottom, 0); flex-direction: row; justify-content: space-around; align-items: center; z-index: 100; border-top: 1px solid var(--line); border-bottom: 0; background: var(--bg-surface); } .brand>span:last-child { display: block; font-size: 10px; } .brand small { display: none; } .brand-mark { font-size: 24px; } .brand-mark span { font-size: 20px; } .workspace-nav { flex-direction: row; width: 100%; justify-content: space-around; margin: 0; gap: 0; } .nav-link { padding: 8px 4px; flex-direction: column; gap: 4px; font-size: 9px; text-align: center; justify-content: center; width: 100%; } .nav-link svg { width: 22px; height: 22px; margin: 0 auto; } .workspace { margin-left: 0; padding-bottom: calc(70px + env(safe-area-inset-bottom, 0)); } #app-header { height: 46px; padding: 0 18px; } .breadcrumb { font-size: 10px; } .header-meta { gap: 0; } .local-badge { font-size: 9px; } #app-main { padding: 16px 0 0; } .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 18px; margin-bottom: 22px; } .eyebrow { font-size: 8px; letter-spacing: 1px; } h1 { font-size: 30px; } .page-heading p { font-size: 11px; } .page-heading .button { width: 100%; } .console-grid { grid-template-columns: 1fr; } .map-panel { border-right: 0; } .map-surface { height: 50vh; min-height: unset; margin-left: -16px; margin-right: -16px; border-radius: 0; border-left: 0; border-right: 0; } .map-footer { padding: 12px; } .map-message { padding-left: 12px; } .map-legend { gap: 12px; } .telemetry-panel { display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; padding: 16px; gap: 12px; border-top: 1px solid var(--line); margin: 0; scrollbar-width: none; } .telemetry-heading { display: none; } .velocity-card { grid-column: unset; grid-row: unset; } .speed-readout { margin: 20px 0; gap: 8px; } .speed-readout strong { font-size: 40px; } .quality-card { grid-column: 1/-1; padding-top: 15px; border-top: 1px solid var(--line); } .quality-pair { padding-top: 14px; } .gnss-card p { max-width: 150px; } .velocity-card .tiny-label { display: none; } .outage-console { padding: 18px 16px 0; } .outage-button { position: fixed; bottom: calc(85px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); width: auto; padding: 14px 24px; border-radius: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); z-index: 90; background: var(--accent-red); color: white; } .run-sequence { gap: 12px; } .run-sequence li { flex-direction: column; align-items: flex-start; gap: 9px; } .run-sequence strong { font-size: 9px; } .run-sequence small { line-height: 1.6; } .pipeline-panel,.recorder-panel { padding: 17px 15px; } .pipeline-nodes { gap: 7px; } .pipeline-nodes strong { font-size: 9px; } .pipeline-nodes small { font-size: 8px; } .recorder-panel { display: block; } .recorder-panel p { margin-top: 12px; } .recorder-actions { margin-top: 17px; } .workspace-footer { align-items: flex-start; font-size: 8px; gap: 14px; line-height: 1.5; } .workspace-footer>span:last-child { font-size: 7px; } .footer-dot { flex-shrink: 0; } .report-workspace { padding: 20px 16px; } .report-toolbar h2 { font-size: 23px; } .runtime-facts { grid-template-columns: 1fr 1fr; gap: 24px; } .performance-cards { gap: 10px; } .performance-card { padding: 16px 12px; } .performance-card strong { font-size: 24px; } .empty-insight { padding: 18px; } .report-footnote { font-size: 9px; } .session-strip { padding: 12px; } .nav-mode-indicator { font-size: 8px; } .session-source strong { font-size: 8px; } .playback-title { width: 100%; } .timeline-container { flex-basis: calc(100% - 150px); } .speed-control { width: 100%; justify-content: flex-end; } .metrics-grid { grid-template-columns: 1fr 1fr; } .brand { display: none; } .page-heading, .navigation-settings, .outage-console, .playback-controls, .bottom-grid, .report-workspace, .workspace-footer { padding-left: 16px; padding-right: 16px; } .velocity-card, .quality-card, .gnss-card { flex: 0 0 85%; scroll-snap-align: center; border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--bg-panel); margin: 0; } .coordinate-readout { display: none; }  #btnStartLive { position: fixed; bottom: calc(85px + env(safe-area-inset-bottom, 0)); left: 50%; transform: translateX(-50%); width: 80%; padding: 16px; border-radius: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 90; } }
 /* Keep the field guide reachable when navigation becomes an icon rail. */
 @media(max-width:850px) {
     .session-strip { align-items: flex-start; }
@@ -317,3 +317,66 @@ body.dashboard-mode .training-panel { display: block !important; }
 body.dashboard-mode .recorder-panel { display: none !important; }
 body.dashboard-mode .pipeline-panel { display: none !important; }
 
+
+/* Loading Screen */
+.app-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.app-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+}
+
+.loader-gif {
+    width: 200px;
+    height: auto;
+}
+
+.loader-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 240px;
+}
+
+.loader-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.loader-bar-fill {
+    height: 100%;
+    width: 1%;
+    background-color: #004d40; /* Or any brand color */
+    border-radius: 4px;
+    transition: width 0.1s linear;
+}
+
+.loader-text {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: #333333;
+    font-weight: 500;
+}

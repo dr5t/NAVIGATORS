@@ -287,7 +287,7 @@ class Trainer:
 
         return mean_loss, metrics
 
-    def train(self) -> Dict:
+    def train(self, epoch_callback=None) -> Dict:
         """
         Run the full training loop.
 
@@ -352,6 +352,9 @@ class Trainer:
                 f"train={train_loss:.6f} | val={val_loss:.6f}{speed_str} | "
                 f"lr={current_lr:.2e} | {elapsed:.1f}s{marker}"
             )
+            
+            if epoch_callback:
+                epoch_callback(epoch, self.epochs, train_loss, val_loss, elapsed)
 
             # Early stopping
             if self.epochs_without_improvement >= self.patience:

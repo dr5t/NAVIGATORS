@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mac Dashboard - Navigators ML Pipeline</title>
+    <link rel="stylesheet" href="mac_dashboard.css">
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-mark">N<span>↗</span></span>
+                <span>MAC DASHBOARD<small>ML TRAINING & TELEMETRY</small></span>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-target="telemetry">Live Telemetry</button>
+                <button class="nav-btn" data-target="dataset">Dataset Manager</button>
+                <button class="nav-btn" data-target="training">Training Pipeline</button>
+                <button class="nav-btn" data-target="logs">System Logs</button>
+            </nav>
+            <div class="connection-status">
+                <div class="status-indicator"></div>
+                <span id="connState">Disconnected</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Telemetry Section -->
+            <section id="telemetry" class="view-section active">
+                <header class="section-header">
+                    <h2>Live Sensor Telemetry</h2>
+                    <div class="badges">
+                        <span class="badge" id="badgePhone">Phone: OFFLINE</span>
+                        <span class="badge" id="badgeSampleRate">0 Hz</span>
+                    </div>
+                </header>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Accelerometer (m/s²)</h3>
+                        <canvas id="accelCanvas" width="500" height="200"></canvas>
+                    </div>
+                    <div class="card">
+                        <h3>Gyroscope (rad/s)</h3>
+                        <canvas id="gyroCanvas" width="500" height="200"></canvas>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Position & Heading</h3>
+                        <div class="stats-grid">
+                            <div><label>Latitude</label><span id="valLat">—</span></div>
+                            <div><label>Longitude</label><span id="valLon">—</span></div>
+                            <div><label>Heading</label><span id="valHeading">—</span></div>
+                            <div><label>Speed</label><span id="valSpeed">— km/h</span></div>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Sync Queue</h3>
+                        <div class="stats-grid">
+                            <div><label>Received Samples</label><span id="valReceived">0</span></div>
+                            <div><label>Offline Sync Status</label><span id="valSyncStatus">Idle</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dataset Section -->
+            <section id="dataset" class="view-section">
+                <header class="section-header">
+                    <h2>Dataset Manager</h2>
+                    <button class="btn-primary" id="btnRefreshDataset">Refresh Dataset</button>
+                </header>
+                <div class="card">
+                    <div class="stats-grid">
+                        <div><label>Total Trips</label><span id="valTotalTrips">0</span></div>
+                        <div><label>Total Samples</label><span id="valTotalSamples">0</span></div>
+                        <div><label>Dataset Version</label><span id="valDatasetVersion">v1.0</span></div>
+                    </div>
+                    <h3 style="margin-top: 20px;">Collected Trips</h3>
+                    <div class="table-container">
+                        <table id="tripTable">
+                            <thead>
+                                <tr>
+                                    <th>Trip ID</th>
+                                    <th>Samples</th>
+                                    <th>Split</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Training Section -->
+            <section id="training" class="view-section">
+                <header class="section-header">
+                    <h2>Training Pipeline</h2>
+                    <div class="badges">
+                        <span class="badge" id="badgeActiveModel">Active: None</span>
+                    </div>
+                </header>
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Job Configuration</h3>
+                        <div class="form-group">
+                            <label>Epochs</label>
+                            <input type="number" id="inputEpochs" value="50">
+                        </div>
+                        <div class="form-group">
+                            <label>Batch Size</label>
+                            <input type="number" id="inputBatchSize" value="64">
+                        </div>
+                        <button class="btn-primary" id="btnStartTraining">Start Training Job</button>
+                    </div>
+                    <div class="card">
+                        <h3>Training Status: <span id="trainStatusLabel">Idle</span></h3>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="trainProgressFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="stats-grid" style="margin-top: 20px;">
+                            <div><label>Epoch</label><span id="trainEpoch">0 / 0</span></div>
+                            <div><label>Train Loss</label><span id="trainLoss">—</span></div>
+                            <div><label>Validation Loss</label><span id="valLoss">—</span></div>
+                            <div><label>ETA</label><span id="trainEta">—</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section id="logs" class="view-section">
+                <header class="section-header">
+                    <h2>System Logs</h2>
+                </header>
+                <div class="card log-console" id="logConsole">
+                    <!-- Logs populated here -->
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="mac_dashboard.js"></script>
+</body>
+</html>

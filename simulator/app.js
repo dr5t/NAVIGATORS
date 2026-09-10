@@ -40,6 +40,8 @@ const state = {
 // Initialization
 // ========================================================
 document.addEventListener('DOMContentLoaded', async () => {
+    const loader = document.getElementById('app-loader');
+
     // Mode Switch: ?mode=mobile vs ?mode=dashboard (default)
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode') || 'dashboard';
@@ -61,9 +63,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         installLocalMap(await LocalMap.load());
     } catch (error) {
         document.getElementById('mapStatus').textContent = error.message;
-        document.getElementById('btnStartLive').disabled = true;
+        const btnStartLive = document.getElementById('btnStartLive');
+        if (btnStartLive) btnStartLive.disabled = true;
     }
-    loadSimulationData();
+    
+    // Wait for simulation data to load
+    await loadSimulationData();
+    
+    // Hide loader after a short delay
+    setTimeout(() => {
+        if (loader) loader.classList.add('hidden');
+    }, 400);
 });
 
 function connectDashboardToWebSocket() {

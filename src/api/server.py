@@ -265,6 +265,21 @@ class ConnectionManager:
         for viewer in dead_viewers:
             self.disconnect_dashboard(viewer)
 
+    async def broadcast_log(self, severity: str, message: str):
+        payload = {
+            "type": "log",
+            "severity": severity,
+            "message": message
+        }
+        dead_viewers = []
+        for viewer in self.dashboard_viewers:
+            try:
+                await viewer.send_json(payload)
+            except:
+                dead_viewers.append(viewer)
+        for viewer in dead_viewers:
+            self.disconnect_dashboard(viewer)
+
 ws_manager = ConnectionManager()
 
 @app.websocket("/ws")
@@ -390,6 +405,50 @@ def get_metrics(session_id: str):
 
 # Serve the static simulator files
 # This must be mounted last so it doesn't override API routes
+from fastapi.responses import FileResponse
+
+@app.get("/dashboard")
+def get_dashboard():
+    dashboard_path = os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "mac_dashboard.html")
+    return FileResponse(dashboard_path)
+
+@app.get("/dataset/details")
+def get_dataset_details():
+    import json
+    dataset_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "phone_recordings")
+    total_samples = 0
+    trips = []
+    
+    if os.path.exists(dataset_dir):
+        for f in os.listdir(dataset_dir):
+            if f.endswith(".json") and f.startswith("trip_"):
+                try:
+                    with open(os.path.join(dataset_dir, f), 'r') as file:
+                        data = json.load(file)
+                        samples = len(data.get("data", {}).get("timestamps", []))
+                        total_samples += samples
+                        trips.append({
+                            "id": f.replace("trip_", "").replace(".json", ""),
+                            "samples": samples,
+                            "split": "Train"
+                        })
+                except Exception:
+                    pass
+                    
+    for i, trip in enumerate(trips):
+        if i % 5 == 0:
+            trip["split"] = "Test"
+        elif i % 5 == 1:
+            trip["split"] = "Val"
+        else:
+            trip["split"] = "Train"
+
+    return {
+        "dataset_version": "v1.0",
+        "total_samples": total_samples,
+        "trips": trips
+    }
+
 static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "simulator")
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 

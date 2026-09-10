@@ -96,6 +96,13 @@ async def receive(trip_id: UUID, sequence: int, request: Request):
         payload = json.loads(body)
         if not isinstance(payload, dict) or not isinstance(payload.get('data'), dict) or not isinstance(payload.get('metadata'), dict):
             raise ValueError()
-        return await run_in_threadpool(store_chunk, trip_id, sequence, payload)
+        res = await run_in_threadpool(store_chunk, trip_id, sequence, payload)
+        
+        # Broadcast sync event
+        if res.get("complete"):
+            import asyncio
+            from .server import ws_manager
+            asyncio.create_task(ws_manager.broadcast_log('SUCCESS', f'Trip {trip_id} fully synced!'))
+        return res
     except (ValueError, TypeError, KeyError) as error:
         raise HTTPException(422, 'Invalid recording JSON.') from error
