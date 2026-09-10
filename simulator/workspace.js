@@ -231,7 +231,7 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
     if (!overlay.classList.contains('active')) {
         overlay.classList.remove('fade-out');
         overlay.classList.add('active');
-        document.getElementById('compassContainer').classList.remove('compass-locked');
+        document.getElementById('compassContainer')?.classList.remove('compass-locked');
 
         // Enforce max 4s loading time
         if (window._loadingTimeout) clearTimeout(window._loadingTimeout);
@@ -244,11 +244,11 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
 
     percent = Math.min(100, Math.max(0, percent));
     
-    // Update text
+    // Update text and bar
     document.getElementById('loadingProgressText').textContent = Math.round(percent) + '%';
     if (message) document.getElementById('loadingStatusText').textContent = message;
-
-    // Update arc
+    const bar = document.getElementById('compassLoadingBar');
+    if (bar) bar.style.width = percent + '%';
     const arc = document.getElementById('compassProgressArc');
     const circumference = 597; // 2 * PI * 95
     const offset = circumference - (percent / 100) * circumference;
@@ -257,7 +257,7 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
     // Lock and hide at 100%
     if (percent >= 100) {
         document.getElementById('loadingStatusText').textContent = finalMessage;
-        document.getElementById('compassContainer').classList.add('compass-locked');
+        document.getElementById('compassContainer')?.classList.add('compass-locked');
         setTimeout(() => {
             overlay.classList.remove('active');
             overlay.classList.add('fade-out');

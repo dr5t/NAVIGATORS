@@ -114,64 +114,24 @@ dialog { width: min(540px, calc(100% - 32px)); padding: 28px 32px; border: 1px s
 
 /* COMPASS LOADING OVERLAY (PREMIUM 3D) */
 #compassLoadingOverlay {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(10, 14, 12, 0.85); /* Glassmorphism base */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    position: fixed; inset: 0; z-index: 2147483647;
+    width: 100vw; height: 100vh;
+    background: #ffffff;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: #e3e8de; font-family: var(--font-mono); font-size: 11px;
+    color: #333; font-family: var(--font-mono); font-size: 11px;
     opacity: 0; pointer-events: none; visibility: hidden;
     transition: opacity 0.5s ease, visibility 0.5s ease;
-    perspective: 1200px;
 }
 #compassLoadingOverlay.active { opacity: 1; pointer-events: all; visibility: visible; }
 #compassLoadingOverlay.fade-out { opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
 
-.compass-container {
-    position: relative; width: 340px; height: 340px; margin-bottom: 50px;
-    transform-style: preserve-3d;
-    transform: rotateX(55deg) rotateZ(0deg);
-    transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.compass-svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5)); }
-
-/* Advanced SVG Elements */
-.compass-bg-ring { stroke: #2a332d; fill: none; stroke-width: 2; }
-.compass-bg-glow { stroke: rgba(184, 85, 50, 0.15); fill: none; stroke-width: 15; filter: blur(4px); }
-.compass-progress-ring { stroke: url(#orangeGlow); fill: none; stroke-width: 5; stroke-linecap: round; transform-origin: center; transform: rotate(-90deg); transition: stroke-dashoffset 0.1s linear, stroke 0.4s ease; filter: drop-shadow(0 0 8px rgba(184, 85, 50, 0.6)); }
-.compass-tick-outer { stroke: #455248; stroke-width: 1.5; }
-.compass-tick-inner { stroke: #334036; stroke-width: 1; }
-.compass-label { fill: #829385; font-size: 16px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; font-family: var(--font-main); letter-spacing: 2px; }
-.compass-label-n { fill: var(--accent-orange); filter: drop-shadow(0 0 5px rgba(184, 85, 50, 0.8)); }
-
-/* Layered 3D Rotations */
-.layer-base { transform-origin: center; transform: translateZ(-20px); }
-.layer-outer { transform-origin: center; animation: spin-slow 60s linear infinite; transform: translateZ(0px); }
-.layer-inner { transform-origin: center; animation: spin-slow-reverse 45s linear infinite; transform: translateZ(20px); }
-.layer-needle { transform-origin: center; transform: translateZ(40px); }
-.compass-needle { transform-origin: center; fill: url(#orangeGlow); animation: needle-search 4s ease-in-out infinite alternate; filter: drop-shadow(0 15px 10px rgba(0,0,0,0.4)); }
-.compass-needle-dark { fill: #1a221d; }
-.compass-needle-base { fill: #e3e8de; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+.loader-content { margin-bottom: 30px; }
 
 /* Status Text */
-.loading-status-container { text-align: center; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-#loadingProgressText { font-size: 42px; font-weight: 300; margin-bottom: 12px; color: #fff; letter-spacing: -1px; }
-#loadingStatusText { color: #a1b0a3; font-weight: 500; }
+.loading-status-container { text-align: center; letter-spacing: 2px; text-transform: uppercase; }
+#loadingProgressText { font-size: 42px; font-weight: 300; margin-bottom: 12px; color: #111; letter-spacing: -1px; }
+#loadingStatusText { color: #555; font-weight: 500; }
 
-/* Animations */
-@media (prefers-reduced-motion: no-preference) {
-    @keyframes spin-slow { 100% { transform: translateZ(0px) rotate(360deg); } }
-    @keyframes spin-slow-reverse { 100% { transform: translateZ(20px) rotate(-360deg); } }
-    @keyframes needle-search { 0% { transform: rotate(-35deg); } 50% { transform: rotate(50deg); } 100% { transform: rotate(15deg); } }
-}
-
-/* Locked state (100%) */
-#compassContainer.compass-locked { transform: rotateX(15deg) rotateZ(0deg) scale(1.05); }
-.compass-locked .layer-outer { animation: none; transform: translateZ(0px) rotate(0deg); transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.compass-locked .layer-inner { animation: none; transform: translateZ(20px) rotate(0deg); transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.compass-locked .compass-needle { animation: none; transform: rotate(0deg); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); fill: url(#greenGlow); }
-.compass-locked .compass-progress-ring { stroke: url(#greenGlow); filter: drop-shadow(0 0 12px rgba(66, 117, 87, 0.8)); }
-.compass-locked .compass-label-n { fill: var(--accent-green); filter: drop-shadow(0 0 8px rgba(66, 117, 87, 0.8)); }
 
 /* Button Acceptance Animation */
 .btn-accepted-anim {
