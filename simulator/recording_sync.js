@@ -8,7 +8,13 @@ class RecordingSync {
         window.addEventListener('online', () => this.flush());
     }
 
-    status(message) { document.getElementById('pcSyncStatus').textContent = message; }
+    status(message, isError = false) { 
+        const el = document.getElementById('pcSyncStatus');
+        if (el) {
+            el.textContent = message;
+            el.style.color = isError ? 'red' : '';
+        }
+    }
 
     async pair(token) {
         const response = await fetch('/recordings/status', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
@@ -63,7 +69,7 @@ class RecordingSync {
             }
             this.status('All queued batches received by PC · data/phone_recordings');
         } catch (error) {
-            this.status(`Sync paused: ${error.message} Reconnect and retry; keep the recording page open or stop and save a backup.`);
+            this.status(`Sync paused: ${error.message} Reconnect and retry; keep the recording page open or stop and save a backup.`, true);
         } finally { this.busy = false; }
     }
 }

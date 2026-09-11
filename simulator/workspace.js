@@ -233,18 +233,38 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
         overlay.classList.add('active');
         document.getElementById('compassContainer')?.classList.remove('compass-locked');
 
-        // Enforce max 4s loading time
+        // Enforce max 3s loading time to detect failure
         if (window._loadingTimeout) clearTimeout(window._loadingTimeout);
         window._loadingTimeout = setTimeout(() => {
-            if (document.getElementById('loadingProgressText').textContent !== '100%') {
-                window.setLoadingState(100, 'Forced complete', finalMessage);
+            const currentProgress = document.getElementById('loadingProgressText').textContent;
+            if (currentProgress !== '100%') {
+                // If not complete in 3 seconds, show failure
+                const statusText = document.getElementById('loadingStatusText');
+                statusText.textContent = 'FAILED TO START';
+                statusText.style.color = 'red';
+                
+                // Stop any further progression of the bar
+                document.getElementById('compassLoadingBar').style.width = currentProgress;
+                
+                // Reset loading state timeout
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                    overlay.classList.add('fade-out');
+                    statusText.style.color = ''; // reset color
+                }, 2000);
             }
-        }, 4000);
+        }, 3000);
     }
 
     percent = Math.min(100, Math.max(0, percent));
     
-    // Update text and bar
+    // Update text and bar (only if not failed)
+    const statusText = document.getElementById('loadingStatusText');
+    if (statusText.textContent === 'FAILED TO START') return; // Do not update if failed
+
+    // Reset color in case it was previously failed
+    statusText.style.color = '';
+    
     document.getElementById('loadingProgressText').textContent = Math.round(percent) + '%';
     if (message) document.getElementById('loadingStatusText').textContent = message;
     const bar = document.getElementById('compassLoadingBar');
@@ -270,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const button = byId('btnPairPC');
         button.disabled = true;
         try { await window.recordingSync.pair(byId('pcPairingCode').value.trim()); }
-        catch (error) { window.recordingSync.status(error.message); }
+        catch (error) { window.recordingSync.status(error.message, true); }
         finally { button.disabled = false; }
     });
     byId('btnSyncPC').addEventListener('click', () => window.recordingSync.flush());
@@ -291,7 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 check();
             });
             location.reload();
-        } catch (error) { window.recordingSync.status(error.message); }
+        } catch (error) { window.recordingSync.status(error.message, true); }
+        finally { byId('btnUpdateApp').disabled = false; }
     });
     byId('travelMode').addEventListener('change', () => {
         const walking = byId('travelMode').value === 'walking';
@@ -317,7 +338,11 @@ document.addEventListener('DOMContentLoaded', () => {
             await cache.put('./data/road_network.json', new Response(JSON.stringify(localMap.data), { headers: { 'Content-Type': 'application/json' } }));
             installLocalMap(localMap);
             notice.textContent = 'Area saved on this device · offline view uses downloaded streets';
-        } catch (error) { notice.textContent = `Area not saved: ${error.message}`; }
+            notice.style.color = '';
+        } catch (error) { 
+            notice.textContent = `Area not saved: ${error.message}`; 
+            notice.style.color = 'red';
+        }
         finally { button.disabled = false; }
     });
     document.querySelectorAll('[data-view]').forEach(button => {
@@ -359,11 +384,13 @@ document.addEventListener('DOMContentLoaded', () => {
             onDataLoaded();
             window.selectWorkspace('replay');
             notice.classList.remove('error');
+            notice.style.color = '';
             const metadata = state.data.metadata;
             notice.textContent = `${loaded.name} · ${count.toLocaleString()} frames · ${(data.timestamps.at(-1) - data.timestamps[0]).toFixed(1)} seconds · ${metadata.dataset?.metadata?.provenance || 'provenance unverified'}. ${metadata.reference || 'Saved trajectory; not live accuracy.'}`;
         } catch (error) {
             notice.classList.add('error');
             notice.textContent = `Import failed: ${error.message}`;
+            notice.style.color = 'red';
         } finally { event.target.value = ''; }
     });
     byId('btnFollow').addEventListener('click', () => {
@@ -415,6 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             renderExperiments(reports);
             notice.classList.remove('error');
+            notice.style.color = '';
             notice.textContent = `${loaded.name} · ${completed.length} completed / ${reports.length} configurations · loaded locally`;
             const first = completed[0];
             byId('experimentInsight').textContent = first ? `GPS outage: ${first.outage.requested_duration_s} seconds` : 'The experiment did not complete.';
@@ -424,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             notice.classList.add('error');
             notice.textContent = `Import failed: ${error.message} Your previous results are unchanged.`;
+            notice.style.color = 'red';
         } finally { event.target.value = ''; }
     });
     byId('parityFile').addEventListener('change', async event => {
@@ -435,7 +464,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Choose a measured report from verify_onnx.py.');
             }
             byId('parityStatus').textContent = `${report.passed ? 'Reported PASS' : 'Reported FAIL'} · maximum difference ${report.max_absolute_difference.toExponential(3)} · ${report.window_count} windows · ${report.provenance || 'Input provenance unverified'}. Export parity only; navigation accuracy is separate.`;
-        } catch (error) { byId('parityStatus').textContent = `Import failed: ${error.message}`; }
+            byId('parityStatus').style.color = '';
+        } catch (error) { 
+            byId('parityStatus').textContent = `Import failed: ${error.message}`; 
+            byId('parityStatus').style.color = 'red';
+        }
         finally { event.target.value = ''; }
     });
     renderExperiments();

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 2em; max-width: 800px; margin: 0 auto; color: #333; }
+h1, h2, h3 { color: #111; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+h1 { font-size: 2em; }
+h2 { font-size: 1.5em; margin-top: 1.5em; }
+h3 { font-size: 1.25em; margin-top: 1.25em; }
+ul { margin-bottom: 1em; padding-left: 2em; }
+li { margin-bottom: 0.5em; }
+strong { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Navigators IDR Simulator - Button Documentation</h1>
+<p>This document provides a comprehensive list of all interactive buttons within the Navigators IDR Simulator interface, detailing their identifiers, their function, and the underlying JavaScript components they are connected to.</p>
+
+<h2>🧭 Navigation & Sidebar Buttons</h2>
+<h3>1. Workspace Tabs</h3>
+<ul>
+<li><strong>Identifier</strong>: Class <code>.nav-link</code></li>
+<li><strong>Label</strong>: "Navigation", "Saved playback", "Experiments", "Device timings"</li>
+<li><strong>Function</strong>: Switches between the different application views/workspaces.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Clicking triggers the <code>setView(viewId)</code> function which toggles the <code>hidden</code> attribute on the corresponding <code>&lt;section&gt;</code> elements.</li>
+</ul>
+
+<h3>2. Demo field guide</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnGuide</code></li>
+<li><strong>Label</strong>: "Demo field guide ↗"</li>
+<li><strong>Function</strong>: Opens the instructions modal dialog.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Triggers <code>dialog.showModal()</code>.</li>
+</ul>
+
+<h3>3. Close Guide</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnCloseGuide</code></li>
+<li><strong>Label</strong>: "×"</li>
+<li><strong>Function</strong>: Closes the instructions modal dialog.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Triggers <code>dialog.close()</code>.</li>
+</ul>
+
+<h2>🗺️ Live Navigation & Map Panel</h2>
+<h3>4. Start Offline Engine / Stop Engine</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnStartLive</code></li>
+<li><strong>Label</strong>: "Start Offline Engine" (changes to "Stop Engine" when running)</li>
+<li><strong>Function</strong>: Toggles the state of the local navigation engine. When started, it requests sensor permissions, loads the AI models, begins capturing data, and updates the UI status indicators.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Interacts with <code>window.offlineEngine</code>.</li>
+</ul>
+
+<h3>5. Simulate GNSS Outage / Restore GPS</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnGpsOutage</code></li>
+<li><strong>Label</strong>: "Simulate GNSS outage" (changes to "Restore GPS")</li>
+<li><strong>Function</strong>: Toggles the <code>engine.gpsOutage</code> boolean flag. When simulated outage is active, the system ignores live GPS coordinates and falls back to local Dead Reckoning to estimate position.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Interacts with <code>window.offlineEngine</code>.</li>
+</ul>
+
+<h3>6. Center local map</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnFitArea</code></li>
+<li><strong>Label</strong>: Target icon inside map panel</li>
+<li><strong>Function</strong>: Centers the Leaflet map view either to the saved offline bounding box or to the current GPS location.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Triggers <code>fitLocalArea()</code>.</li>
+</ul>
+
+<h3>7. Save area offline</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnSaveArea</code></li>
+<li><strong>Label</strong>: "Save area offline"</li>
+<li><strong>Function</strong>: Grabs the current map bounds, identifies the required map tiles, and downloads them into the browser's IndexedDB. Allows the map to render when internet connectivity is lost.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Interacts with the <code>LocalMap</code> instance and IndexedDB APIs.</li>
+</ul>
+
+<h3>8. Follow position</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnFollow</code></li>
+<li><strong>Label</strong>: "Follow position"</li>
+<li><strong>Function</strong>: Toggles whether the map view automatically pans to keep the user's current position marker centered.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Toggles the <code>state.followPosition</code> flag.</li>
+</ul>
+
+<h2>▶️ Playback Controls</h2>
+<h3>9. Play Trajectory</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnPlay</code></li>
+<li><strong>Label</strong>: Play icon</li>
+<li><strong>Function</strong>: Starts the playback loop of a loaded trajectory JSON file.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Triggers the <code>play()</code> function.</li>
+</ul>
+
+<h3>10. Pause Trajectory</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnPause</code></li>
+<li><strong>Label</strong>: Pause icon</li>
+<li><strong>Function</strong>: Pauses the currently playing trajectory.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Triggers the <code>pause()</code> function.</li>
+</ul>
+
+<h3>11. Reset Trajectory</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnReset</code></li>
+<li><strong>Label</strong>: "↺" (Reset icon)</li>
+<li><strong>Function</strong>: Resets the trajectory playback index to <code>0</code> and updates the timeline slider to the beginning.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Triggers the <code>reset()</code> function.</li>
+</ul>
+
+<h2>💻 PC Sync & App Settings</h2>
+<h3>12. Pair PC</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnPairPC</code></li>
+<li><strong>Label</strong>: "Pair PC"</li>
+<li><strong>Function</strong>: Reads the pairing code from the input and attempts to establish a connection with the local Python server for syncing recorded data.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Interacts with the <code>RecordingSync</code> class.</li>
+</ul>
+
+<h3>13. Retry Sync</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnSyncPC</code></li>
+<li><strong>Label</strong>: "Retry sync"</li>
+<li><strong>Function</strong>: Attempts to manually flush any locally buffered sensor data to the connected PC if automatic background sync failed.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Calls <code>window.recordingSync.flush()</code>.</li>
+</ul>
+
+<h3>14. Update App</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnUpdateApp</code></li>
+<li><strong>Label</strong>: "Update app"</li>
+<li><strong>Function</strong>: Interacts with the browser's Service Worker to fetch the latest cached files and reloads the window to apply the update.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Accesses <code>navigator.serviceWorker</code>.</li>
+</ul>
+
+<h3>15. Start ML Training</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnStartTraining</code></li>
+<li><strong>Label</strong>: "Start ML Training"</li>
+<li><strong>Function</strong>: Sends a request to the paired backend to initiate model training using the synced recording data.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code> and <code>mac_dashboard.js</code>. Triggers the <code>startTraining()</code> function.</li>
+</ul>
+
+<h2>📊 Performance Profiling</h2>
+<h3>16. Reset Timings</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnResetTimings</code></li>
+<li><strong>Label</strong>: "Reset timings"</li>
+<li><strong>Function</strong>: Clears the currently recorded performance metrics/timings for device profiling.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Interacts with <code>window.deviceProfiler</code>.</li>
+</ul>
+
+<h3>17. Export Device Timings</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnExportTimings</code></li>
+<li><strong>Label</strong>: "Export device timings"</li>
+<li><strong>Function</strong>: Serializes the device profiler stats into a JSON Blob and triggers a local file download.</li>
+<li><strong>Connection</strong>: Connected in <code>app.js</code>. Calls <code>window.deviceProfiler.getStats()</code>.</li>
+</ul>
+
+<h2>🛡️ Startup Privacy Modal</h2>
+<h3>18. Accept & Continue</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnStart</code></li>
+<li><strong>Label</strong>: "Accept & Continue"</li>
+<li><strong>Function</strong>: Confirms acceptance of terms, closes the modal, sets a consent flag in <code>localStorage</code>, and initializes the workspace.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Interacts with DOM class lists and <code>localStorage</code>.</li>
+</ul>
+
+<h3>19. Reject All</h3>
+<ul>
+<li><strong>Identifier</strong>: ID <code>#btnSkip</code></li>
+<li><strong>Label</strong>: "Reject All"</li>
+<li><strong>Function</strong>: Plays a shake animation and changes text to "Please accept T&C" to enforce consent.</li>
+<li><strong>Connection</strong>: Connected in <code>workspace.js</code>. Modifies DOM styles and classes.</li>
+</ul>
+
+</body>
+</html>
