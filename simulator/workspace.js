@@ -539,12 +539,15 @@ window.updateMapSource = (failed = false) => {
             state.onlineTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
             }).on('tileerror', () => window.updateMapSource(true));
+            state.onlineTiles.addTo(state.map);
         }
         state.localMap.layer.remove();
-        state.onlineTiles.addTo(state.map);
+        state.onlineTiles.getContainer().style.filter = 'none';
     } else {
-        state.onlineTiles?.remove();
-        state.localMap.layer.addTo(state.map).bringToBack();
+        if (state.onlineTiles) {
+            state.onlineTiles.getContainer().style.filter = 'grayscale(100%) opacity(50%)';
+        }
+        state.localMap.layer.addTo(state.map).bringToFront();
     }
     byId('mapNetworkStatus').textContent = online ? 'Online streets · save this area before disconnecting'
         : failed ? 'Online map unavailable · showing downloaded streets' : 'Offline streets · downloaded area only';

@@ -730,8 +730,19 @@ class OfflineEngine {
     }
 
     updateUI(data) {
+        this.pendingUIData = data;
+        if (!this.uiFrameRequested) {
+            this.uiFrameRequested = true;
+            requestAnimationFrame(() => this.renderUI());
+        }
+    }
+
+    renderUI() {
+        this.uiFrameRequested = false;
+        const data = this.pendingUIData;
+        if (!data) return;
+        
         if (data.status !== 'active') window.updateConsoleTelemetry?.(data);
-        // Hook into the existing app.js functions safely
         if (data.status === 'waiting_for_gnss') {
             if (typeof updateNavMode === 'function') {
                 updateGnssStatus(false);
@@ -759,7 +770,7 @@ class OfflineEngine {
                 const estLon = data.estimated_lon;
 
                 state.estimatedCoords.push([estLat, estLon]);
-                state.estimatedLine.setLatLngs(state.estimatedCoords);
+                state.estimatedLine.addLatLng([estLat, estLon]);
                 state.vehicleMarker.setLatLng([estLat, estLon]).setOpacity(1);
                 state.estimatedLine.setStyle({ color: data.nav_mode === 'dr' ? '#ba5b37' : '#4c7b59', dashArray: data.nav_mode === 'dr' ? '5, 6' : null });
                 if (state.followPosition) state.map.panTo([estLat, estLon], { animate: false });

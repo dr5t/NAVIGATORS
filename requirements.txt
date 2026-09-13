@@ -15,3 +15,4 @@ tqdm>=4.65.0
 fastapi>=0.103.0
 uvicorn>=0.23.2
 websockets>=11.0.3
+onnxscript>=0.1.0

@@ -2,9 +2,9 @@
 class LocalMap {
     static async load() {
         const saved = typeof caches !== 'undefined' ? await (await caches.open('navigators-map-data-v1')).match('./data/road_network.json') : null;
-        const response = saved || await fetch('./data/road_network.json');
-        if (!response.ok) throw new Error('Local OSM database is missing. Download the demo area first.');
-        return new LocalMap(await response.json());
+        if (!saved) return null;
+        const response = await saved.json();
+        return new LocalMap(response);
     }
 
     static async download(lat, lon) {
@@ -72,11 +72,9 @@ class LocalMap {
         return e >= this.bounds[0] && e <= this.bounds[2] && n >= this.bounds[1] && n <= this.bounds[3];
     }
 
-    centerView(map) {
-        map.setView([this.data.origin.lat, this.data.origin.lon], 15);
-    }
-
     draw(map) {
+        if (!this.data || !this.data.roads) return;
+
         const renderer = L.canvas({ padding: 0.5 });
         const layers = this.data.roads.map(road => {
             const line = L.polyline(road.points.map(p => this.toLatLon(p)), {
@@ -89,7 +87,6 @@ class LocalMap {
         });
         this.layer = L.featureGroup(layers).addTo(map).bringToBack();
         map.attributionControl.addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · ODbL · Local road map');
-        this.centerView(map);
     }
 }
 

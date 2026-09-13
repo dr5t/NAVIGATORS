@@ -70,6 +70,16 @@
                     <h2>Dataset Manager</h2>
                     <button class="btn-primary" id="btnRefreshDataset">Refresh Dataset</button>
                 </header>
+                
+                <!-- Import Dataset Feature -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3>Import External Dataset</h3>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="inputExternalDatasetUrl" placeholder="Enter dataset URL (e.g., https://example.com/dataset.json)" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #333; background: #1a1a1a; color: white;">
+                        <button class="btn-primary" id="btnImportDataset">Import Dataset</button>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="stats-grid">
                         <div><label>Total Trips</label><span id="valTotalTrips">0</span></div>

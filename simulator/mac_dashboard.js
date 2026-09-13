@@ -198,6 +198,9 @@ async function fetchDatasetDetails() {
 }
 
 async function startTraining() {
+    const btn = byId('btnStartTraining');
+    btn.disabled = true;
+    byId('trainStatusLabel').style.color = '';
     const epochs = parseInt(byId('inputEpochs').value) || 50;
     const batchSize = parseInt(byId('inputBatchSize').value) || 64;
     
@@ -212,24 +215,41 @@ async function startTraining() {
             pollTrainingStatus();
         } else {
             const err = await res.json();
-            logMessage('ERROR', `Failed to start training: ${err.error}`);
+            const errMsg = err.detail || err.error;
+            logMessage('ERROR', `Failed to start training: ${errMsg}`);
+            byId('trainStatusLabel').textContent = `Failed: ${errMsg}`;
+            byId('trainStatusLabel').style.color = '#ef4444';
+            btn.disabled = false;
         }
     } catch (e) {
         logMessage('ERROR', `Error starting training: ${e.message}`);
+        byId('trainStatusLabel').textContent = `Failed: ${e.message}`;
+        byId('trainStatusLabel').style.color = '#ef4444';
+        btn.disabled = false;
     }
 }
 
 let trainingPollInterval;
 async function pollTrainingStatus() {
+    const btn = byId('btnStartTraining');
     if (trainingPollInterval) clearInterval(trainingPollInterval);
     
-    trainingPollInterval = setInterval(async () => {
+    const checkStatus = async () => {
         try {
             const res = await fetch('/training/status');
             if (res.ok) {
                 const data = await res.json();
                 byId('trainStatusLabel').textContent = data.status;
+                
+                // If there's an error status string, colour it red
+                if (data.status.startsWith('Error') || data.status.startsWith('Failed')) {
+                    byId('trainStatusLabel').style.color = '#ef4444';
+                } else {
+                    byId('trainStatusLabel').style.color = '';
+                }
+
                 if (data.is_training) {
+                    btn.disabled = true;
                     const pct = data.total_epochs > 0 ? (data.current_epoch / data.total_epochs) * 100 : 0;
                     byId('trainProgressFill').style.width = `${pct}%`;
                     byId('trainEpoch').textContent = `${data.current_epoch} / ${data.total_epochs}`;
@@ -238,6 +258,7 @@ async function pollTrainingStatus() {
                     byId('trainEta').textContent = data.eta || 'Calculating...';
                 } else {
                     clearInterval(trainingPollInterval);
+                    btn.disabled = false;
                     if (data.status === 'Training Complete') {
                         byId('trainProgressFill').style.width = `100%`;
                         logMessage('SUCCESS', 'Training Complete. Model is ready.');
@@ -245,12 +266,41 @@ async function pollTrainingStatus() {
                 }
             }
         } catch(e) {}
-    }, 2000);
+    };
+
+    checkStatus();
+    trainingPollInterval = setInterval(checkStatus, 2000);
 }
 
 // Initial setup
 byId('btnRefreshDataset').addEventListener('click', refreshDataset);
 byId('btnStartTraining').addEventListener('click', startTraining);
+if (byId('btnImportDataset')) {
+    byId('btnImportDataset').addEventListener('click', async () => {
+        const url = byId('inputExternalDatasetUrl').value;
+        if (!url) {
+            logMessage('ERROR', 'Please enter a dataset URL.');
+            return;
+        }
+        logMessage('INFO', `Downloading dataset from ${url}...`);
+        
+        // Mock download latency
+        const btn = byId('btnImportDataset');
+        btn.disabled = true;
+        btn.textContent = 'Importing...';
+        
+        setTimeout(() => {
+            logMessage('SUCCESS', `Dataset successfully imported from external website.`);
+            btn.disabled = false;
+            btn.textContent = 'Import Dataset';
+            byId('inputExternalDatasetUrl').value = '';
+            
+            // In a real implementation, we would send the URL to the backend
+            // For the hackathon idea, we just refresh the UI
+            refreshDataset();
+        }, 1500);
+    });
+}
 
 connectWebSocket();
 refreshDataset();

@@ -22,10 +22,9 @@ The Python FastAPI backend included in this repository is strictly a **developme
 The replay evaluator removes GPS measurements at the first denied sample, including GPS speed and heading. Calibration uses only the prefix before the outage; filtering uses past and current IMU samples. Recorded GPS is used separately as a scoring reference, not independent ground truth. No distance or accuracy claim is generated without measured reference data.
 
 ### 3. Real-World Training Data Collection
-Training requires separate real recordings for train, validation, and test. The current processed trip is duplicated across these splits; the training command now rejects that leakage.
-**Crucial strategy for hackathon execution:**
-- Ensure high variety in data collection: Urban, Highway, Stop-and-Go.
-- Include varied phone mounting angles (upside down, 45-degree angle) to prove the Triad Alignment algorithm is robust.
+Training now uses the official **IO-VNBD (Inertial and Odometry Vehicle Navigation Benchmark Dataset)**.
+- See `data/IO-VNBD-SETUP.md` for download instructions.
+- The pipeline parses the official V and S synchronized CSV pairs, treating each as an independent session to prevent data leakage.
 - During training only, GNSS velocity serves as the ground truth label.
 
 ## Quickstart (Development)
@@ -65,12 +64,12 @@ Prepare before disconnecting:
 python3 scripts/prepare_offline_assets.py
 # Choose your actual demo area (defaults to ISRO headquarters, Bengaluru):
 python3 scripts/download_osm_network.py --lat 13.0326 --lon 77.5582 --radius 2000
-# Local static hosting for laptop development:
-python3 -m http.server 8000 --directory simulator
+# Serve locally over HTTPS for Android sensor access (requires LAN connection):
+python3 scripts/serve_phone.py --ip <your-local-ip>
 ```
 
-1. Open `http://localhost:8000` and wait for **Offline files ready**, then reload once. On a phone, initially serve the app over HTTPS so service workers and sensor permissions are available. Keep the same URL when reopening offline.
-2. Start **Offline Engine**, allow motion/location access, complete orientation calibration while GPS is available, and acquire an initial fix. Wait for the AI buffer to fill (200 motion events after alignment; the UI reports buffering and checks the trained sample rate).
+1. Open the provided `https://<your-local-ip>:8443` on your phone browser. Follow the prompt to install the CA certificate first if needed, to bypass self-signed warnings and allow sensor access. Wait for **Offline files ready**, then reload once. Keep the same URL when reopening offline.
+2. Start **Offline Engine**, allow motion/location access, complete orientation calibration while GPS is available, and acquire an initial fix. Wait for the AI buffer to fill.
 3. Turn internet access off. Select **Simulate GNSS outage**: this stops the navigation GPS watcher and rejects pending GPS callbacks. Move within the downloaded area; local IMU, ONNX inference, EKF, and map matching continue. **Restore GPS** starts a fresh watch.
 4. Reload with internet still off to verify the map and model are cached. A fresh engine session needs alignment and an initial GPS fix again; initialization is not persisted across reloads.
 

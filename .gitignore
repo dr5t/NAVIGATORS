@@ -2,3 +2,10 @@
 __pycache__/
 *.pyc
 data/phone_recordings/
+data/IO-VNBD/
+venv/
+.DS_Store
+runs/
+checkpoints/
+simulator/model.onnx
+Important Documents/

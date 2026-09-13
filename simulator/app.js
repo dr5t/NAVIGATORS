@@ -143,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function installLocalMap(localMap) {
     state.localMap?.layer?.remove();
     state.localMap = localMap;
+    if (!localMap) return;
     localMap.draw(state.map);
     const origin = localMap.data.origin;
     document.getElementById('mapCoordinates').textContent = `${Math.abs(origin.lat).toFixed(4)}° ${origin.lat >= 0 ? 'N' : 'S'} / ${Math.abs(origin.lon).toFixed(4)}° ${origin.lon >= 0 ? 'E' : 'W'}`;
@@ -154,16 +155,31 @@ function installLocalMap(localMap) {
 
 function initMap() {
     state.map = L.map('map', {
-        center: [28.6139, 77.2090],
-        zoom: 15,
+        center: [0, 0],
+        zoom: 2,
         zoomControl: false,
         attributionControl: true,
     });
 
+    state.onlineTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(state.map);
+
     if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition((pos) => {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
             if (state.map) {
                 state.map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+                if (!state.localMap && navigator.onLine) {
+                    try {
+                        document.getElementById('mapNetworkStatus').textContent = 'Downloading streets for your realtime location...';
+                        const localMap = await LocalMap.download(pos.coords.latitude, pos.coords.longitude);
+                        const cache = await caches.open('navigators-map-data-v1');
+                        await cache.put('./data/road_network.json', new Response(JSON.stringify(localMap.data), { headers: { 'Content-Type': 'application/json' } }));
+                        installLocalMap(localMap);
+                    } catch (e) {
+                        console.error('Failed to download local map for realtime location:', e);
+                    }
+                }
             }
         });
     }
@@ -261,7 +277,12 @@ function initControls() {
                 });
             });
         }).catch(error => {
-            offlineStatus.textContent = `Offline installation failed: ${error.message}`;
+            if (error.message.includes('SSL certificate') || error.message.includes('security')) {
+                console.warn('Service Worker registration skipped: Development SSL certificate detected. Offline mode requires a trusted CA or localhost. The application remains fully functional online.');
+                offlineStatus.textContent = `Offline mode unavailable (Dev SSL)`;
+            } else {
+                offlineStatus.textContent = `Offline installation failed: ${error.message}`;
+            }
         });
     } else {
         offlineStatus.textContent = 'Offline installation requires HTTPS or localhost';
@@ -386,19 +407,19 @@ function initControls() {
 async function loadSimulationData() {
     try {
         const response = await fetch('data/simulation.json');
-        const data = response.ok ? await response.json() : generateDemoData();
+        const data = response.ok ? await response.json() : null;
         if (state.replayName) return;
         state.data = data;
-        if (state.view === 'replay') onDataLoaded();
+        if (state.view === 'replay' && data) onDataLoaded();
     } catch (e) {
         if (state.replayName) return;
-        console.log('Loading demo data...');
-        state.data = generateDemoData();
-        if (state.view === 'replay') onDataLoaded();
+        console.log('No simulation data available.');
+        state.data = null;
     }
 }
 
 function onDataLoaded() {
+    if (!state.data) return;
     const data = state.data;
     const meta = data.metadata;
 
@@ -739,154 +760,4 @@ function updateConfidence(confidence) {
     } else {
         value.style.color = 'var(--accent-red)';
     }
-}
-
-// ========================================================
-// Demo Data Generator (when no simulation.json available)
-// ========================================================
-function generateDemoData() {
-    const N = 1060; // ~106 seconds at 10Hz
-    const dt = 0.1;
-    const refLat = 28.6139;
-    const refLon = 77.2090;
-    const metersPerDegLat = 111320;
-    const metersPerDegLon = 111320 * Math.cos(refLat * Math.PI / 180);
-
-    const data = {
-        timestamps: [],
-        true_positions: [],
-        estimated_positions: [],
-        true_lat_lon: [],
-        estimated_lat_lon: [],
-        gnss_available: [],
-        nav_mode: [],
-        speed_true: [],
-        speed_estimated: [],
-        heading_true: [],
-        heading_estimated: [],
-        position_error: [],
-        confidence: [],
-        zupt_active: [],
-        dr_drift_percent: [],
-    };
-
-    let posE = 0, posN = 0;
-    let estE = 0, estN = 0;
-    let heading = 0;
-    let speed = 0;
-    let drDist = 0;
-    let drStartE = 0, drStartN = 0;
-    let drActive = false;
-
-    // Define trajectory segments
-    const segments = [
-        { dur: 50, spd: 0, acc: 3, hr: 0 },      // Accelerate from stop
-        { dur: 150, spd: 15, acc: 0, hr: 0 },     // Cruise straight
-        { dur: 50, spd: 15, acc: 0, hr: 0.1 },    // Gentle left turn
-        { dur: 200, spd: 15, acc: 0, hr: 0 },     // Straight (tunnel - GNSS denied)
-        { dur: 30, spd: 15, acc: 0, hr: -0.15 },  // Right turn in tunnel
-        { dur: 100, spd: 15, acc: 0, hr: 0 },     // Exit tunnel
-        { dur: 50, spd: 15, acc: -2, hr: 0 },     // Braking
-        { dur: 80, spd: 0, acc: 0, hr: 0 },       // Stopped
-        { dur: 50, spd: 0, acc: 2.5, hr: 0 },     // Accelerate
-        { dur: 150, spd: 12, acc: 0, hr: 0 },     // Cruise
-        { dur: 50, spd: 12, acc: 0, hr: 0.2 },    // Left turn
-        { dur: 100, spd: 12, acc: 0, hr: 0 },     // Final straight
-    ];
-
-    let segIdx = 0, segSample = 0;
-
-    for (let i = 0; i < N; i++) {
-        const t = i * dt;
-
-        // Get current segment
-        let seg = segments[segIdx];
-        if (segIdx < segments.length - 1 && segSample >= seg.dur) {
-            segIdx++;
-            segSample = 0;
-            seg = segments[segIdx];
-        }
-        segSample++;
-
-        // Update dynamics
-        speed += seg.acc * dt;
-        speed = Math.max(0, Math.min(speed, seg.spd > 0 ? seg.spd : 30));
-        heading += seg.hr * dt;
-
-        const vE = speed * Math.sin(heading);
-        const vN = speed * Math.cos(heading);
-
-        posE += vE * dt;
-        posN += vN * dt;
-
-        // GNSS denial from t=25s to t=55s
-        const gnssOk = !(t >= 25 && t <= 55);
-
-        // Estimated position (with some error during DR)
-        let errScale = gnssOk ? 0.3 : 1.5 + (t - 25) * 0.05;
-        errScale = Math.min(errScale, 5);
-
-        const noiseE = (Math.random() - 0.5) * errScale * 0.1;
-        const noiseN = (Math.random() - 0.5) * errScale * 0.1;
-
-        if (gnssOk) {
-            estE = posE + (Math.random() - 0.5) * 2;
-            estN = posN + (Math.random() - 0.5) * 2;
-            drActive = false;
-        } else {
-            if (!drActive) {
-                drActive = true;
-                drDist = 0;
-                drStartE = estE;
-                drStartN = estN;
-            }
-            estE += vE * dt + noiseE;
-            estN += vN * dt + noiseN;
-            drDist += speed * dt;
-        }
-
-        const posError = Math.sqrt((estE - posE) ** 2 + (estN - posN) ** 2);
-        const navMode = gnssOk ? 'gnss_ins' : 'dr';
-        const confidence = gnssOk ? 0.95 + Math.random() * 0.05 : Math.max(0.1, Math.exp(-(t - 25) / 30));
-        const drDrift = drActive && drDist > 0 ? (posError / drDist) * 100 : 0;
-
-        // Convert to lat/lon
-        const trueLat = refLat + posN / metersPerDegLat;
-        const trueLon = refLon + posE / metersPerDegLon;
-        const estLat = refLat + estN / metersPerDegLat;
-        const estLon = refLon + estE / metersPerDegLon;
-
-        data.timestamps.push(t);
-        data.true_positions.push([posE, posN]);
-        data.estimated_positions.push([estE, estN]);
-        data.true_lat_lon.push([trueLat, trueLon]);
-        data.estimated_lat_lon.push([estLat, estLon]);
-        data.gnss_available.push(gnssOk);
-        data.nav_mode.push(navMode);
-        data.speed_true.push(speed);
-        data.speed_estimated.push(speed + (Math.random() - 0.5) * 0.5);
-        data.heading_true.push(heading);
-        data.heading_estimated.push(heading + (Math.random() - 0.5) * 0.02);
-        data.position_error.push(posError);
-        data.confidence.push(confidence);
-        data.zupt_active.push(speed < 0.1);
-        data.dr_drift_percent.push(drDrift);
-    }
-
-    return {
-        metadata: {
-            sample_rate: 10,
-            ref_lat: refLat,
-            ref_lon: refLon,
-            total_duration: N * dt,
-            total_distance: data.true_positions.reduce((sum, p, i) => {
-                if (i === 0) return 0;
-                const prev = data.true_positions[i - 1];
-                return sum + Math.sqrt((p[0] - prev[0]) ** 2 + (p[1] - prev[1]) ** 2);
-            }, 0),
-            outage_ranges: [[25, 55]],
-            metrics: { ate_rmse: 2.3, cep50: 1.8, cep95: 5.1, drift_percent: 4.7 },
-        },
-        data: data,
-    };
 }
