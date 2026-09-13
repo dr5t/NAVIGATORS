@@ -12,6 +12,73 @@ This project implements smartphone IMU navigation, a TCN velocity model, and a 1
 4. **15-State Offline EKF**: Implemented in JavaScript for local execution. It tracks 3D Position, 3D Velocity, 3D Attitude (Euler angles), and biases.
 5. **Dynamic Constraints**: Integrates Non-Holonomic Constraints (NHC) and Zero Velocity Updates (ZUPT) when stationary.
 
+### Process Flow Diagram
+
+```mermaid
+flowchart TD
+    %% Styling Definitions
+    classDef hardware fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc
+    classDef software fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#f8fafc
+    classDef model fill:#312e81,stroke:#a855f7,stroke-width:2px,color:#f8fafc
+    classDef map fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#f8fafc
+    classDef output fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#f8fafc
+    
+    subgraph "Data Acquisition Layer (Hardware / Edge)"
+        A1[Smartphone Accelerometer]:::hardware
+        A2[Smartphone Gyroscope]:::hardware
+        A3[Smartphone Magnetometer]:::hardware
+        A4[GNSS Receiver (If Available)]:::hardware
+    end
+
+    subgraph "Preprocessing & Feature Extraction"
+        B1[HTML5 DeviceMotion API]:::software
+        B2[Noise Filtering & Calibration]:::software
+        B3[Sliding Window Buffer (50Hz)]:::software
+    end
+    
+    A1 & A2 & A3 -->|Raw Kinematic Data| B1
+    A4 -.->|Ground Truth / Fallback| B1
+    B1 --> B2
+    B2 --> B3
+
+    subgraph "Edge AI Inference Engine (ONNX)"
+        C1[Temporal Convolutional Network - TCN]:::model
+        C2[LSTM / Recurrent Layer]:::model
+        C3[Velocity & Heading Estimation]:::model
+    end
+
+    B3 -->|Normalized Tensors| C1
+    C1 --> C2
+    C2 --> C3
+
+    subgraph "Map Matching & Sensor Fusion"
+        D1[Extended Kalman Filter - EKF]:::software
+        D2[Overpass API / Offline Vector DB]:::map
+        D3[Road Topology Snapping]:::software
+    end
+
+    C3 -->|Estimated Trajectory| D1
+    D2 -->|Pre-cached Road Geometries| D3
+    D1 --> D3
+
+    subgraph "Presentation & UI Layer (PWA)"
+        E1[Service Worker - Offline Cache]:::software
+        E2[Local Web Map Interface]:::output
+        E3[Mac Telemetry Dashboard]:::output
+    end
+
+    D3 -->|Corrected Coordinates| E2
+    D3 -->|Sync via Websocket| E3
+    E1 -.->|Serves Static Assets| E2
+```
+
+### Architecture Details
+1. **Data Acquisition (Blue):** Physical sensors inside the commercial off-the-shelf mobile device capture raw physics data.
+2. **Preprocessing (Purple):** Software APIs ingest this data, clean the noise, and pack it into fixed-size windows (e.g., 50Hz).
+3. **Edge AI Inference (Indigo):** The trained PyTorch model (exported to ONNX) predicts the vehicle's velocity and heading in real-time, directly on the device.
+4. **Map Matching (Green):** An Extended Kalman Filter takes the ML prediction and forcefully constrains/snaps it to valid road geometries fetched from a local, offline database.
+5. **Presentation (Red/Dark):** The final, highly accurate coordinates are rendered onto the Progressive Web App UI for the driver, and synced to the fleet manager dashboard.
+
 ## Core Directives
 
 ### 1. Completely Offline Edge Execution
