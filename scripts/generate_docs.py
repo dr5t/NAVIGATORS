@@ -16,7 +16,7 @@ The system provides intelligent dead reckoning (IDR) using smartphone-only senso
 - **No Ground-Truth Leakage**: The estimator must never have access to ground-truth velocity or position during an outage.
 
 ## 3. Core Architecture Components
-1. **Sensor Interface**: Captures linear acceleration and gyroscope data at 100 Hz.
+1. **Sensor Interface**: Captures linear acceleration and gyroscope data at 10 Hz.
 2. **Phone-to-Vehicle Alignment**: Dynamically aligns the arbitrary smartphone frame to the vehicle's Forward/Lateral/Vertical frame using gravity and forward acceleration vectors.
 3. **Temporal Convolutional Network (TCN)**: A lightweight, low-latency ONNX model that predicts a 2D planar velocity vector from a 200-timestep window of IMU data.
 4. **15-State Extended Kalman Filter (EKF)**: Fuses the AI velocity predictions with raw IMU data, and incorporates GNSS when available.
@@ -44,7 +44,7 @@ This guide explains the exact components and data flow of the Navigators IDR sys
 Raw IMU data is noisy and arbitrary in orientation. The system first estimates gravity to establish the *Down* vector. Then, by observing acceleration during movement, it establishes the *Forward* vector. This allows the system to rotate all raw IMU data into the vehicle frame.
 
 ### 2.2 Deep Learning (TCN) Velocity Estimation
-Instead of raw double integration (which drifts quadratically in seconds), the system windows 200 timesteps (2 seconds) of aligned IMU data and passes it to an ONNX-exported Temporal Convolutional Network. The network outputs a `[v_forward, v_lateral]` prediction.
+Instead of raw double integration (which drifts quadratically in seconds), the system windows 200 timesteps (20 seconds) of aligned IMU data and passes it to an ONNX-exported Temporal Convolutional Network. The network outputs a `[v_forward, v_lateral]` prediction.
 
 ### 2.3 The 15-State EKF
 The EKF state vector includes:
@@ -97,7 +97,7 @@ The `scripts/benchmark.py` script runs the entire system through real-world scen
 The Navigators Intelligent Dead Reckoning (IDR) system provides continuous vehicle navigation using smartphone sensors during GNSS outages.
 
 ## 2. Functional Requirements
-- **FR1**: Collect IMU data (Accel/Gyro) at minimum 50Hz (target 100Hz).
+- **FR1**: Collect IMU data (Accel/Gyro) at minimum 10Hz (target 10Hz).
 - **FR2**: Detect GNSS loss and seamlessly switch to dead reckoning.
 - **FR3**: Estimate 2D vehicle velocity using a deep learning model.
 - **FR4**: Fuse AI velocity with IMU using a 15-state EKF.

@@ -117,13 +117,13 @@
                         <h3>Job Configuration</h3>
                         <div class="form-group">
                             <label>Epochs</label>
-                            <input type="number" id="inputEpochs" value="50">
+                            <input type="number" id="inputEpochs" value="40">
                         </div>
                         <div class="form-group">
                             <label>Batch Size</label>
-                            <input type="number" id="inputBatchSize" value="64">
+                            <input type="number" id="inputBatchSize" value="256">
                         </div>
-                        <button class="btn-primary" id="btnStartTraining">Start Training Job</button>
+                        <button class="btn-primary" id="btnStartTraining">Start ML Training</button>
                     </div>
                     <div class="card">
                         <h3>Training Status: <span id="trainStatusLabel">Idle</span></h3>
@@ -131,10 +131,21 @@
                             <div class="progress-bar-fill" id="trainProgressFill" style="width: 0%;"></div>
                         </div>
                         <div class="stats-grid" style="margin-top: 20px;">
-                            <div><label>Epoch</label><span id="trainEpoch">0 / 0</span></div>
+                            <div><label>Epoch</label><span id="trainEpoch">0 / 40</span></div>
                             <div><label>Train Loss</label><span id="trainLoss">—</span></div>
                             <div><label>Validation Loss</label><span id="valLoss">—</span></div>
                             <div><label>ETA</label><span id="trainEta">—</span></div>
+                        </div>
+                        <div id="trainSampleCounts" style="margin-top: 15px; font-size: 0.85rem; color: #64748b;">
+                            <span>Samples: Train <strong id="trainSampleCount">63,423</strong> | Val <strong id="valSampleCount">30,349</strong> | Test <strong id="testSampleCount">11,934</strong></span>
+                        </div>
+                        <div id="trainFinalMetrics" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; display: none; font-size: 0.85rem; line-height: 1.6;">
+                            <div><strong>Final Test MAE:</strong> <span id="metricTestMae">—</span> m/s</div>
+                            <div><strong>Final Test RMSE:</strong> <span id="metricTestRmse">—</span> m/s</div>
+                            <div><strong>Zero Baseline MAE:</strong> <span id="metricZeroBaselineMae">—</span> m/s</div>
+                            <div><strong>Mean Baseline MAE:</strong> <span id="metricBaselineMae">—</span> m/s</div>
+                            <div><strong>Error Reduction:</strong> <span id="metricErrorReduction">—</span>%</div>
+                            <div><strong>Promotion Status:</strong> <span id="metricPromotionStatus" style="font-weight: 600;">—</span></div>
                         </div>
                     </div>
                 </div>

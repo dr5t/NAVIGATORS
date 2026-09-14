@@ -11,7 +11,7 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
     Extracts IMU inputs (Accel, Gyro) and Ground Truth targets (Velocity N/E).
     
     Returns:
-        X: np.ndarray of shape (N, 6) -> [Accel X, Y, Z, Gyro Yaw, Pitch, Roll]
+        X: np.ndarray of shape (N, 6) -> [Accel X, Y, Z, Gyro X, Y, Z]
         Y: np.ndarray of shape (N, 2) -> [V_N, V_E] (m/s)
     """
     try:
@@ -28,7 +28,7 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
     
     # Check if we have the required columns
     accel_cols = [c for c in s_df.columns if 'ACCELEROMETER X' in c or 'ACCELEROMETER Y' in c or 'ACCELEROMETER Z' in c]
-    gyro_cols = [c for c in s_df.columns if 'GYROSCOPE Yaw' in c or 'GYROSCOPE Pitch' in c or 'GYROSCOPE Roll' in c]
+    gyro_cols = [c for c in s_df.columns if 'GYROSCOPE Yaw' in c or 'GYROSCOPE Pitch' in c or 'GYROSCOPE Roll' in c or 'GYROSCOPE X' in c or 'GYROSCOPE Y' in c or 'GYROSCOPE Z' in c]
     
     if len(accel_cols) < 3 or len(gyro_cols) < 3:
         print(f"Missing IMU columns in {s_csv_path}")
@@ -37,9 +37,9 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
     acc_x = [c for c in accel_cols if 'X' in c][0]
     acc_y = [c for c in accel_cols if 'Y' in c][0]
     acc_z = [c for c in accel_cols if 'Z' in c][0]
-    gyr_y = [c for c in gyro_cols if 'Yaw' in c][0]
-    gyr_p = [c for c in gyro_cols if 'Pitch' in c][0]
-    gyr_r = [c for c in gyro_cols if 'Roll' in c][0]
+    gyr_y = [c for c in gyro_cols if ('Yaw' in c or 'X' in c)][0]
+    gyr_p = [c for c in gyro_cols if ('Pitch' in c or 'Y' in c)][0]
+    gyr_r = [c for c in gyro_cols if ('Roll' in c or 'Z' in c)][0]
     
     imu_features = s_df[[acc_x, acc_y, acc_z, gyr_y, gyr_p, gyr_r]].values
     
@@ -89,8 +89,14 @@ def discover_synchronized_sessions(base_dir: str) -> List[Tuple[str, str]]:
         
     for v_file in sync_dir.rglob("V-*.csv"):
         session_id = v_file.stem.replace("V-", "")
+        
+        # Check in the same directory first (Categorised)
         s_file = v_file.parent / f"S-{session_id}.csv"
         
+        # Check in S-Dataset sibling directory (Uncategorised)
+        if not s_file.exists():
+            s_file = v_file.parent.parent / "S-Dataset" / f"S-{session_id}.csv"
+            
         if s_file.exists():
             pairs.append((str(s_file), str(v_file)))
             

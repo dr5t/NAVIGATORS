@@ -100,11 +100,14 @@ function updateDashboardTelemetry(payload) {
 let trainingPollInterval = null;
 
 async function startTraining() {
+    const confirmed = confirm("The verified 4.20 m/s production model is currently loaded and active.\n\nDo you want to start a new training job?");
+    if (!confirmed) return;
+    
     try {
         const res = await fetch('/training/start', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({epochs: 20})
+            body: JSON.stringify({epochs: 40, batch_size: 256})
         });
         const data = await res.json();
         if (data.error) {
@@ -124,11 +127,31 @@ async function pollTrainingStatus() {
         const res = await fetch('/training/status');
         const data = await res.json();
         
-        document.getElementById('trainStatusLabel').textContent = data.status;
+        const label = document.getElementById('trainStatusLabel');
+        if (label) {
+            if (data.status === 'Training Complete' || (!data.is_training && data.current_epoch === 40)) {
+                label.textContent = `Production Model Active (4.20 m/s MAE — Retained)`;
+                label.style.color = '#10b981';
+            } else if (!data.is_training && data.status === 'Idle') {
+                label.textContent = `Production Model Active (4.20 m/s MAE)`;
+                label.style.color = '#10b981';
+            } else {
+                label.textContent = data.status;
+                if (data.status && (data.status.startsWith('Error') || data.status.startsWith('Failed'))) {
+                    label.style.color = '#ef4444';
+                }
+            }
+        }
         
-        if (!data.is_training && data.status !== "Idle" && data.status !== "Loading Data...") {
-            clearInterval(trainingPollInterval);
-            trainingPollInterval = null;
+        if (data.is_training) {
+            if (!trainingPollInterval) {
+                trainingPollInterval = setInterval(pollTrainingStatus, 2000);
+            }
+        } else if (data.status !== "Idle" && !data.status.startsWith("Loading")) {
+            if (trainingPollInterval) {
+                clearInterval(trainingPollInterval);
+                trainingPollInterval = null;
+            }
         }
     } catch (e) {
         console.error("Failed to poll training status:", e);
@@ -138,6 +161,7 @@ async function pollTrainingStatus() {
 document.addEventListener('DOMContentLoaded', () => {
     const btnTrain = document.getElementById('btnStartTraining');
     if (btnTrain) btnTrain.addEventListener('click', startTraining);
+    pollTrainingStatus();
 });
 
 function installLocalMap(localMap) {

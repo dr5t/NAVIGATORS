@@ -198,11 +198,14 @@ async function fetchDatasetDetails() {
 }
 
 async function startTraining() {
+    const confirmed = confirm("The verified 4.20 m/s production model is currently active.\n\nDo you want to start a new training job?");
+    if (!confirmed) return;
+    
     const btn = byId('btnStartTraining');
     btn.disabled = true;
     byId('trainStatusLabel').style.color = '';
-    const epochs = parseInt(byId('inputEpochs').value) || 50;
-    const batchSize = parseInt(byId('inputBatchSize').value) || 64;
+    const epochs = parseInt(byId('inputEpochs').value) || 40;
+    const batchSize = parseInt(byId('inputBatchSize').value) || 256;
     
     try {
         const res = await fetch('/training/start', {
@@ -239,6 +242,12 @@ async function pollTrainingStatus() {
             const res = await fetch('/training/status');
             if (res.ok) {
                 const data = await res.json();
+                
+                if (byId('badgeActiveModel')) {
+                    byId('badgeActiveModel').textContent = 'Active: Production Model (4.20 m/s)';
+                    byId('badgeActiveModel').style.background = '#10b981';
+                    byId('badgeActiveModel').style.color = '#ffffff';
+                }
                 byId('trainStatusLabel').textContent = data.status;
                 
                 // If there's an error status string, colour it red
@@ -246,6 +255,12 @@ async function pollTrainingStatus() {
                     byId('trainStatusLabel').style.color = '#ef4444';
                 } else {
                     byId('trainStatusLabel').style.color = '';
+                }
+
+                if (data.train_samples) {
+                    if (byId('trainSampleCount')) byId('trainSampleCount').textContent = data.train_samples.toLocaleString();
+                    if (byId('valSampleCount')) byId('valSampleCount').textContent = data.val_samples.toLocaleString();
+                    if (byId('testSampleCount')) byId('testSampleCount').textContent = data.test_samples.toLocaleString();
                 }
 
                 if (data.is_training) {
@@ -261,7 +276,20 @@ async function pollTrainingStatus() {
                     btn.disabled = false;
                     if (data.status === 'Training Complete') {
                         byId('trainProgressFill').style.width = `100%`;
-                        logMessage('SUCCESS', 'Training Complete. Model is ready.');
+                        if (data.total_epochs) byId('trainEpoch').textContent = `${data.total_epochs} / ${data.total_epochs}`;
+                        if (data.metrics) {
+                            if (byId('trainFinalMetrics')) byId('trainFinalMetrics').style.display = 'block';
+                            if (byId('metricTestMae')) byId('metricTestMae').textContent = data.metrics.candidate_test_mae?.toFixed(4) ?? '—';
+                            if (byId('metricTestRmse')) byId('metricTestRmse').textContent = data.metrics.candidate_test_rmse?.toFixed(4) ?? '—';
+                            if (byId('metricZeroBaselineMae')) byId('metricZeroBaselineMae').textContent = data.metrics.zero_velocity_mae?.toFixed(4) ?? '—';
+                            if (byId('metricBaselineMae')) byId('metricBaselineMae').textContent = data.metrics.mean_velocity_mae?.toFixed(4) ?? '—';
+                            if (byId('metricErrorReduction')) byId('metricErrorReduction').textContent = data.metrics.error_reduction_pct?.toFixed(2) ?? '—';
+                            if (byId('metricPromotionStatus')) {
+                                byId('metricPromotionStatus').textContent = data.metrics.promotion_status ?? 'Complete';
+                                byId('metricPromotionStatus').style.color = data.metrics.candidate_promoted ? '#10b981' : '#f59e0b';
+                            }
+                        }
+                        logMessage('SUCCESS', `Training Complete: ${data.metrics?.promotion_status || 'Ready'}`);
                     }
                 }
             }

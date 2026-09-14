@@ -128,7 +128,7 @@ class DataRecorder {
                 ];
             }
             
-            // Record a frame exactly when IMU updates (typically 50-100Hz)
+            // Record a frame exactly when IMU updates (typically 10Hz)
             this.recordFrame();
         };
         window.addEventListener('devicemotion', this.handleMotion);

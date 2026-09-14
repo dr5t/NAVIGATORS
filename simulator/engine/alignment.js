@@ -26,7 +26,7 @@ class PhoneVehicleAligner {
         ];
         
         // Configuration
-        this.GRAVITY_SAMPLES_REQUIRED = 100; // 1 second at 100Hz
+        this.GRAVITY_SAMPLES_REQUIRED = 100; // 10 seconds at 10Hz
         this.FORWARD_SAMPLES_REQUIRED = 50;  // 0.5 seconds of pure acceleration
     }
 

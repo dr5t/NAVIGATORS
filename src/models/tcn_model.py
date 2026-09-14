@@ -138,7 +138,7 @@ class TCNVelocityEstimator(nn.Module):
         super().__init__()
 
         if num_channels is None:
-            num_channels = [64, 64, 128, 128]
+            num_channels = [64, 128, 256, 256, 512]
 
         self.use_skip = use_skip_connections
         self.num_blocks = len(num_channels)

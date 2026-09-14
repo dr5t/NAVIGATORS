@@ -26,8 +26,8 @@ try:
 except ImportError:
     HAS_TENSORBOARD = False
 
-from models.tcn_model import TCNVelocityEstimator
-from models.lstm_model import LSTMVelocityEstimator
+from src.models.tcn_model import TCNVelocityEstimator
+from src.models.lstm_model import LSTMVelocityEstimator
 
 
 class AngularLoss(nn.Module):
@@ -99,15 +99,12 @@ class Trainer:
         self.config = config or {}
 
         # Device selection
-        if device is None:
-            if torch.cuda.is_available():
-                self.device = torch.device("cuda")
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-                self.device = torch.device("mps")
-            else:
-                self.device = torch.device("cpu")
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            self.device = torch.device("mps")
         else:
-            self.device = device
+            self.device = torch.device("cpu")
 
         print(f"[Trainer] Using device: {self.device}")
 
@@ -354,7 +351,10 @@ class Trainer:
             )
             
             if epoch_callback:
-                epoch_callback(epoch, self.epochs, train_loss, val_loss, elapsed)
+                try:
+                    epoch_callback(epoch, self.epochs, train_loss, val_loss, elapsed, current_lr)
+                except TypeError:
+                    epoch_callback(epoch, self.epochs, train_loss, val_loss, elapsed)
 
             # Early stopping
             if self.epochs_without_improvement >= self.patience:

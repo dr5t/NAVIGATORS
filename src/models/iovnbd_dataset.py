@@ -5,10 +5,14 @@ from typing import List, Tuple
 import random
 
 # Import our new parser
-from data_prep.iovnbd_parser import discover_synchronized_sessions, parse_synchronized_iovnbd
+from src.data_prep.iovnbd_parser import discover_synchronized_sessions, parse_synchronized_iovnbd
+
+import json
+import os
 
 class IOVNBDDataset(Dataset):
-    def __init__(self, session_pairs: List[Tuple[str, str]], window_size: int = 200, stride: int = 20):
+    def __init__(self, session_pairs: List[Tuple[str, str]], window_size: int = 200, stride: int = 20,
+                 mean: np.ndarray = None, std: np.ndarray = None):
         """
         PyTorch Dataset for IO-VNBD synchronized sessions.
         
@@ -16,9 +20,14 @@ class IOVNBDDataset(Dataset):
             session_pairs: List of (s_csv_path, v_csv_path)
             window_size: Length of the sliding window in samples (default 200)
             stride: Step size between windows (default 20)
+            mean: Precomputed mean for Z-score normalization (optional)
+            std: Precomputed std for Z-score normalization (optional)
         """
         self.window_size = window_size
         self.stride = stride
+        
+        self.mean = mean
+        self.std = std
         
         self.windows_x = []
         self.targets_y = []
@@ -45,9 +54,23 @@ class IOVNBDDataset(Dataset):
         if self.windows_x:
             self.windows_x = np.array(self.windows_x, dtype=np.float32)
             self.targets_y = np.array(self.targets_y, dtype=np.float32)
+            
+            # Calculate mean and std from this dataset if not provided (i.e. Training set)
+            if self.mean is None or self.std is None:
+                # Shape is (N, window_size, 6), calculate per-channel across all samples and time steps
+                self.mean = np.mean(self.windows_x, axis=(0, 1), keepdims=True)
+                self.std = np.std(self.windows_x, axis=(0, 1), keepdims=True)
+                self.std[self.std == 0] = 1.0  # Prevent division by zero
+                
+            # Apply Z-score normalization
+            self.windows_x = (self.windows_x - self.mean) / self.std
+            
         else:
             self.windows_x = np.zeros((0, window_size, 6), dtype=np.float32)
             self.targets_y = np.zeros((0, 2), dtype=np.float32)
+            if self.mean is None:
+                self.mean = np.zeros((1, 1, 6), dtype=np.float32)
+                self.std = np.ones((1, 1, 6), dtype=np.float32)
 
     def __len__(self):
         return len(self.windows_x)
@@ -56,7 +79,7 @@ class IOVNBDDataset(Dataset):
         return torch.from_numpy(self.windows_x[idx]), torch.from_numpy(self.targets_y[idx])
 
 
-def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int = 200, batch_size: int = 64) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int = 200, batch_size: int = 64, stats_dir: str = "checkpoints") -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
     Discovers all IO-VNBD synchronized sessions, splits them securely (to prevent leakage),
     and creates DataLoaders.
@@ -82,9 +105,24 @@ def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int =
     
     print(f"Dataset split (Sessions): Train={len(train_pairs)}, Val={len(val_pairs)}, Test={len(test_pairs)}")
     
+    # Create Train dataset and compute normalization stats
     train_ds = IOVNBDDataset(train_pairs, window_size=window_size)
-    val_ds = IOVNBDDataset(val_pairs, window_size=window_size)
-    test_ds = IOVNBDDataset(test_pairs, window_size=window_size)
+    
+    # Apply exactly the same stats to Val and Test
+    val_ds = IOVNBDDataset(val_pairs, window_size=window_size, mean=train_ds.mean, std=train_ds.std)
+    test_ds = IOVNBDDataset(test_pairs, window_size=window_size, mean=train_ds.mean, std=train_ds.std)
+    
+    # Save normalization stats for Android inference
+    os.makedirs(stats_dir, exist_ok=True)
+    stats_dict = {
+        "mean": train_ds.mean.flatten().tolist(),
+        "std": train_ds.std.flatten().tolist(),
+        "features": ["ACCELEROMETER X", "ACCELEROMETER Y", "ACCELEROMETER Z", 
+                     "GYROSCOPE X", "GYROSCOPE Y", "GYROSCOPE Z"],
+        "method": "z-score"
+    }
+    with open(os.path.join(stats_dir, "norm_stats.json"), "w") as f:
+        json.dump(stats_dict, f, indent=4)
     
     print(f"Dataset split (Windows): Train={len(train_ds)}, Val={len(val_ds)}, Test={len(test_ds)}")
     

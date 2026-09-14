@@ -62,80 +62,169 @@ class GnssStateMachine {
     }
 }
 
-class ZUPTDetector {
+class VehicleMotionDetector {
     constructor() {
-        this.accelThreshold = 0.05;
-        this.gyroThreshold = 0.01;
-        this.windowSize = 10;
+        this.accelThreshold = 0.035;   // m2/s4 stationary variance threshold
+        this.gyroThreshold = 0.008;    // rad2/s2 stationary gyro variance threshold
+        this.maxGyroThreshold = 0.08;  // rad/s stationary max gyro rate
+        this.windowSize = 15;          // 1.5s at 10Hz
         this.gravity = 9.81;
-        this.minStationarySamples = 3;
 
         this.accelBuffer = [];
         this.gyroBuffer = [];
 
         this.isStationary = false;
+        this.motionState = 'UNKNOWN'; // 'STATIONARY' | 'MOVING' | 'UNKNOWN'
+        this.motionReason = 'insufficient data';
+        this.stationaryDwell = 0.0;
+        this.movingDwell = 0.0;
+        this.lastMovingTime = 0;
         this.consecutiveStationary = 0;
-    }
+        this.consecutiveMoving = 0;
 
-    update(accel, gyro, speed) {
-        this.accelBuffer.push(accel);
-        this.gyroBuffer.push(gyro);
-
-        if (this.accelBuffer.length > this.windowSize) {
-            this.accelBuffer.shift();
-            this.gyroBuffer.shift();
-        }
-
-        if (this.accelBuffer.length < this.windowSize) {
-            this.isStationary = false;
-            return false;
-        }
-
-        // 1. Accelerometer variance and mean magnitude
-        let accelMagnitudes = this.accelBuffer.map(a => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]));
-        let accelMean = accelMagnitudes.reduce((a, b) => a + b) / accelMagnitudes.length;
-        let accelVar = accelMagnitudes.reduce((acc, val) => acc + Math.pow(val - accelMean, 2), 0) / accelMagnitudes.length;
-
-        // 2. Gravity consistency
-        let gravityConsistent = Math.abs(accelMean - this.gravity) < 1.0;
-
-        // 3. Gyroscope variance and max rate
-        let gyroMags = this.gyroBuffer.map(g => Math.sqrt(g[0]*g[0] + g[1]*g[1] + g[2]*g[2]));
-        let gyroMeanMag = gyroMags.reduce((a, b) => a + b) / gyroMags.length;
-        let gyroVar = gyroMags.reduce((acc, val) => acc + Math.pow(val - gyroMeanMag, 2), 0) / gyroMags.length;
-        let maxGyroRate = Math.max(...gyroMags);
-
-        // 4. GNSS Speed check
-        let speedOk = true;
-        if (speed !== null && speed !== undefined) {
-            speedOk = speed < 0.5;
-        }
-
-        let conditionMet = (
-            accelVar < this.accelThreshold &&
-            gyroVar < this.gyroThreshold &&
-            maxGyroRate < 0.15 &&
-            gravityConsistent &&
-            speedOk
-        );
-
-        if (conditionMet) {
-            this.consecutiveStationary++;
-        } else {
-            this.consecutiveStationary = 0;
-        }
-
-        this.isStationary = this.consecutiveStationary >= this.minStationarySamples;
-        return this.isStationary;
+        this.lastMetrics = {
+            accelMag: 9.81,
+            dynamicAccel: 0.0,
+            accelVar: 0.0,
+            gyroMag: 0.0,
+            maxGyro: 0.0,
+            gyroVar: 0.0
+        };
     }
 
     reset() {
         this.accelBuffer = [];
         this.gyroBuffer = [];
         this.isStationary = false;
+        this.motionState = 'UNKNOWN';
+        this.motionReason = 'insufficient data';
+        this.stationaryDwell = 0.0;
+        this.movingDwell = 0.0;
         this.consecutiveStationary = 0;
+        this.consecutiveMoving = 0;
+    }
+
+    update(accel, gyro, speed, dt = 0.1, currentTime = 0) {
+        this.accelBuffer.push([...accel]);
+        this.gyroBuffer.push([...gyro]);
+
+        if (this.accelBuffer.length > this.windowSize) {
+            this.accelBuffer.shift();
+            this.gyroBuffer.shift();
+        }
+
+        if (this.accelBuffer.length < 5) {
+            this.isStationary = false;
+            this.motionState = 'UNKNOWN';
+            this.motionReason = 'insufficient data';
+            return this.isStationary;
+        }
+
+        // 1. Accelerometer variance and mean magnitude
+        const accelMags = this.accelBuffer.map(a => Math.hypot(a[0], a[1], a[2]));
+        const accelMean = accelMags.reduce((a, b) => a + b, 0) / accelMags.length;
+        const accelVar = accelMags.reduce((acc, val) => acc + Math.pow(val - accelMean, 2), 0) / accelMags.length;
+        const latestAccelMag = accelMags[accelMags.length - 1];
+        const dynamicAccel = Math.abs(latestAccelMag - this.gravity);
+
+        // 2. Gyroscope variance and max rate
+        const gyroMags = this.gyroBuffer.map(g => Math.hypot(g[0], g[1], g[2]));
+        const gyroMean = gyroMags.reduce((a, b) => a + b, 0) / gyroMags.length;
+        const gyroVar = gyroMags.reduce((acc, val) => acc + Math.pow(val - gyroMean, 2), 0) / gyroMags.length;
+        const maxGyro = Math.max(...gyroMags);
+        const latestGyroMag = gyroMags[gyroMags.length - 1];
+
+        this.lastMetrics = {
+            accelMag: latestAccelMag,
+            dynamicAccel: dynamicAccel,
+            accelVar: accelVar,
+            gyroMag: latestGyroMag,
+            maxGyro: maxGyro,
+            gyroVar: gyroVar
+        };
+
+        const hasGnssSpeed = (speed !== null && speed !== undefined && Number.isFinite(speed));
+
+        if (hasGnssSpeed) {
+            // Real GNSS speed available as supporting evidence (NOT fed into AI model)
+            if (speed >= 0.8) {
+                // Vehicle moving (speed >= 0.8 m/s ~ 2.9 km/h)
+                this.motionState = 'MOVING';
+                this.motionReason = `GNSS speed (${speed.toFixed(1)} m/s)`;
+                this.stationaryDwell = 0.0;
+                this.movingDwell += dt;
+                this.lastMovingTime = currentTime || Date.now() / 1000;
+                this.consecutiveStationary = 0;
+            } else if (speed < 0.4) {
+                // Vehicle speed near zero: check if IMU is also quiet or has idle vibrations
+                const imuStationary = (accelVar < this.accelThreshold && maxGyro < this.maxGyroThreshold && dynamicAccel < 0.35);
+                this.stationaryDwell += dt;
+                if (imuStationary && this.stationaryDwell >= 1.0) {
+                    this.motionState = 'STATIONARY';
+                    this.motionReason = `GNSS zero speed & IMU quiet (${this.stationaryDwell.toFixed(1)}s)`;
+                    this.movingDwell = 0.0;
+                } else if (this.stationaryDwell >= 1.5) {
+                    this.motionState = 'STATIONARY';
+                    this.motionReason = `GNSS zero speed (vehicle idle vibrations)`;
+                    this.movingDwell = 0.0;
+                }
+            } else {
+                // Low speed crawling (0.4 - 0.8 m/s)
+                this.motionState = 'MOVING';
+                this.motionReason = `GNSS crawl (${speed.toFixed(1)} m/s)`;
+                this.stationaryDwell = 0.0;
+                this.lastMovingTime = currentTime || Date.now() / 1000;
+            }
+        } else {
+            // GNSS Denied / Outage / Tunnel / Offline
+            // Rely purely on IMU dynamics without GNSS speed
+            if (this.motionState === 'MOVING' || this.motionState === 'UNKNOWN') {
+                // Check if vehicle has come to a complete stop
+                const isVeryQuiet = (accelVar < 0.025 && maxGyro < 0.06 && dynamicAccel < 0.25);
+                if (isVeryQuiet) {
+                    this.stationaryDwell += dt;
+                    if (this.stationaryDwell >= 1.5) { // 1.5s quiet dwell required to stop
+                        this.motionState = 'STATIONARY';
+                        this.motionReason = `IMU stationary dwell (${this.stationaryDwell.toFixed(1)}s)`;
+                        this.movingDwell = 0.0;
+                    } else {
+                        // Still in MOVING state during deceleration/settling
+                        this.motionState = 'MOVING';
+                        this.motionReason = `IMU settling (${this.stationaryDwell.toFixed(1)}s)`;
+                    }
+                } else {
+                    // Road vibrations, steering, or acceleration active
+                    this.stationaryDwell = 0.0;
+                    this.movingDwell += dt;
+                    this.motionState = 'MOVING';
+                    this.motionReason = `IMU motion (accel var: ${accelVar.toFixed(3)}, gyro: ${maxGyro.toFixed(2)})`;
+                    this.lastMovingTime = currentTime || Date.now() / 1000;
+                }
+            } else {
+                // Currently STATIONARY: check for start of vehicle movement
+                const motionDetected = (accelVar > 0.040 || maxGyro > 0.10 || dynamicAccel > 0.40);
+                if (motionDetected) {
+                    this.consecutiveMoving++;
+                    if (this.consecutiveMoving >= 3) { // 0.3s of motion triggers moving
+                        this.motionState = 'MOVING';
+                        this.motionReason = `IMU motion detected (accel var: ${accelVar.toFixed(3)})`;
+                        this.stationaryDwell = 0.0;
+                        this.consecutiveMoving = 0;
+                        this.lastMovingTime = currentTime || Date.now() / 1000;
+                    }
+                } else {
+                    this.consecutiveMoving = 0;
+                    this.motionState = 'STATIONARY';
+                    this.motionReason = 'IMU quiet';
+                }
+            }
+        }
+
+        this.isStationary = (this.motionState === 'STATIONARY');
+        return this.isStationary;
     }
 }
+const ZUPTDetector = VehicleMotionDetector;
 
 class OfflineEngine {
     constructor() {
@@ -146,9 +235,7 @@ class OfflineEngine {
         // Sensor Data Buffer
         this.currentAccel = [0, 0, 0];
         this.currentGyro = [0, 0, 0];
-        this.currentGnss = null;
-
-        // Buffer for ONNX model (window_size = 200, features = 6)
+        this.currentGnss = null;        // Buffer for ONNX model (window_size = 200, features = 6)
         this.windowSize = 200;
         this.sensorBuffer = []; // stores [ax, ay, az, gx, gy, gz] arrays
 
@@ -157,8 +244,15 @@ class OfflineEngine {
         this.modelLoading = false;
         this.profiler = new DeviceProfiler();
         this.modelContract = null;
-        this.imuFilter = new CausalIMUFilter();
+        this.imuFilter = new CausalIMUFilter(false); // removeGravity = false (model trained on raw IMU)
         this.sensorTimes = [];
+
+        // Raw Android sensor event rate tracking (50-100Hz from hardware) vs 10Hz model rate
+        this.rawEventTimes = [];
+        this.observedRawSensorRate = 10;
+        this.observedEffectiveRate = 10;
+        this.lastDiagnosticLogTime = 0;
+        this.lastLoggedMotionState = null;
 
         // Navigation State
         this.initialized = false;
@@ -181,9 +275,10 @@ class OfflineEngine {
         this.lastMotionTime = -Infinity;
         this.mapMatcher = new GeometricMapMatcher(this.roadNetwork, 30.0);
 
-        // GNSS State Machine
+        // GNSS State Machine & Vehicle Motion Detector
         this.gnssStateMachine = new GnssStateMachine();
-        this.zuptDetector = new ZUPTDetector();
+        this.motionDetector = new VehicleMotionDetector();
+        this.zuptDetector = this.motionDetector;
         this.gnssAvailable = false;
         this.zuptActive = false;
 
@@ -269,7 +364,7 @@ class OfflineEngine {
             const contract = this.modelContract;
             if (contract.mean?.length !== 6 || contract.std?.length !== 6 ||
                 !contract.mean.every(Number.isFinite) || !contract.std.every(v => Number.isFinite(v) && v > 0) ||
-                JSON.stringify(contract.output_order) !== '["east","north"]') throw new Error('Invalid model input/output contract');
+                (JSON.stringify(contract.output_order) !== '["east","north"]' && JSON.stringify(contract.output_order) !== '["north","east"]')) throw new Error('Invalid model input/output contract');
             this.windowSize = contract.window_size;
             if (window.setLoadingState) window.setLoadingState(40, "DOWNLOADING AI VELOCITY MODEL");
 
@@ -289,22 +384,28 @@ class OfflineEngine {
                 chunks.push(value);
                 loadedBytes += value.length;
                 if (window.setLoadingState) {
-                    const progress = 40 + (loadedBytes / totalBytes) * 20;
-                    window.setLoadingState(Math.min(60, progress), "DOWNLOADING AI VELOCITY MODEL");
+                    const pct = 40 + Math.min(35, Math.floor((loadedBytes / totalBytes) * 35));
+                    window.setLoadingState(pct, `DOWNLOADING AI VELOCITY MODEL (${Math.round(loadedBytes/1024/1024*10)/10}MB)`);
                 }
             }
-            
             const modelBytes = new Uint8Array(loadedBytes);
-            let position = 0;
-            for(let chunk of chunks) {
-                modelBytes.set(chunk, position);
-                position += chunk.length;
+            let offset = 0;
+            for (const chunk of chunks) {
+                modelBytes.set(chunk, offset);
+                offset += chunk.length;
+            }
+            
+            let external = null;
+            if (contract.external_data) {
+                if (window.setLoadingState) window.setLoadingState(75, "DOWNLOADING MODEL WEIGHTS");
+                const extResponse = await fetch('./model.onnx.data');
+                if (!extResponse.ok) throw new Error('Failed to fetch model.onnx.data');
+                external = await extResponse.arrayBuffer();
             }
 
-            const external = contract.external_data ? new Uint8Array(await (await fetch('./model.onnx.data')).arrayBuffer()) : null;
             this.profiler.modelBytes = modelBytes.byteLength + (external?.byteLength || 0);
-            
-            if (window.setLoadingState) window.setLoadingState(60, "COMPILING WEBASSEMBLY ENGINE");
+
+            if (window.setLoadingState) window.setLoadingState(80, "COMPILING WEBASSEMBLY ENGINE");
             console.log("[Edge AI] Loading ONNX Model into WebAssembly...");
             // Load the model exported to the simulator folder
             // Small delay to allow the UI to render the 60% state before blocking synchronous compilation
@@ -381,14 +482,20 @@ class OfflineEngine {
         this.gpsError = '';
         this.ekf = new ExtendedKalmanFilter();
         this.gnssStateMachine = new GnssStateMachine();
-        this.zuptDetector.reset();
+        this.motionDetector.reset();
+        this.zuptDetector = this.motionDetector;
         this.walker = this.navigationMode === 'walking' ? new PedestrianTracker(this.stepLength) : null;
         document.getElementById('btnGpsOutage').textContent = 'Simulate GNSS outage';
 
         // Reset buffers and timers
         this.sensorBuffer = [];
         this.sensorTimes = [];
-        this.imuFilter = new CausalIMUFilter();
+        this.rawEventTimes = [];
+        this.observedRawSensorRate = 10;
+        this.observedEffectiveRate = 10;
+        this.lastDiagnosticLogTime = 0;
+        this.lastLoggedMotionState = null;
+        this.imuFilter = new CausalIMUFilter(false);
         this.profiler.reset();
         this.lastTime = performance.now() / 1000.0;
 
@@ -401,8 +508,16 @@ class OfflineEngine {
             }
             if (!event.accelerationIncludingGravity || !event.rotationRate) return;
             const motionTime = performance.now() / 1000;
-            const motionDt = Number.isFinite(this.lastMotionTime) ? motionTime - this.lastMotionTime : 0;
             this.lastMotionTime = motionTime;
+
+            // Track raw Android hardware sensor event rate (typically 50-100 Hz)
+            this.rawEventTimes.push(motionTime);
+            if (this.rawEventTimes.length > 50) this.rawEventTimes.shift();
+            if (this.rawEventTimes.length > 1) {
+                const dtRaw = motionTime - this.rawEventTimes[0];
+                if (dtRaw > 0) this.observedRawSensorRate = (this.rawEventTimes.length - 1) / dtRaw;
+            }
+
             const accel = event.accelerationIncludingGravity;
             if (accel) {
                 this.currentAccel = [accel.x || 0, accel.y || 0, accel.z || 0];
@@ -415,15 +530,6 @@ class OfflineEngine {
                     (gyro.gamma || 0) * toRad,
                     (gyro.alpha || 0) * toRad
                 ];
-            }
-            if (this.aligner.isAligned) {
-                const aligned = [...this.aligner.rotate(this.currentAccel), ...this.aligner.rotate(this.currentGyro)];
-                this.sensorBuffer.push(this.imuFilter.step(aligned, motionDt));
-                this.sensorTimes.push(motionTime);
-                if (this.sensorBuffer.length > this.windowSize) { this.sensorBuffer.shift(); this.sensorTimes.shift(); }
-                if (this.sensorTimes.length > 1) {
-                    this.observedImuRate = (this.sensorTimes.length - 1) / (motionTime - this.sensorTimes[0]);
-                }
             }
         };
         window.addEventListener('devicemotion', this.handleMotion);
@@ -521,20 +627,30 @@ class OfflineEngine {
             speed = gnss.speed;
         }
 
+        // 1. Phone-to-Vehicle Alignment (runs in background; does NOT block buffering or navigation)
+        this.aligner.feed(this.currentAccel, hasGoodGNSS ? speed : -1, currentTime);
 
-        // 2. Alignment Phase
-        const isAligned = this.aligner.feed(this.currentAccel, speed, currentTime);
-        if (!isAligned) {
-            // Documenting: update UI here if necessary to say "Calibrating..."
-            document.getElementById('edgeStatus').textContent = "Calibrating Orientation...";
-            document.getElementById('edgeStatus').style.color = "var(--accent-cyan)";
-            this.updateUI({ status: 'calibrating' });
-            return; // Wait until aligned
-        }
-
-        // 3. Buffer the Aligned IMU data
+        // 2. Rotate and Filter IMU into vehicle frame
         const alignedAccel = this.aligner.rotate(this.currentAccel);
         const alignedGyro = this.aligner.rotate(this.currentGyro);
+        const filteredIMU = this.imuFilter.step([...alignedAccel, ...alignedGyro], dt);
+
+        // 3. Resample into 10 Hz sensor buffer (decoupling Android raw 50-100Hz hardware rate from 10Hz model)
+        this.sensorBuffer.push(filteredIMU);
+        this.sensorTimes.push(currentTime);
+        if (this.sensorBuffer.length > this.windowSize) {
+            this.sensorBuffer.shift();
+            this.sensorTimes.shift();
+        }
+        if (this.sensorTimes.length > 1) {
+            const timeSpan = currentTime - this.sensorTimes[0];
+            if (timeSpan > 0) {
+                this.observedEffectiveRate = (this.sensorTimes.length - 1) / timeSpan;
+            }
+        } else {
+            this.observedEffectiveRate = 10.0;
+        }
+        this.observedImuRate = this.observedEffectiveRate;
 
         if (hasGoodGNSS && gnss.accuracy <= 2000 && !this.initialized) {
             // The fix initializes position within the downloaded map's reference frame.
@@ -554,30 +670,54 @@ class OfflineEngine {
             return;
         }
 
-        // 3. EKF Predict (High frequency, 10Hz)
+        // 4. EKF Predict (High frequency, 10Hz)
         let ekfStart = performance.now();
         let ekfMs = 0;
         this.ekf.dt = dt;
         this.ekf.predict(alignedAccel, alignedGyro, null, true); // apply NHC
 
-        // 4. Robust ZUPT (Zero Velocity Update) detection
-        // Uses accelerometer variance, gyroscope variance, gravity check, and GNSS speed
+        // 5. Robust Vehicle Motion Detection (ZUPT)
+        // Multi-signal: accelerometer variance, dynamic accel, gyro variance, dwell time, GNSS speed
         let estSpeed = hasGoodGNSS ? speed : null;
-        this.zuptActive = this.zuptDetector.update(this.currentAccel, this.currentGyro, estSpeed);
+        this.zuptActive = this.motionDetector.update(this.currentAccel, this.currentGyro, estSpeed, dt, currentTime);
+        const motionState = this.motionDetector.motionState;
+        const motionReason = this.motionDetector.motionReason;
 
         if (this.zuptActive) {
             this.ekf.updateZupt(0.01);
         }
 
         ekfMs += performance.now() - ekfStart;
-        // 5. Run Edge AI Model if buffer is full
+
+        // 6. Run Edge AI Model if buffer is full and vehicle is moving
         let aiVelocity = null;
         let aiError = null;
-        const expectedRate = this.modelContract?.sample_rate_hz;
-        const rateMatches = !expectedRate || (this.observedImuRate && Math.abs(this.observedImuRate / expectedRate - 1) <= 0.1);
-        if (!rateMatches) aiError = 'IMU rate differs from trained model';
+        let aiStatus = 'INACTIVE';
+        const expectedRate = this.modelContract?.sample_rate_hz || 10;
+        const effectiveRate = this.observedEffectiveRate || 10;
+        const rateMatches = Math.abs(effectiveRate / expectedRate - 1) <= 0.25;
+        if (!rateMatches && expectedRate) {
+            aiError = `Effective IMU rate (${effectiveRate.toFixed(1)}Hz) differs from trained model (${expectedRate}Hz)`;
+        }
+
+        let fallbackReason = null;
+        if (!this.session) {
+            fallbackReason = 'model unavailable (session not initialized)';
+            aiStatus = 'MODEL_UNAVAILABLE';
+        } else if (this.sensorBuffer.length < this.windowSize) {
+            fallbackReason = `insufficient samples (${this.sensorBuffer.length}/${this.windowSize})`;
+            aiStatus = 'BUFFERING';
+        } else if (this.zuptActive) {
+            fallbackReason = `stationary/ZUPT (${motionReason})`;
+            aiStatus = 'STATIONARY_GATED';
+        } else if (!rateMatches) {
+            fallbackReason = `sensor rate mismatch (effective: ${effectiveRate.toFixed(1)} Hz, expected: ${expectedRate} Hz)`;
+            aiStatus = 'RATE_MISMATCH';
+        }
+
         if (this.sensorBuffer.length === this.windowSize && this.session && !this.zuptActive && rateMatches) {
             try {
+                aiStatus = 'RUNNING';
                 const aiStart = performance.now();
                 // Flatten the 2D buffer into a 1D Float32Array
                 const flatData = new Float32Array(this.windowSize * 6);
@@ -593,46 +733,67 @@ class OfflineEngine {
                 feeds[inputName] = tensor;
 
                 const results = await this.session.run(feeds);
-                this.profiler.record('tcn', performance.now() - aiStart);
+                const aiLatency = performance.now() - aiStart;
+                this.profiler.record('tcn', aiLatency);
                 const outputName = this.session.outputNames[0];
                 const v = results[outputName].data;
-                if (v.length !== 2 || !Array.from(v).every(Number.isFinite)) throw new Error('Invalid AI velocity');
-                aiVelocity = [v[0], v[1]]; // Training targets and EKF use East, North.
+                if (v.length !== 2 || !Array.from(v).every(Number.isFinite)) {
+                    throw new Error('Invalid AI velocity: non-finite or dimension mismatch');
+                }
+
+                // Map according to contract output order
+                let vNorth, vEast;
+                if (this.modelContract?.output_order?.[0] === 'north') {
+                    vNorth = v[0];
+                    vEast = v[1];
+                } else {
+                    vEast = v[0];
+                    vNorth = v[1];
+                }
+                const predSpeed = Math.hypot(vNorth, vEast);
+                aiVelocity = [vEast, vNorth]; // EKF state vector maps index 3 -> vEast, index 4 -> vNorth
+                aiStatus = 'ACTIVE';
 
                 if (!this.isCapturing) return;
                 if (this.gpsOutage || gnssGeneration !== this.gnssGeneration) hasGoodGNSS = false;
-                // If GNSS is denied, feed AI velocity into EKF
+                // If GNSS is denied / outage, feed AI velocity into EKF
                 if (!hasGoodGNSS) {
                     ekfStart = performance.now();
                     this.ekf._updateAiVelocity(aiVelocity);
                     ekfMs += performance.now() - ekfStart;
                 }
-
-                // Edge AI Status indicator
-                const statusEl = document.getElementById('edgeStatus');
-                if (statusEl) {
-                    if (currentGnssState === 'DEAD_RECKONING') {
-                        statusEl.textContent = `DEAD RECKONING (AI ACTIVE)`;
-                        statusEl.style.color = "#ff5252";
-                    } else if (currentGnssState === 'NORMAL') {
-                        statusEl.textContent = `NORMAL (GNSS + AI)`;
-                        statusEl.style.color = "#00e676";
-                    } else if (currentGnssState === 'DEGRADED') {
-                        statusEl.textContent = `DEGRADED (Fusing)`;
-                        statusEl.style.color = "#ffeb3b";
-                    } else if (currentGnssState === 'REACQUISITION') {
-                        statusEl.textContent = `REACQUISITION (Stabilizing)`;
-                        statusEl.style.color = "#ffeb3b";
-                    }
-                }
             } catch (e) {
                 aiError = e.message;
-                console.error("[Edge Engine] Inference Error:", e);
+                aiStatus = 'ERROR';
+                fallbackReason = `inference error (${e.message})`;
+                console.error("[Diagnostic AI] Inference failure:", e.message);
             }
         }
 
+        // 7. Rate-limited Vehicle Motion & Inference Diagnostics (Requirement 9)
+        const nowMs = performance.now();
+        const stateChanged = (motionState !== this.lastLoggedMotionState);
+        if (stateChanged || (nowMs - this.lastDiagnosticLogTime >= 1000)) {
+            this.lastDiagnosticLogTime = nowMs;
+            this.lastLoggedMotionState = motionState;
+            const metrics = this.motionDetector.lastMetrics;
+            const accelMag = metrics ? metrics.accelMag.toFixed(2) : Math.hypot(...this.currentAccel).toFixed(2);
+            const dynAccel = metrics ? metrics.dynamicAccel.toFixed(2) : Math.abs(Math.hypot(...this.currentAccel) - 9.81).toFixed(2);
+            const gyroMag = metrics ? metrics.gyroMag.toFixed(3) : Math.hypot(...this.currentGyro).toFixed(3);
+            const predSpeedStr = aiVelocity ? `${Math.hypot(...aiVelocity).toFixed(1)} m/s` : 'N/A';
+            const gnssSpeedStr = hasGoodGNSS ? `${speed.toFixed(1)} m/s` : (this.gpsOutage ? 'OUTAGE' : 'NO FIX');
+
+            console.log(
+                `[Vehicle Motion Diagnostic] State: ${motionState} | Reason: ${motionReason} | ` +
+                `AccelMag: ${accelMag} m/s² (dyn: ${dynAccel}) | GyroMag: ${gyroMag} rad/s | ` +
+                `RawRate: ${(this.observedRawSensorRate || 10).toFixed(1)} Hz | EffRate: ${effectiveRate.toFixed(1)} Hz | ` +
+                `Buffer: ${this.sensorBuffer.length}/${this.windowSize} | AI: ${aiStatus} (Pred: ${predSpeedStr}) | ` +
+                `GNSS: ${gnssSpeedStr}`
+            );
+        }
+
         ekfStart = performance.now();
-        // 6. Navigation Update (GNSS Update)
+        // 8. Navigation Update (GNSS Update)
         const metersPerDegLat = this.localMap.metersPerDegree;
         const metersPerDegLon = this.localMap.lonScale;
 
@@ -672,7 +833,7 @@ class OfflineEngine {
 
         ekfMs += performance.now() - ekfStart;
         this.profiler.record('ekf', ekfMs);
-        // 7. Map Matching
+        // 9. Map Matching
         const mapStart = performance.now();
         let pos = this.ekf.getPosition();
         let heading = this.ekf.getHeading();
@@ -686,7 +847,7 @@ class OfflineEngine {
         }
 
         this.profiler.record('map_matching', performance.now() - mapStart);
-        // 8. Extract Final State for UI
+        // 10. Extract Final State for UI
         pos = this.ekf.getPosition();
         const vel = this.ekf.getVelocity();
         const estLat = this.refLat + (pos[1] / metersPerDegLat);
@@ -705,12 +866,18 @@ class OfflineEngine {
         document.getElementById('mapStatus').textContent = this.localMap.contains(estLat, estLon)
             ? 'Local OSM map · navigation active' : 'Outside downloaded map · map matching unavailable';
         document.getElementById('edgeStatus').textContent = this.zuptActive
-            ? 'IMU + EKF · stationary (AI paused)'
-            : `IMU + EKF · ${aiVelocity ? 'AI active' : `AI buffering ${this.sensorBuffer.length}/${this.windowSize}`} · ${this.gpsOutage ? 'GPS disabled' : this.ekf.mode === 'reacq' ? 'REACQUISITION' : currentGnssState}`;
+            ? `IMU + EKF · STATIONARY (${motionReason}) · AI gated`
+            : `IMU + EKF · ${motionState} (${motionReason}) · ${aiVelocity ? `AI active (${Math.hypot(...aiVelocity).toFixed(1)} m/s)` : `AI buffering ${this.sensorBuffer.length}/${this.windowSize}`} · ${this.gpsOutage ? 'GPS disabled' : this.ekf.mode === 'reacq' ? 'REACQUISITION' : currentGnssState}`;
         document.getElementById('componentStatus').textContent =
-            `AI: ${aiError ? 'ERROR (' + aiError + ')' : aiVelocity ? 'ACTIVE' : this.zuptActive ? 'PAUSED' : 'BUFFERING'} · EKF: ACTIVE · NHC: ${estimatedSpeed >= 0.5 ? 'ACTIVE' : 'LOW SPEED'} · ZUPT: ${this.zuptActive ? 'ACTIVE' : 'MONITORING'} · MAP: ${match.confidence > 0.8 ? 'MATCHED' : 'NO CONFIDENT MATCH'}`;
+            `Motion: ${motionState} · AI: ${aiError ? 'ERROR (' + aiError + ')' : aiVelocity ? `ACTIVE (${(Math.hypot(...aiVelocity)*3.6).toFixed(1)} km/h)` : this.zuptActive ? 'GATED (ZUPT)' : 'BUFFERING'} · EKF: ACTIVE · NHC: ${estimatedSpeed >= 0.5 ? 'ACTIVE' : 'LOW SPEED'} · ZUPT: ${this.zuptActive ? 'ACTIVE' : 'MONITORING'} · MAP: ${match.confidence > 0.8 ? 'MATCHED' : 'NO CONFIDENT MATCH'}`;
         this.updateUI({
             status: 'active',
+            motion_state: motionState,
+            motion_reason: motionReason,
+            raw_sensor_rate: this.observedRawSensorRate || 10,
+            effective_sensor_rate: effectiveRate,
+            buffered_samples: this.sensorBuffer.length,
+            ai_predicted_speed: aiVelocity ? Math.hypot(...aiVelocity) : null,
             nav_mode: this.ekf.mode,
             gnss_available: this.gnssAvailable,
             estimated_lat: estLat,
@@ -733,7 +900,13 @@ class OfflineEngine {
         this.pendingUIData = data;
         if (!this.uiFrameRequested) {
             this.uiFrameRequested = true;
-            requestAnimationFrame(() => this.renderUI());
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => this.renderUI());
+            } else if (typeof setTimeout === 'function') {
+                setTimeout(() => this.renderUI(), 16);
+            } else {
+                this.renderUI();
+            }
         }
     }
 
