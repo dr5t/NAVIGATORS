@@ -770,11 +770,39 @@ dialog {
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* Responsive Mobile Navigation Layout (Max-Width: 1023px) */
+@media (max-width: 1023px) {
     .top-hud-bar { padding: 6px 12px; }
-    .telemetry-pill { display: none; }
+    .telemetry-pill { display: flex; }
     .brand-name small { display: none; }
-    .sheet-nav-tabs { flex-wrap: wrap; gap: 6px; }
+    
+    .map-fabs-right {
+        right: 12px;
+        top: 120px;
+        gap: 8px;
+    }
+    .map-fabs-left {
+        left: 12px;
+        top: 120px;
+    }
+    .fab-btn {
+        width: 40px; height: 40px;
+    }
+
+    .sheet-nav-tabs {
+        flex-wrap: wrap; gap: 4px; padding: 0 10px 8px;
+    }
+    .sheet-tab-btn {
+        padding: 6px 10px; font-size: 11px;
+    }
     .cards-grid { grid-template-columns: 1fr; }
+
+    /* Primary Start Navigation Button styling on Mobile */
+    .btn-engine {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 20px;
+        font-size: 14px;
+        border-radius: var(--radius-md);
+    }
 }
