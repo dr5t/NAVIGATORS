@@ -370,11 +370,12 @@ svg {
 }
 .brand-icon {
     width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan));
+    background: var(--accent-primary);
     border-radius: var(--radius-md);
     display: grid; place-items: center;
     font-weight: 800; font-size: 16px; color: var(--bg-dark);
 }
+
 .brand-name {
     font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
     display: flex; flex-direction: column; line-height: 1.1;
@@ -481,20 +482,35 @@ svg {
 /* Quick Action Engine Button */
 .btn-engine {
     pointer-events: auto;
-    background: linear-gradient(135deg, #059669, #10b981);
-    color: #ffffff;
+    background: var(--accent-primary);
+    color: #0b0f19;
     font-weight: 600;
-    font-size: 12px;
+    font-size: 13px;
     padding: 8px 16px;
-    border-radius: var(--radius-full);
-    box-shadow: 0 4px 14px var(--accent-emerald-glow);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
     display: flex; align-items: center; gap: 8px;
+    transition: all var(--transition-fast);
 }
-.btn-engine:hover { transform: translateY(-1px); }
+.btn-engine:hover:not(:disabled) {
+    background: #34d399;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+.btn-engine:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
 .btn-engine.running {
-    background: linear-gradient(135deg, #dc2626, #ef4444);
-    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    background: var(--color-error);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
 }
+.btn-engine.running:hover:not(:disabled) {
+    background: #f87171;
+    transform: translateY(-1px);
+}
+
+
 
 /* Floating Search Bar */
 .search-bar-floating {
@@ -900,21 +916,124 @@ svg {
     margin-top: 16px;
 }
 
-/* Button Variants */
-.button {
-    padding: 8px 16px; border-radius: var(--radius-sm);
-    font-weight: 500; font-size: 12px;
-    display: inline-flex; align-items: center; gap: 8px;
-    transition: transform var(--transition-fast), background var(--transition-fast);
+/* ==========================================================================
+   BUTTON SYSTEM (CONVENTIONAL HIERARCHY, HOVER, ACTIVE, DISABLED, LOADING)
+   ========================================================================== */
+.button, .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm, 6px);
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all var(--transition-fast, 0.15s ease);
+    user-select: none;
+    box-sizing: border-box;
 }
-.button.primary {
-    background: var(--accent-emerald); color: var(--bg-dark); font-weight: 600;
+
+/* Primary Conventional Button */
+.button.primary, .btn-primary {
+    background: var(--accent-primary, #10b981);
+    color: #0b0f19;
+    font-weight: 600;
+    border-radius: var(--radius-sm, 6px);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
-.button.secondary {
-    background: var(--bg-surface-elevated); color: var(--text-primary);
-    border: 1px solid var(--border-glass);
+.button.primary:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
+    background: #34d399;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
-.button.secondary:hover { border-color: var(--text-secondary); }
+.button.primary:active:not(:disabled), .btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+/* Secondary Button */
+.button.secondary, .btn-secondary {
+    background: var(--bg-surface-elevated, #1f2937);
+    color: var(--text-primary, #f9fafb);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    border-radius: var(--radius-sm, 6px);
+}
+.button.secondary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--text-secondary, #9ca3af);
+    transform: translateY(-1px);
+}
+.button.secondary:active:not(:disabled), .btn-secondary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Danger Button */
+.btn-danger {
+    background: var(--color-error, #ef4444);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: var(--radius-sm, 6px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+.btn-danger:hover:not(:disabled) {
+    background: #f87171;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+}
+.btn-danger:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Ghost Button */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary, #9ca3af);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 6px);
+}
+.btn-ghost:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary, #f9fafb);
+}
+.btn-ghost:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Disabled State */
+button:disabled, .button:disabled, .btn:disabled, .btn-primary:disabled, .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Loading State */
+.button.is-loading, .btn.is-loading, .btn-primary.is-loading, .btn-secondary.is-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+.button.is-loading::after, .btn.is-loading::after, .btn-primary.is-loading::after, .btn-secondary.is-loading::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
 
 /* Dialogs & Overlays */
 dialog {
@@ -928,42 +1047,144 @@ dialog {
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); }
 
-/* Responsive Mobile Navigation Layout (Max-Width: 1023px) */
-@media (max-width: 1023px) {
-    .top-hud-bar { padding: 6px 12px; }
-    .telemetry-pill { display: flex; }
-    .brand-name small { display: none; }
-    
-    .map-fabs-right {
-        right: 12px;
-        top: 120px;
-        gap: 8px;
-    }
-    .map-fabs-left {
-        left: 12px;
-        top: 120px;
-    }
-    .fab-btn {
-        width: 40px; height: 40px;
-    }
+/* ==========================================================================
+   DELIBERATE RESPONSIVE BREAKPOINT SYSTEM
+   1. Large Desktop (>= 1280px)
+   2. Laptop (1024px - 1279px)
+   3. Tablet (768px - 1023px)
+   4. Mobile (480px - 767px)
+   5. Narrow Mobile (< 480px)
+   ========================================================================== */
 
-    .sheet-nav-tabs {
-        flex-wrap: wrap; gap: 4px; padding: 0 10px 8px;
-    }
-    .sheet-tab-btn {
-        padding: 6px 10px; font-size: 11px;
-    }
-    .cards-grid { grid-template-columns: 1fr; }
-
-    /* Primary Start Navigation Button styling on Mobile */
-    .btn-engine {
-        width: 100%;
-        justify-content: center;
-        padding: 12px 20px;
-        font-size: 14px;
-        border-radius: var(--radius-md);
+/* --- 1. LARGE DESKTOP (>= 1280px) --- */
+@media (min-width: 1280px) {
+    .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* --- 2. LAPTOP / COMPACT DESKTOP (1024px - 1279px) --- */
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* --- 3. TABLET (768px - 1023px) --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .desktop-sidebar { display: none !important; }
+    .top-hud-bar { padding: 8px 16px; }
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    .sheet-nav-tabs { justify-content: space-around; }
+}
+
+/* --- 4. MOBILE (480px - 767px) --- */
+@media (min-width: 480px) and (max-width: 767px) {
+    .desktop-sidebar { display: none !important; }
+    
+    .top-hud-container {
+        top: 8px; left: 8px; right: 8px;
+        gap: 6px;
+    }
+    .top-hud-bar {
+        padding: 6px 10px;
+    }
+    .brand-name small { display: none; }
+
+    .map-fabs-right { right: 8px; top: 110px; gap: 8px; }
+    .map-fabs-left { left: 8px; top: 110px; }
+
+    .sheet-nav-tabs {
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 4px 8px 8px;
+        gap: 6px;
+        scroll-snap-type: x mandatory;
+    }
+    .sheet-tab-btn {
+        flex: 0 0 auto;
+        min-height: 44px;
+        padding: 8px 12px;
+        scroll-snap-align: start;
+    }
+
+    .cards-grid { grid-template-columns: 1fr; }
+    .btn-engine { width: 100%; min-height: 44px; justify-content: center; }
+}
+
+/* --- 5. NARROW MOBILE (< 480px) --- */
+@media (max-width: 479px) {
+    html, body {
+        overflow-x: hidden !important;
+    }
+
+    .desktop-sidebar { display: none !important; }
+
+    .top-hud-container {
+        top: 6px; left: 6px; right: 6px;
+        gap: 4px;
+    }
+
+    .top-hud-bar {
+        padding: 4px 8px;
+        gap: 8px;
+    }
+
+    .brand-pill { gap: 6px; }
+    .brand-icon { width: 28px; height: 28px; font-size: 14px; }
+    .brand-name { font-size: 12px; }
+    .brand-name small { display: none; }
+
+    .telemetry-pill {
+        padding: 4px 8px;
+        gap: 8px;
+    }
+    .speed-badge strong { font-size: 16px; }
+    .speed-badge span { font-size: 9px; }
+
+    .map-fabs-right { right: 6px; top: 100px; gap: 6px; }
+    .map-fabs-left { left: 6px; top: 100px; }
+    .fab-btn { width: 38px; height: 38px; }
+
+    .sheet-nav-tabs {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 4px 6px 6px;
+        gap: 4px;
+        scrollbar-width: none;
+    }
+    .sheet-nav-tabs::-webkit-scrollbar { display: none; }
+
+    .sheet-tab-btn {
+        flex: 0 0 auto;
+        min-height: 44px;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .sheet-content {
+        padding: 12px 14px 20px;
+    }
+
+    .cards-grid { grid-template-columns: 1fr; gap: 8px; }
+    .nav-card { padding: 10px 12px; }
+
+    .btn-engine {
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+        font-size: 13px;
+    }
+
+    .lab-nav-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 4px !important;
+    }
+}
+
 
 /* ==========================================================================
    COMPACT FOOTER COMPONENT
@@ -1038,4 +1259,71 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); }
         margin-left: 0;
     }
 }
+
+/* ==========================================================================
+   ACCESSIBILITY & INCLUSIVITY SYSTEM (WCAG 2.1 AA COMPLIANCE)
+   1. Keyboard Focus States (:focus-visible)
+   2. Reduced Motion Support (@media prefers-reduced-motion)
+   3. Screen Reader Utilities (.sr-only)
+   4. High Contrast & Non-Color Dependent State Helpers
+   ========================================================================== */
+
+/* 1. Visible Focus States for Keyboard Navigation */
+:focus {
+    outline: none;
+}
+
+:focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--accent-emerald, #10b981) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25) !important;
+}
+
+/* 2. Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .btn-engine, .button, .fab-btn, .bottom-sheet, .lab-drawer {
+        transition: none !important;
+        transform: none !important;
+    }
+}
+
+/* 3. Screen Reader Utility Class */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* 4. High Contrast Text & Non-Color Dependent State Helpers */
+.high-contrast-text {
+    color: #ffffff !important;
+}
+
+.fab-btn:focus-visible {
+    border-color: var(--accent-emerald) !important;
+}
+
+.sheet-tab-btn:focus-visible {
+    border-color: var(--accent-emerald) !important;
+}
+
 

@@ -1004,7 +1004,8 @@
                         <div style="font-size: 10px; font-family: var(--font-mono); color: var(--accent-emerald);">ENGINEERING TELEMETRY & WORKSPACE · SIH26168 IDR SUITE</div>
                     </div>
                 </div>
-                <button id="btnCloseLab" class="button secondary" style="font-size:14px; padding:4px 12px; background: rgba(255,255,255,0.05);">✕ Close Lab</button>
+                <button id="btnCloseLab" class="button secondary" style="font-size:13px; padding:4px 12px; background: rgba(255,255,255,0.05);"><svg style="width:14px; height:14px; margin-right:4px;"><use href="#i-close"/></svg>Close Lab</button>
+
             </div>
 
             <!-- 12-SECTION TECHNICAL NAVIGATION TOOLBAR -->
@@ -1541,17 +1542,27 @@
 
             sheetTabs.forEach(tab => {
                 tab.addEventListener('click', () => {
-                    sheetTabs.forEach(t => t.classList.remove('selected'));
+                    sheetTabs.forEach(t => {
+                        t.classList.remove('selected');
+                        t.setAttribute('aria-selected', 'false');
+                    });
                     tab.classList.add('selected');
+                    tab.setAttribute('aria-selected', 'true');
                     const target = tab.dataset.sheetTab;
                     Object.keys(panels).forEach(key => {
-                        if (panels[key]) panels[key].hidden = (key !== target);
+                        if (panels[key]) {
+                            const isHidden = (key !== target);
+                            panels[key].hidden = isHidden;
+                            panels[key].setAttribute('aria-hidden', isHidden ? 'true' : 'false');
+                        }
                     });
                     if (target === 'lab' && labDrawer) {
                         labDrawer.hidden = false;
+                        labDrawer.setAttribute('aria-hidden', 'false');
                     }
                 });
             });
+
 
             // Desktop Navigation Sidebar Sync
             const desktopNavItems = document.querySelectorAll('[data-desktop-tab]');
@@ -2326,7 +2337,8 @@
                             </div>
                             <div style="display:flex; gap:6px;">
                                 <a href="tel:${c.phone}" style="font-size:10px; padding:3px 8px; background:rgba(16,185,129,0.15); color:var(--accent-emerald); border:1px solid var(--accent-emerald); border-radius:3px; text-decoration:none; font-weight:600;">Call</a>
-                                <button onclick="window.removeSosContact(${i})" style="font-size:10px; padding:3px 6px; background:transparent; color:#ef4444; border:none; cursor:pointer;">✕</button>
+                                <button onclick="window.removeSosContact(${i})" style="font-size:10px; padding:3px 6px; background:transparent; color:#ef4444; border:none; cursor:pointer;" title="Remove contact">Remove</button>
+
                             </div>
                         </div>
                     `).join('');

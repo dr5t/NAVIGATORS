@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnStart.addEventListener('click', () => {
             btnStart.classList.add('btn-accepted-anim');
-            btnStart.textContent = 'Accepted ✓';
+            btnStart.textContent = 'Accepted';
             setTimeout(() => {
                 localStorage.setItem('startupAcknowledged', 'true');
                 startupModal.close();
@@ -523,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnStart.textContent = 'Accept & Continue';
             }, 600);
         });
+
 
         btnSkip.addEventListener('click', () => {
             btnSkip.classList.remove('btn-shake-anim');
