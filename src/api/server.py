@@ -432,6 +432,19 @@ def get_about_page():
 def get_contact_page():
     return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "contact.html"))
 
+@app.get("/404")
+def get_404_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "404.html"))
+
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(StarletteHTTPException)
+def custom_http_exception_handler(request, exc):
+    if exc.status_code == 404:
+        return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "404.html"), status_code=404)
+    return {"detail": exc.detail}
+
+
 @app.get("/dataset/details")
 def get_dataset_details():
     import json

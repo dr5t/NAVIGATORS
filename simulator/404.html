@@ -3,69 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 Page Not Found | Navigators</title>
-    <meta name="description" content="The requested page could not be found on the Navigators map.">
+    <title>Page Not Found | Navigators</title>
+    <meta name="description" content="The location you are looking for is not available.">
     
-    <!-- Open Graph Metadata -->
-    <meta property="og:title" content="404 Page Not Found | Navigators">
-    <meta property="og:description" content="Off the map. Return to standard navigation.">
-    <meta property="og:type" content="website">
-
     <!-- Favicon & Manifest -->
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="index.css">
     <style>
-        body { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            text-align: center; 
-            padding: 2rem;
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-dark, #0B0F19);
+            color: var(--text-primary, #F9FAFB);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            text-align: center;
+            box-sizing: border-box;
         }
-        h1 { 
-            font-family: var(--font-mono); 
-            font-size: 5rem; 
-            color: var(--accent-amber); 
-            margin: 0; 
-            letter-spacing: -0.05em;
+
+        .container-404 {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 3rem 2.5rem;
+            max-width: 460px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        p { 
-            color: var(--text-secondary); 
-            font-size: 1.1rem; 
-            margin: 1rem 0 2rem; 
-        }
-        .btn-home {
-            background: var(--accent-emerald);
-            color: var(--bg-dark);
+
+        .badge-404 {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #F59E0B;
+            font-size: 0.85rem;
+            font-family: var(--font-mono, monospace);
             font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-sm);
+            border-radius: 9999px;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #F9FAFB;
+            margin: 0 0 0.75rem 0;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        p {
+            color: #9CA3AF;
+            font-size: 1.05rem;
+            line-height: 1.5;
+            margin: 0 0 2rem 0;
+        }
+
+        .btn-navigate {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #10B981;
+            color: #0B0F19;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.85rem 1.75rem;
+            border-radius: 8px;
             text-decoration: none;
-            transition: transform var(--transition-fast);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
         }
-        .btn-home:hover {
+
+        .btn-navigate:hover {
+            background: #34D399;
             transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
         }
+
         footer {
-            position: absolute;
-            bottom: 24px;
-            font-size: 12px;
-            color: var(--text-muted);
+            margin-top: 2.5rem;
+            font-size: 0.8rem;
+            color: #6B7280;
         }
     </style>
 </head>
 <body>
-    <h1>404</h1>
-    <p>Signal lost. The requested path is off the map.</p>
-    <a href="./" class="btn-home">Return to Navigation Map</a>
+    <div class="container-404">
+        <div class="badge-404">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            ERROR 404
+        </div>
+        <h1>Page not found</h1>
+        <p>The location you're looking for isn't available.</p>
+        <a href="./" class="btn-navigate">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+            Return to Navigate
+        </a>
+    </div>
 
     <footer>
         Developed by Navigators
     </footer>
 </body>
 </html>
+
