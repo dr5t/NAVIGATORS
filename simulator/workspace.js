@@ -99,24 +99,7 @@ window.selectWorkspace = view => {
         if (view === 'performance') window.refreshDeviceTimings();
     };
 
-    // Fast switch if it's the initial load or loading overlay doesn't exist
-    if (previous === undefined || !window.setLoadingState) {
-        performSwitch();
-        return;
-    }
-
-    // Play loading animation
-    window.setLoadingState(0, "LOADING MODULE", "READY");
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += 10;
-        window.setLoadingState(progress, "LOADING MODULE", "READY");
-        if (progress >= 100) {
-            clearInterval(interval);
-            // Switch UI immediately when progress hits 100% so it's ready when the overlay fades out (800ms transition)
-            performSwitch();
-        }
-    }, 40); // 400ms loading + 800ms lock/fade animation = ~1.2s total wait before user sees the new screen
+    performSwitch();
 };
 
 window.updateConsoleTelemetry = data => {
@@ -513,18 +496,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnSkip = byId('btnSkip');
 
         const runInitialLoading = async () => {
-            window.setLoadingState(0, "INITIALIZING WORKSPACE", "WORKSPACE READY");
-            await new Promise(r => setTimeout(r, 400));
-            window.setLoadingState(40, "LOADING OFFLINE DATA", "WORKSPACE READY");
-            await new Promise(r => setTimeout(r, 400));
-            window.setLoadingState(80, "CONNECTING TO SENSORS", "WORKSPACE READY");
-            await new Promise(r => setTimeout(r, 400));
+            window.setLoadingState(0, "INITIALIZING ENGINE & WORKSPACE", "WORKSPACE READY");
+            if (window.offlineEngine?.initModel) {
+                try {
+                    await window.offlineEngine.initModel();
+                } catch (e) {
+                    console.warn('[Engine Init] Engine deferred or offline:', e);
+                }
+            }
+            window.setLoadingState(60, "VERIFYING LOCAL MAP DATA", "WORKSPACE READY");
+            await window.refreshOfflineMapsUI?.();
             window.setLoadingState(100, "WORKSPACE READY", "WORKSPACE READY");
-            
+
             // Wait for the overlay to fade out before showing the modal
             setTimeout(() => {
                 startupModal.showModal();
-            }, 1200);
+            }, 1000);
         };
         runInitialLoading();
 

@@ -1,0 +1,290 @@
+{
+  "version": "1.0",
+  "roles": [
+    {
+      "id": "guest",
+      "name": "Guest",
+      "description": "Unauthenticated visitor with read-only navigation and map access"
+    },
+    {
+      "id": "internal_contributor",
+      "name": "Internal Contributor",
+      "description": "Technical field contributor with trajectory recording and ML evaluation access"
+    },
+    {
+      "id": "local_contributor",
+      "name": "Local Contributor",
+      "description": "Verified local community editor with place and road contribution permissions"
+    },
+    {
+      "id": "moderator",
+      "name": "Community Moderator",
+      "description": "Reviewer authorized to approve or reject community submissions and manage place data"
+    },
+    {
+      "id": "super_admin",
+      "name": "Super Administrator",
+      "description": "Platform governance administrator with universal access across all resources"
+    },
+    {
+      "id": "team_admin",
+      "name": "Team Administrator",
+      "description": "Engineering lead with ML training, model deployment, and role assignment permissions"
+    },
+    {
+      "id": "user",
+      "name": "Registered User",
+      "description": "Standard member with saved places and personal contribution drafting"
+    }
+  ],
+  "permissions": [
+    {
+      "id": "contribution:approve",
+      "resource": "contribution",
+      "action": "approve",
+      "description": "Approve contribution and synchronize to canonical map data"
+    },
+    {
+      "id": "contribution:create",
+      "resource": "contribution",
+      "action": "create",
+      "description": "Submit new place edits, hazard reports, or road change proposals"
+    },
+    {
+      "id": "contribution:read",
+      "resource": "contribution",
+      "action": "read",
+      "description": "View community contributions and review statuses"
+    },
+    {
+      "id": "contribution:reject",
+      "resource": "contribution",
+      "action": "reject",
+      "description": "Reject contribution with moderation rationale"
+    },
+    {
+      "id": "contribution:update",
+      "resource": "contribution",
+      "action": "update",
+      "description": "Edit pending contributions before review"
+    },
+    {
+      "id": "contribution:withdraw",
+      "resource": "contribution",
+      "action": "withdraw",
+      "description": "Withdraw own pending contribution"
+    },
+    {
+      "id": "dataset:create",
+      "resource": "dataset",
+      "action": "create",
+      "description": "Upload or record new sensor trajectory datasets"
+    },
+    {
+      "id": "dataset:delete",
+      "resource": "dataset",
+      "action": "delete",
+      "description": "Delete datasets from local or cloud storage"
+    },
+    {
+      "id": "dataset:read",
+      "resource": "dataset",
+      "action": "read",
+      "description": "Inspect and download trajectory recordings and ground truth"
+    },
+    {
+      "id": "dataset:update",
+      "resource": "dataset",
+      "action": "update",
+      "description": "Tag session metadata, vehicle parameters, and sensor mounting info"
+    },
+    {
+      "id": "model:approve",
+      "resource": "model",
+      "action": "approve",
+      "description": "Approve candidate model for production qualification"
+    },
+    {
+      "id": "model:create",
+      "resource": "model",
+      "action": "create",
+      "description": "Register newly trained ONNX model checkpoints"
+    },
+    {
+      "id": "model:deploy",
+      "resource": "model",
+      "action": "deploy",
+      "description": "Deploy qualified model to live client navigation runtime"
+    },
+    {
+      "id": "model:read",
+      "resource": "model",
+      "action": "read",
+      "description": "Inspect model architectures, weights, and evaluation metrics"
+    },
+    {
+      "id": "model:update",
+      "resource": "model",
+      "action": "update",
+      "description": "Update model metadata and evaluation notes"
+    },
+    {
+      "id": "place:create",
+      "resource": "place",
+      "action": "create",
+      "description": "Add new places, amenities, and POIs to map"
+    },
+    {
+      "id": "place:delete",
+      "resource": "place",
+      "action": "delete",
+      "description": "Remove places from canonical map data"
+    },
+    {
+      "id": "place:read",
+      "resource": "place",
+      "action": "read",
+      "description": "Query and view places, amenities, and POIs"
+    },
+    {
+      "id": "place:update",
+      "resource": "place",
+      "action": "update",
+      "description": "Modify place details, metadata, and operating hours"
+    },
+    {
+      "id": "role:assign",
+      "resource": "role",
+      "action": "assign",
+      "description": "Assign or revoke roles and permissions for accounts"
+    },
+    {
+      "id": "training:create",
+      "resource": "training",
+      "action": "create",
+      "description": "Dispatch neural network model training jobs"
+    },
+    {
+      "id": "training:read",
+      "resource": "training",
+      "action": "read",
+      "description": "Monitor training status, epoch loss curves, and profiler timings"
+    },
+    {
+      "id": "user:read",
+      "resource": "user",
+      "action": "read",
+      "description": "View user profiles, identifiers, and role statuses"
+    },
+    {
+      "id": "user:update",
+      "resource": "user",
+      "action": "update",
+      "description": "Modify user profile settings and account states"
+    }
+  ],
+  "role_permissions": {
+    "guest": [
+      "place:read"
+    ],
+    "internal_contributor": [
+      "contribution:create",
+      "contribution:read",
+      "contribution:update",
+      "contribution:withdraw",
+      "dataset:create",
+      "dataset:read",
+      "dataset:update",
+      "model:create",
+      "model:read",
+      "place:create",
+      "place:read",
+      "place:update",
+      "training:create",
+      "training:read",
+      "user:read"
+    ],
+    "local_contributor": [
+      "contribution:create",
+      "contribution:read",
+      "contribution:update",
+      "contribution:withdraw",
+      "place:create",
+      "place:read",
+      "place:update",
+      "user:read"
+    ],
+    "moderator": [
+      "contribution:approve",
+      "contribution:create",
+      "contribution:read",
+      "contribution:reject",
+      "contribution:update",
+      "contribution:withdraw",
+      "place:create",
+      "place:delete",
+      "place:read",
+      "place:update",
+      "user:read"
+    ],
+    "super_admin": [
+      "contribution:approve",
+      "contribution:create",
+      "contribution:read",
+      "contribution:reject",
+      "contribution:update",
+      "contribution:withdraw",
+      "dataset:create",
+      "dataset:delete",
+      "dataset:read",
+      "dataset:update",
+      "model:approve",
+      "model:create",
+      "model:deploy",
+      "model:read",
+      "model:update",
+      "place:create",
+      "place:delete",
+      "place:read",
+      "place:update",
+      "role:assign",
+      "training:create",
+      "training:read",
+      "user:read",
+      "user:update"
+    ],
+    "team_admin": [
+      "contribution:approve",
+      "contribution:create",
+      "contribution:read",
+      "contribution:reject",
+      "contribution:update",
+      "contribution:withdraw",
+      "dataset:create",
+      "dataset:delete",
+      "dataset:read",
+      "dataset:update",
+      "model:approve",
+      "model:create",
+      "model:deploy",
+      "model:read",
+      "model:update",
+      "place:create",
+      "place:delete",
+      "place:read",
+      "place:update",
+      "role:assign",
+      "training:create",
+      "training:read",
+      "user:read",
+      "user:update"
+    ],
+    "user": [
+      "contribution:create",
+      "contribution:read",
+      "contribution:withdraw",
+      "place:read",
+      "user:read"
+    ]
+  }
+}

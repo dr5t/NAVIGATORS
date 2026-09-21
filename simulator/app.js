@@ -34,7 +34,13 @@ const state = {
     // Accumulated coordinates for drawing
     truthCoords: [],
     estimatedCoords: [],
+
+    // Routing layers & positioning
+    routeLine: null,
+    destMarker: null,
+    lastPosition: null,
 };
+window.state = state;
 
 // ========================================================
 // Initialization
@@ -130,7 +136,7 @@ async function pollTrainingStatus() {
         const label = document.getElementById('trainStatusLabel');
         if (label) {
             if (data.status === 'Training Complete' || (!data.is_training && data.current_epoch === 40)) {
-                label.textContent = `Production Model Active (4.20 m/s MAE — Retained)`;
+                label.textContent = `Production Model Active (4.20 m/s MAE - Retained)`;
                 label.style.color = '#10b981';
             } else if (!data.is_training && data.status === 'Idle') {
                 label.textContent = `Production Model Active (4.20 m/s MAE)`;
@@ -259,6 +265,13 @@ function initMap() {
         zIndexOffset: 999,
         opacity: 0,
     }).addTo(state.map);
+
+    // Map click destination selection
+    state.map.on('click', (e) => {
+        if (typeof window.setDestination === 'function') {
+            window.setDestination(e.latlng.lat, e.latlng.lng, `Destination (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`);
+        }
+    });
 }
 
 function initControls() {
@@ -421,9 +434,193 @@ function initControls() {
             }
         }
     });
+    // Phase 2 Floating Map Action Buttons
+    const btnFollow = document.getElementById('btnFollow');
+    if (btnFollow) {
+        btnFollow.addEventListener('click', () => {
+            state.followPosition = !state.followPosition;
+            btnFollow.setAttribute('aria-pressed', String(state.followPosition));
+            btnFollow.style.background = state.followPosition ? 'rgba(16,185,129,0.2)' : '';
+            btnFollow.style.borderColor = state.followPosition ? 'var(--accent-emerald)' : '';
+            if (state.followPosition && state.map) {
+                const pos = state.lastPosition || (state.vehicleMarker ? state.vehicleMarker.getLatLng() : null);
+                if (pos) {
+                    const lat = pos.lat !== undefined ? pos.lat : pos[0];
+                    const lon = pos.lon !== undefined ? (pos.lng !== undefined ? pos.lng : pos.lon) : pos[1];
+                    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                        state.map.panTo([lat, lon]);
+                    }
+                }
+            }
+        });
+    }
 
-    // Data Recording UI removed (automatically handles background sync via Start Engine)
+    const btnFitArea = document.getElementById('btnFitArea');
+    if (btnFitArea) {
+        btnFitArea.addEventListener('click', () => {
+            if (state.routeLine && state.map) {
+                state.map.fitBounds(state.routeLine.getBounds(), { padding: [50, 50] });
+            } else if (state.localMap && state.localMap.data && state.localMap.data.origin && state.map) {
+                state.map.setView([state.localMap.data.origin.lat, state.localMap.data.origin.lon], 15);
+            }
+        });
+    }
+
+    const btnEmergencySOS = document.getElementById('btnEmergencySOS');
+    if (btnEmergencySOS) {
+        btnEmergencySOS.addEventListener('click', () => {
+            const pos = state.lastPosition || (state.vehicleMarker ? state.vehicleMarker.getLatLng() : null);
+            const latStr = pos ? (pos.lat !== undefined ? pos.lat.toFixed(6) : pos[0].toFixed(6)) : 'Acquiring...';
+            const lonStr = pos ? (pos.lon !== undefined ? (pos.lng !== undefined ? pos.lng.toFixed(6) : pos.lon.toFixed(6)) : pos[1].toFixed(6)) : 'Acquiring...';
+            const modeEl = document.getElementById('navModeIndicator');
+            const modeName = modeEl ? modeEl.textContent.trim() : 'Active';
+            const sosMsg = `EMERGENCY SOS ALERT\n\nCurrent Estimated Position:\nLatitude: ${latStr}\nLongitude: ${lonStr}\nMode: ${modeName}\n\nBroadcast emergency coordinates to local dispatch?`;
+            if (confirm(sosMsg)) {
+                showNavToast('Emergency Coordinates Saved', `Broadcast: ${latStr}, ${lonStr}`, 4000);
+            }
+        });
+    }
+
+    const btnCancelRoute = document.getElementById('btnCancelRoute');
+    if (btnCancelRoute) {
+        btnCancelRoute.addEventListener('click', () => {
+            if (typeof window.cancelRoute === 'function') {
+                window.cancelRoute();
+            }
+        });
+    }
 }
+
+// ========================================================
+// Phase 2 Routing & RBAC Engine Integration
+// ========================================================
+if (typeof NavigatorsRouter !== 'undefined') {
+    window.router = new NavigatorsRouter();
+}
+if (typeof NavigatorsAuth !== 'undefined') {
+    window.auth = new NavigatorsAuth();
+}
+
+window.setDestination = async function(destLat, destLon, name = 'Destination') {
+    if (!state.map) return;
+
+    let startLat = null, startLon = null;
+    if (state.lastPosition && Number.isFinite(state.lastPosition.lat)) {
+        startLat = state.lastPosition.lat;
+        startLon = state.lastPosition.lon;
+    } else if (state.vehicleMarker && state.vehicleMarker.getLatLng()) {
+        const vPos = state.vehicleMarker.getLatLng();
+        if (Number.isFinite(vPos.lat) && Number.isFinite(vPos.lng) && (vPos.lat !== 0 || vPos.lng !== 0)) {
+            startLat = vPos.lat;
+            startLon = vPos.lng;
+        }
+    }
+
+    if (!Number.isFinite(startLat) || !Number.isFinite(startLon)) {
+        if (state.localMap && state.localMap.data && state.localMap.data.origin) {
+            startLat = state.localMap.data.origin.lat;
+            startLon = state.localMap.data.origin.lon;
+        } else {
+            const center = state.map.getCenter();
+            startLat = center.lat;
+            startLon = center.lng;
+        }
+    }
+
+    const routeCard = document.getElementById('activeRouteCard');
+    const routeDestName = document.getElementById('routeDestName');
+    const routeMeta = document.getElementById('routeMeta');
+    const routeManeuvers = document.getElementById('routeManeuvers');
+    const mapStatus = document.getElementById('mapStatus');
+
+    if (routeCard) {
+        routeCard.style.display = 'flex';
+        if (routeDestName) routeDestName.textContent = name;
+        if (routeMeta) routeMeta.textContent = 'Calculating optimal driving route...';
+        if (routeManeuvers) routeManeuvers.innerHTML = '<div style="font-size:11px; color:var(--text-muted); padding:4px;">Finding path...</div>';
+    }
+    if (mapStatus) mapStatus.textContent = `Routing to ${name}...`;
+
+    try {
+        if (!window.router && typeof NavigatorsRouter !== 'undefined') {
+            window.router = new NavigatorsRouter();
+        }
+        if (!window.router) throw new Error('Routing engine not initialized.');
+
+        const route = await window.router.route(startLat, startLon, destLat, destLon, state.localMap);
+
+        if (state.routeLine) {
+            state.routeLine.remove();
+            state.routeLine = null;
+        }
+        if (state.destMarker) {
+            state.destMarker.remove();
+            state.destMarker = null;
+        }
+
+        state.routeLine = L.polyline(route.coordinates, {
+            color: '#06b6d4',
+            weight: 5,
+            opacity: 0.9,
+            lineJoin: 'round'
+        }).addTo(state.map);
+
+        const destIcon = L.divIcon({
+            className: 'dest-marker',
+            html: `<div style="background:#06b6d4; color:#0b0f19; font-weight:700; font-size:11px; padding:3px 8px; border-radius:4px; border:1px solid #ffffff; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.5);">${name}</div>`,
+            iconAnchor: [30, 20]
+        });
+        state.destMarker = L.marker([destLat, destLon], { icon: destIcon }).addTo(state.map);
+
+        state.map.fitBounds(state.routeLine.getBounds(), { padding: [60, 60] });
+
+        if (routeCard) {
+            const distText = route.distanceMeters < 1000 
+                ? `${Math.round(route.distanceMeters)} m` 
+                : `${(route.distanceMeters / 1000).toFixed(1)} km`;
+            const durationMins = Math.ceil(route.durationSeconds / 60);
+            const engineLabel = route.engine === 'osrm' ? 'Online OSRM' : 'Offline A* Road Graph';
+
+            if (routeMeta) routeMeta.textContent = `${distText} · ${durationMins} min · ${engineLabel}`;
+
+            if (routeManeuvers) {
+                routeManeuvers.innerHTML = route.maneuvers.map(m => `
+                    <div class="route-step-item">
+                        <span class="route-step-instruction">
+                            <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2;"><polyline points="9 18 15 12 9 6"/></svg>
+                            ${m.instruction}
+                        </span>
+                        <span class="route-step-dist">${m.distanceMeters < 1000 ? Math.round(m.distanceMeters) + 'm' : (m.distanceMeters/1000).toFixed(1) + 'km'}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        if (mapStatus) mapStatus.textContent = `Route active: ${name} via ${route.engine === 'osrm' ? 'Online OSRM' : 'Offline A*'}.`;
+
+    } catch (err) {
+        console.warn('[Routing Error]', err);
+        if (routeCard) routeCard.style.display = 'none';
+        if (mapStatus) mapStatus.textContent = `Route planning: ${err.message || 'No driving path found.'}`;
+        alert(`Route planning failed: ${err.message || 'No driving path found in local road network.'}`);
+    }
+};
+
+window.cancelRoute = function() {
+    if (state.routeLine) {
+        state.routeLine.remove();
+        state.routeLine = null;
+    }
+    if (state.destMarker) {
+        state.destMarker.remove();
+        state.destMarker = null;
+    }
+    const routeCard = document.getElementById('activeRouteCard');
+    if (routeCard) routeCard.style.display = 'none';
+    const mapStatus = document.getElementById('mapStatus');
+    if (mapStatus) mapStatus.textContent = 'Active route cancelled.';
+};
+
 
 // ========================================================
 // Data Loading
@@ -693,9 +890,9 @@ function updateNavMode(mode, accuracy = 0) {
 
     if (lastToastMode !== mode) {
         if (mode === 'dr' && lastToastMode !== null) {
-            showNavToast('Dead Reckoning Active', 'GNSS signal lost. Navigation continues.', 2500);
+            showNavToast('Dead Reckoning Active', 'GNSS signal lost. Inertial dead reckoning continues.', 3500);
         } else if ((mode === 'reacq' || (mode === 'gnss_ins' && lastToastMode === 'dr')) && lastToastMode !== null) {
-            showNavToast('GNSS Restored', 'Position correction resumed.', 2500);
+            showNavToast('GNSS Restored', 'GNSS signal reacquired. Position correction resumed.', 2500);
         }
         lastToastMode = mode;
     }

@@ -11,18 +11,18 @@
     --bg-dark: #0b0f19;
     --bg-surface: #111827;
     --bg-surface-elevated: #1f2937;
-    --bg-glass: rgba(17, 24, 39, 0.85);
-    --bg-glass-heavy: rgba(11, 15, 25, 0.92);
+    --bg-glass: #111827;
+    --bg-glass-heavy: #0b0f19;
 
     /* Text Tokens */
     --text-primary: #f9fafb;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
 
-    /* Border Tokens */
-    --border-color: rgba(255, 255, 255, 0.12);
-    --border-glass: rgba(255, 255, 255, 0.12);
-    --border-glass-light: rgba(255, 255, 255, 0.06);
+    /* Border Tokens (Solid & Crisp) */
+    --border-color: #1f2937;
+    --border-glass: #1f2937;
+    --border-glass-light: #1f2937;
 
     /* Accent & Semantic State Tokens */
     --accent-primary: #10b981;
@@ -36,9 +36,9 @@
     --color-error: #ef4444;
     --color-info: #06b6d4;
 
-    /* Map & HUD Overlay Tokens */
-    --map-overlay-bg: rgba(11, 15, 25, 0.85);
-    --map-overlay-border: rgba(255, 255, 255, 0.12);
+    /* Map & HUD Overlay Tokens (Solid Opaque) */
+    --map-overlay-bg: #0f172a;
+    --map-overlay-border: #1f2937;
 
     /* GNSS State Colors */
     --gnss-active: var(--color-success);
@@ -232,8 +232,7 @@ svg {
 
 .leaflet-bar {
     border: 1px solid var(--border-glass) !important;
-    background: var(--bg-glass) !important;
-    backdrop-filter: blur(12px);
+    background: var(--bg-surface) !important;
     border-radius: var(--radius-md) !important;
     overflow: hidden;
     box-shadow: var(--shadow-hud);
@@ -249,10 +248,9 @@ svg {
 }
 
 .leaflet-control-attribution {
-    background: var(--bg-glass-heavy) !important;
+    background: var(--bg-surface) !important;
     color: var(--text-muted) !important;
     font-size: 10px !important;
-    backdrop-filter: blur(8px);
     padding: 2px 8px !important;
     border-radius: var(--radius-sm) 0 0 0;
 }
@@ -287,8 +285,7 @@ svg {
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
-    background: var(--bg-glass-heavy);
-    backdrop-filter: blur(12px);
+    background: var(--bg-surface-elevated);
     border: 1px solid var(--border-glass);
     padding: 6px 14px;
     border-radius: var(--radius-full);
@@ -352,9 +349,7 @@ svg {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: var(--bg-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: var(--bg-surface);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-lg);
     padding: 8px 16px;
@@ -518,8 +513,7 @@ svg {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--bg-glass-heavy);
-    backdrop-filter: blur(16px);
+    background: var(--bg-surface);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-lg);
     padding: 8px 16px;
@@ -580,8 +574,7 @@ svg {
 .fab-btn {
     width: 44px; height: 44px;
     border-radius: var(--radius-md);
-    background: var(--bg-glass-heavy);
-    backdrop-filter: blur(12px);
+    background: var(--bg-surface);
     border: 1px solid var(--border-glass);
     color: var(--text-primary);
     display: grid; place-items: center;
@@ -660,9 +653,7 @@ svg {
         top: 130px;
         z-index: 1000;
         flex-direction: column;
-        background: var(--bg-glass-heavy);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        background: var(--bg-surface);
         border: 1px solid var(--border-glass);
         border-radius: var(--radius-lg);
         padding: 10px;
@@ -712,9 +703,7 @@ svg {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     z-index: 1100;
-    background: var(--bg-glass-heavy);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--bg-surface);
     border-top: 1px solid var(--border-glass);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     box-shadow: var(--shadow-sheet);
@@ -863,8 +852,7 @@ svg {
     position: fixed;
     inset: 0;
     z-index: 2000;
-    background: var(--bg-glass-heavy);
-    backdrop-filter: blur(24px);
+    background: var(--bg-canvas);
     display: flex;
     flex-direction: column;
     padding: 24px;
@@ -1045,7 +1033,7 @@ dialog {
     box-shadow: var(--shadow-sheet);
     max-width: 500px; margin: auto;
 }
-dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
 
 /* ==========================================================================
    DELIBERATE RESPONSIVE BREAKPOINT SYSTEM
@@ -1196,10 +1184,8 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); }
     justify-content: space-between;
     gap: 12px 20px;
     padding: 16px 20px;
-    background: rgba(11, 15, 25, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--border-glass-light, rgba(255, 255, 255, 0.08));
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-glass-light, #1f2937);
     font-size: 13px;
     color: var(--text-secondary, #9CA3AF);
     border-radius: var(--radius-md, 8px);
@@ -1351,5 +1337,98 @@ textarea:focus-visible,
     contain: content;
 }
 
+/* ==========================================================================
+   6. Phase 2: Active Routing & Turn Maneuver Styles
+   ========================================================================== */
+.active-route-card {
+    position: absolute;
+    top: 104px;
+    left: 12px;
+    width: 360px;
+    max-width: calc(100vw - 24px);
+    background: var(--bg-surface-solid);
+    border: 1px solid var(--border-solid);
+    border-radius: 8px;
+    padding: 12px;
+    z-index: 1050;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
+.route-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border-solid);
+    padding-bottom: 8px;
+}
 
+.route-dest-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.route-dest-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.route-dest-meta {
+    font-size: 11px;
+    color: var(--accent-cyan);
+    font-family: var(--font-mono);
+}
+
+.btn-cancel-route {
+    background: transparent;
+    border: 1px solid var(--border-solid);
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.btn-cancel-route:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.route-maneuvers-list {
+    max-height: 140px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.route-step-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: var(--bg-surface-elevated);
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.route-step-instruction {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-primary);
+}
+
+.route-step-dist {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    white-space: nowrap;
+}

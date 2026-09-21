@@ -145,17 +145,17 @@
                     <svg><use href="#i-play"/></svg>
                     <span>Start Navigation</span>
                 </button>
-                    <!-- User Profile Icon -->
-                    <div class="user-profile-badge" title="Profile & Status">
+                    <!-- User Profile Icon / Role Access -->
+                    <button id="authProfileBtn" class="user-profile-badge" title="Profile & Roles" aria-label="Profile and Roles" style="background:transparent; border:none; cursor:pointer;">
                         <svg viewBox="0 0 24 24" style="width:18px; height:18px; color:var(--text-secondary);"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
-                    </div>
+                    </button>
                 </div>
             </div>
 
             <!-- Floating Search Bar -->
             <div class="search-bar-floating">
                 <svg class="search-icon"><use href="#i-search"/></svg>
-                <input type="text" id="mapSearchInput" class="search-input" placeholder="Where to?" aria-label="Where to? Search destination or coordinates">
+                <input type="text" id="mapSearchInput" class="search-input" placeholder="Search destination, coordinates, or tap map to route..." aria-label="Search destination, coordinates, or tap map to route">
                 
                 <div class="mode-selector-group" id="navigationSettings">
                     <select id="travelMode">
@@ -166,6 +166,20 @@
                         <input id="stepLength" type="number" min="0.3" max="1.2" step="0.05" value="0.7">
                     </span>
                 </div>
+            </div>
+
+            <!-- Active Route Card (Turn-by-turn maneuvers & ETA) -->
+            <div id="activeRouteCard" class="active-route-card" style="display:none;">
+                <div class="route-header">
+                    <div class="route-dest-info">
+                        <div class="route-dest-title" id="routeDestName">Route Active</div>
+                        <div class="route-dest-meta" id="routeMeta">Calculating...</div>
+                    </div>
+                    <button id="btnCancelRoute" class="btn-cancel-route" title="Cancel Route" aria-label="Cancel active route">
+                        <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="route-maneuvers-list" id="routeManeuvers"></div>
             </div>
         </div>
 
@@ -288,7 +302,7 @@
                         <!-- Search bar inside Explore -->
                         <div class="explore-search-box" style="position: relative; display: flex; align-items: center; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 12px; gap: 8px;">
                             <svg style="width:16px; height:16px; fill:var(--text-muted);"><use href="#i-search"/></svg>
-                            <input type="text" id="exploreSearchInput" placeholder="Search nearby places or categories..." style="background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13px; width: 100%;" />
+                            <input type="text" id="exploreSearchInput" placeholder="Search destination, coordinates, or tap category to route..." aria-label="Search destination, coordinates, or tap category to route" style="background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13px; width: 100%;" />
                         </div>
                     </div>
 
@@ -297,7 +311,8 @@
                         
                         <!-- 1. Categories Grid -->
                         <div class="nav-card">
-                            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px;">Categories</h3>
+                            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 4px;">Categories</h3>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Verified local POI database and canonical community map sync</div>
                             <div class="explore-category-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
                                 <button class="category-chip" data-category="fuel" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
                                     <svg style="width: 20px; height: 20px; fill: var(--accent-emerald);"><use href="#i-compass"/></svg>
@@ -981,7 +996,7 @@
                                 <div>
                                     <strong style="color: white; font-size: 13px;">13. About Navigators</strong>
                                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Navigators Inertial Dead Reckoning System v1.2.4</div>
-                                    <div style="font-size: 10px; color: var(--accent-emerald); font-family: var(--font-mono); margin-top: 4px;">SIH26168 IDR SUITE · BUILD 2026.09</div>
+                                    <div style="font-size: 10px; color: var(--accent-emerald); font-family: var(--font-mono); margin-top: 4px;">NAVIGATORS IDR SUITE · BUILD 2026.09</div>
                                 </div>
                                 <div style="display: flex; gap: 6px;">
                                     <a href="./about.html" class="button secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">About Page</a>
@@ -1001,7 +1016,7 @@
                     <svg style="width: 22px; height: 22px; fill: var(--accent-emerald);"><use href="#i-chip"/></svg>
                     <div>
                         <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: 0.5px;">NAVIGATOR LAB</h2>
-                        <div style="font-size: 10px; font-family: var(--font-mono); color: var(--accent-emerald);">ENGINEERING TELEMETRY & WORKSPACE · SIH26168 IDR SUITE</div>
+                        <div style="font-size: 10px; font-family: var(--font-mono); color: var(--accent-emerald);">ENGINEERING TELEMETRY & WORKSPACE · NAVIGATORS IDR SUITE</div>
                     </div>
                 </div>
                 <button id="btnCloseLab" class="button secondary" style="font-size:13px; padding:4px 12px; background: rgba(255,255,255,0.05);"><svg style="width:14px; height:14px; margin-right:4px;"><use href="#i-close"/></svg>Close Lab</button>
@@ -1518,6 +1533,8 @@
     <script src="engine/pedestrian.js"></script>
     <script src="engine/alignment.js"></script>
     <script src="engine/preprocessing.js"></script>
+    <script src="engine/router.js"></script>
+    <script src="engine/auth.js"></script>
     <script src="device_profiler.js"></script>
     <script src="local_map.js"></script>
     <script src="data_recorder.js"></script>
@@ -1586,20 +1603,58 @@
                 });
             });
 
+            window.switchSheetTab = function(target) {
+                sheetTabs.forEach(t => {
+                    const isTarget = (t.dataset.sheetTab === target);
+                    t.classList.toggle('selected', isTarget);
+                    t.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+                });
+                desktopNavItems.forEach(i => {
+                    i.classList.toggle('selected', i.dataset.desktopTab === target);
+                });
+                Object.keys(panels).forEach(key => {
+                    if (panels[key]) {
+                        const isHidden = (key !== target);
+                        panels[key].hidden = isHidden;
+                        panels[key].setAttribute('aria-hidden', isHidden ? 'true' : 'false');
+                    }
+                });
+                const bottomSheet = document.getElementById('bottomSheet');
+                if (bottomSheet) bottomSheet.classList.add('expanded');
+                if (target === 'lab' && labDrawer) {
+                    labDrawer.hidden = false;
+                    labDrawer.setAttribute('aria-hidden', 'false');
+                }
+            };
+
+            document.getElementById('authProfileBtn')?.addEventListener('click', () => {
+                window.switchSheetTab('account');
+            });
+
             // Search Input Handler (Latitude, Longitude lookup)
             const searchInput = document.getElementById('mapSearchInput');
             if (searchInput) {
                 searchInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         const val = searchInput.value.trim();
+                        if (!val) return;
                         const coords = val.split(',').map(s => parseFloat(s.trim()));
                         if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                            if (window.state && window.state.map) {
-                                window.state.map.setView([coords[0], coords[1]], 16);
+                            if (typeof window.setDestination === 'function') {
+                                window.setDestination(coords[0], coords[1], `Location (${coords[0].toFixed(4)}, ${coords[1].toFixed(4)})`);
                             }
-                        } else if (val) {
-                            const mapStatus = document.getElementById('mapStatus');
-                            if (mapStatus) mapStatus.textContent = `Search target: "${val}". Enter "lat, lon" for direct coordinate navigation.`;
+                        } else {
+                            let match = null;
+                            if (window.state && window.state.localMap && Array.isArray(window.state.localMap.data?.pois)) {
+                                const q = val.toLowerCase();
+                                match = window.state.localMap.data.pois.find(p => p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)));
+                            }
+                            if (match && typeof window.setDestination === 'function') {
+                                window.setDestination(match.lat, match.lon, match.name);
+                            } else {
+                                const mapStatus = document.getElementById('mapStatus');
+                                if (mapStatus) mapStatus.textContent = `No match found for "${val}". Enter coordinates (lat, lon) or tap anywhere on the map to route.`;
+                            }
                         }
                     }
                 });
@@ -1694,19 +1749,56 @@
 
             function filterExploreCategory(catKey) {
                 const label = categoryLabels[catKey] || catKey;
-                if (exploreNearbyList) {
+                if (!exploreNearbyList) return;
+
+                let refLat = 13.0827, refLon = 80.2707;
+                if (window.state && window.state.lastPosition && Number.isFinite(window.state.lastPosition.lat)) {
+                    refLat = window.state.lastPosition.lat;
+                    refLon = window.state.lastPosition.lon;
+                } else if (window.state && window.state.map) {
+                    const c = window.state.map.getCenter();
+                    refLat = c.lat;
+                    refLon = c.lng;
+                }
+
+                let pois = [];
+                if (window.state && window.state.localMap && typeof window.state.localMap.getPois === 'function') {
+                    pois = window.state.localMap.getPois(catKey, refLat, refLon);
+                }
+
+                if (pois.length === 0) {
                     exploreNearbyList.innerHTML = `
-                        <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px;">
                             <div>
-                                <strong style="color: var(--text-primary); font-size: 13px;">${label} nearby</strong>
-                                <div style="font-size: 11px; color: var(--text-muted);">Querying map data for ${label.toLowerCase()}</div>
+                                <strong style="color: var(--text-primary); font-size: 12px;">No ${label} indexed nearby</strong>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">No verified places in this category in downloaded area. Use Contribute tab to submit new locations.</div>
                             </div>
-                            <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">Active Category</span>
+                            <span class="badge" style="font-size: 10px; background: rgba(255,255,255,0.06); color: var(--text-muted); padding: 2px 6px; border-radius: 4px;">0 Found</span>
                         </div>
                     `;
+                    const mapStatus = document.getElementById('mapStatus');
+                    if (mapStatus) mapStatus.textContent = `No ${label} indexed in current area.`;
+                    return;
                 }
+
+                exploreNearbyList.innerHTML = pois.map(poi => {
+                    const distText = poi.distanceMeters !== undefined 
+                        ? (poi.distanceMeters < 1000 ? `${Math.round(poi.distanceMeters)} m` : `${(poi.distanceMeters / 1000).toFixed(1)} km`)
+                        : '';
+                    return `
+                        <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;">
+                            <div>
+                                <strong style="color: var(--text-primary); font-size: 12px;">${poi.name}</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">${label} · ${poi.lat.toFixed(4)}, ${poi.lon.toFixed(4)} ${distText ? '· ' + distText : ''}</div>
+                                ${poi.source === 'community' ? '<span style="font-size: 9px; color: var(--accent-emerald);">Verified Community Submission</span>' : ''}
+                            </div>
+                            <button onclick="window.setDestination(${poi.lat}, ${poi.lon}, '${poi.name.replace(/'/g, "\\'")}')" class="button primary" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Route</button>
+                        </div>
+                    `;
+                }).join('');
+
                 const mapStatus = document.getElementById('mapStatus');
-                if (mapStatus) mapStatus.textContent = `Showing category: ${label}`;
+                if (mapStatus) mapStatus.textContent = `Found ${pois.length} ${label} within active area.`;
             }
 
             categoryChips.forEach(chip => {
@@ -1720,7 +1812,7 @@
 
             if (exploreSearch) {
                 exploreSearch.addEventListener('input', () => {
-                    const query = exploreSearch.value.trim().toLowerCase();
+                    const query = exploreSearch.value.trim();
                     if (!query && exploreNearbyList) {
                         exploreNearbyList.innerHTML = `
                             <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -1731,6 +1823,46 @@
                                 <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">Available</span>
                             </div>
                         `;
+                    } else if (query && exploreNearbyList) {
+                        const coords = query.split(',').map(s => parseFloat(s.trim()));
+                        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                            exploreNearbyList.innerHTML = `
+                                <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(16,185,129,0.06); border: 1px solid var(--border-color); border-radius: 6px;">
+                                    <div>
+                                        <strong style="color: var(--text-primary); font-size: 12px;">Coordinate Fix: ${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}</strong>
+                                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Direct coordinate destination available.</div>
+                                    </div>
+                                    <button onclick="window.setDestination(${coords[0]}, ${coords[1]}, 'Coordinates (${coords[0].toFixed(4)}, ${coords[1].toFixed(4)})')" class="button primary" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Route</button>
+                                </div>
+                            `;
+                        } else {
+                            let matches = [];
+                            if (window.state && window.state.localMap && Array.isArray(window.state.localMap.data?.pois)) {
+                                const q = query.toLowerCase();
+                                matches = window.state.localMap.data.pois.filter(p => p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q)));
+                            }
+                            if (matches.length > 0) {
+                                exploreNearbyList.innerHTML = matches.map(poi => `
+                                    <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;">
+                                        <div>
+                                            <strong style="color: var(--text-primary); font-size: 12px;">${poi.name}</strong>
+                                            <div style="font-size: 11px; color: var(--text-muted);">${poi.category || 'POI'} · ${poi.lat.toFixed(4)}, ${poi.lon.toFixed(4)}</div>
+                                        </div>
+                                        <button onclick="window.setDestination(${poi.lat}, ${poi.lon}, '${poi.name.replace(/'/g, "\\'")}')" class="button primary" style="padding: 4px 10px; font-size: 11px; white-space: nowrap;">Route</button>
+                                    </div>
+                                `).join('');
+                            } else {
+                                exploreNearbyList.innerHTML = `
+                                    <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px;">
+                                        <div>
+                                            <strong style="color: var(--text-primary); font-size: 12px;">"${query}"</strong>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">No matching POIs found in downloaded map. Enter coordinates (lat, lon) or tap any point on the map to route.</div>
+                                        </div>
+                                        <span class="badge" style="font-size: 10px; background: rgba(255,255,255,0.06); color: var(--text-muted); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">0 Matches</span>
+                                    </div>
+                                `;
+                            }
+                        }
                     }
                 });
             }
@@ -1834,6 +1966,9 @@
                     localStorage.setItem('navigators_place_submissions', JSON.stringify(items));
                     
                     // Canonical Map Data Pipeline Sync (Online Map + Offline Map)
+                    if (window.state && window.state.localMap && typeof window.state.localMap.syncApprovedCommunityPlaces === 'function') {
+                        window.state.localMap.syncApprovedCommunityPlaces();
+                    }
                     if (window.state && window.state.map && item.location) {
                         const coords = item.location.split(',').map(s => parseFloat(s.trim()));
                         if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {

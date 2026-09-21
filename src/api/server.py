@@ -1,5 +1,5 @@
 """
-Navigators IDR — FastAPI Real-time Server
+Navigators IDR - FastAPI Real-time Server
 Receives live IMU & GNSS data from mobile web clients over WebSockets,
 runs the IDR pipeline, and streams back the estimated navigation state.
 """
@@ -27,8 +27,10 @@ from typing import List, Optional, Dict, Any
 app = FastAPI(title="Navigators IDR Backend")
 from api.recordings import router as recordings_router
 from api.training import router as training_router
+from api.auth import router as auth_router
 app.include_router(recordings_router)
 app.include_router(training_router)
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
