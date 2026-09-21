@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any
 
 from src.db.database import init_db
 from src.db.contributions import ContributionRepository, Contribution
+from src.db.state_machine import ContributionState, StateTransitionError
 from src.db.auth_service import AuthService, SessionContext
 from src.db.authorization import AuthorizationService
 from src.api.auth import get_current_session, extract_bearer_token
@@ -43,6 +44,22 @@ class UpdateContributionRequest(BaseModel):
 class ReviewContributionRequest(BaseModel):
     decision: str  # 'approved' or 'rejected'
     notes: Optional[str] = None
+
+
+class ReviewNotesRequest(BaseModel):
+    notes: Optional[str] = None
+
+
+def handle_transition_error(err: Exception) -> HTTPException:
+    """Format StateTransitionError into appropriate HTTP error response."""
+    if isinstance(err, StateTransitionError):
+        code = err.code
+        if code in ("UNAUTHENTICATED",):
+            return HTTPException(status_code=401, detail=f"[{code}] {err.message}")
+        if code in ("NOT_OWNER", "PERMISSION_DENIED"):
+            return HTTPException(status_code=403, detail=f"[{code}] {err.message}")
+        return HTTPException(status_code=400, detail=f"[{code}] {err.message}")
+    return HTTPException(status_code=400, detail=str(err))
 
 
 # =============================================================================
@@ -150,6 +167,7 @@ def update_contribution(
 
 
 @router.delete("/{contrib_id}")
+@router.post("/{contrib_id}/withdraw")
 def withdraw_contribution(
     contrib_id: str,
     context: SessionContext = Depends(get_current_session),
@@ -168,7 +186,11 @@ def withdraw_contribution(
         status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
         raise HTTPException(status_code=status_code, detail=decision.reason)
 
-    withdrawn = contrib_repo.withdraw(contrib_id)
+    try:
+        withdrawn = contrib_repo.withdraw(contrib_id, user=context)
+    except Exception as e:
+        raise handle_transition_error(e)
+
     return {
         "message": "Contribution withdrawn successfully.",
         "contribution": withdrawn.to_dict() if withdrawn else None,
@@ -193,10 +215,105 @@ def submit_contribution(
         status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
         raise HTTPException(status_code=status_code, detail=decision.reason)
 
-    submitted = contrib_repo.submit(contrib_id)
+    try:
+        submitted = contrib_repo.submit(contrib_id, user=context)
+    except Exception as e:
+        raise handle_transition_error(e)
+
     return {
         "message": "Contribution submitted for moderation review.",
         "contribution": submitted.to_dict() if submitted else None,
+    }
+
+
+@router.post("/{contrib_id}/approve")
+def approve_contribution(
+    contrib_id: str,
+    req: Optional[ReviewNotesRequest] = None,
+    context: SessionContext = Depends(get_current_session),
+):
+    """
+    Reviewer approves contribution for map inclusion.
+    Requires moderator role and 'contribution:approve' permission.
+    """
+    item = contrib_repo.get(contrib_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Contribution not found.")
+
+    decision = authz_service.can(user=context, action="contribution:approve", resource=item)
+    if not decision.allowed:
+        status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
+        raise HTTPException(status_code=status_code, detail=decision.reason)
+
+    notes = req.notes if req else None
+    try:
+        approved = contrib_repo.approve(contrib_id, reviewer=context, notes=notes)
+    except Exception as e:
+        raise handle_transition_error(e)
+
+    return {
+        "message": "Contribution approved successfully.",
+        "contribution": approved.to_dict() if approved else None,
+    }
+
+
+@router.post("/{contrib_id}/reject")
+def reject_contribution(
+    contrib_id: str,
+    req: Optional[ReviewNotesRequest] = None,
+    context: SessionContext = Depends(get_current_session),
+):
+    """
+    Reviewer rejects contribution with rationale notes.
+    Requires moderator role and 'contribution:reject' permission.
+    """
+    item = contrib_repo.get(contrib_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Contribution not found.")
+
+    decision = authz_service.can(user=context, action="contribution:reject", resource=item)
+    if not decision.allowed:
+        status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
+        raise HTTPException(status_code=status_code, detail=decision.reason)
+
+    notes = req.notes if req else None
+    try:
+        rejected = contrib_repo.reject(contrib_id, reviewer=context, notes=notes)
+    except Exception as e:
+        raise handle_transition_error(e)
+
+    return {
+        "message": "Contribution rejected with review notes.",
+        "contribution": rejected.to_dict() if rejected else None,
+    }
+
+
+@router.post("/{contrib_id}/publish")
+def publish_contribution(
+    contrib_id: str,
+    context: SessionContext = Depends(get_current_session),
+):
+    """
+    Synchronizes approved contribution into canonical live map data.
+    Requires staff role and 'place:create' permission.
+    """
+    item = contrib_repo.get(contrib_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Contribution not found.")
+
+    decision = authz_service.can(user=context, action="place:create", resource=item)
+    if not decision.allowed:
+        status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
+        raise HTTPException(status_code=status_code, detail=decision.reason)
+
+    try:
+        published = contrib_repo.publish(contrib_id, staff=context)
+    except Exception as e:
+        raise handle_transition_error(e)
+
+    return {
+        "message": "Contribution published to canonical map dataset.",
+        "contribution": published.to_dict() if published else None,
     }
 
 
@@ -215,19 +332,22 @@ def review_contribution(
     if not item:
         raise HTTPException(status_code=404, detail="Contribution not found.")
 
-    action = "contribution:approve" if req.decision == "approved" else "contribution:reject"
+    action = "contribution:approve" if req.decision.lower() in ("approved", "approve") else "contribution:reject"
     decision = authz_service.can(user=context, action=action, resource=item)
     if not decision.allowed:
         status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
         raise HTTPException(status_code=status_code, detail=decision.reason)
 
-    moderator_id = context.user.id if context.user else "moderator"
-    reviewed = contrib_repo.review(
-        contribution_id=contrib_id,
-        reviewed_by=moderator_id,
-        decision=req.decision,
-        review_notes=req.notes,
-    )
+    try:
+        reviewed = contrib_repo.review(
+            contribution_id=contrib_id,
+            reviewed_by=context,
+            decision=req.decision,
+            review_notes=req.notes,
+        )
+    except Exception as e:
+        raise handle_transition_error(e)
+
     return {
         "message": f"Contribution review completed with decision '{req.decision}'.",
         "contribution": reviewed.to_dict() if reviewed else None,

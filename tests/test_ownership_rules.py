@@ -165,7 +165,7 @@ def test_user_47_and_user_82_ownership_scenario(
 
     # User 47 submits contribution to pending review
     contrib_pending = contrib_repo.submit("contrib_182")
-    assert contrib_pending.status == "pending"
+    assert contrib_pending.status in ("pending", "pending_review")
 
     # Now Moderator can review (approve/reject)
     can_mod_approve = authz_service.can(user=session_mod, action="contribution:approve", resource=contrib_pending)
@@ -259,7 +259,7 @@ def test_api_contributions_ownership_flow(monkeypatch, temp_db: Path, auth_servi
 
     # User 47 submits draft for review
     submit_resp = api_submit_contribution(contrib_id=contrib_id, context=session_47)
-    assert submit_resp["contribution"]["status"] == "pending"
+    assert submit_resp["contribution"]["status"] in ("pending", "pending_review")
 
     # Moderator reviews and approves
     review_resp = api_review_contribution(

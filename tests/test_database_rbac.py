@@ -188,14 +188,17 @@ def test_user_update_and_login_timestamp(repo: RBACRepository):
     repo.create_user("usr_update", "update@example.org", "Original Name")
 
     updated = repo.update_user("usr_update", name="Modified Name", status="suspended")
+    assert updated is not None
     assert updated.name == "Modified Name"
     assert updated.status == "suspended"
 
     user_before = repo.get_user("usr_update")
+    assert user_before is not None
     assert user_before.last_login_at is None
 
     repo.record_login("usr_update")
     user_after = repo.get_user("usr_update")
+    assert user_after is not None
     assert user_after.last_login_at is not None
 
 

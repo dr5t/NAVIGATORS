@@ -149,8 +149,8 @@ class ContributionStateMachine:
         Returns:
             (allowed: bool, reason: str, code: str)
         """
-        current_norm = str(current_state).lower()
-        target_norm = str(target_state).lower()
+        current_norm = current_state.lower()
+        target_norm = target_state.lower()
 
         # Normalize 'pending' alias to canonical 'pending_review'
         if current_norm == "pending":
@@ -188,8 +188,8 @@ class ContributionStateMachine:
 
         if hasattr(user, "user") and user.user:
             user_id = str(user.user.id)
-            user_perms = set(user.permissions or [])
-            user_roles = {r.id if hasattr(r, "id") else str(r) for r in (user.roles or [])}
+            user_perms = {str(p) for p in (user.permissions or [])}
+            user_roles = {str(r.id if hasattr(r, "id") else r) for r in (user.roles or [])}
             is_guest = getattr(user, "is_guest", False)
         elif isinstance(user, str):
             user_id = user
@@ -198,7 +198,7 @@ class ContributionStateMachine:
                 rbac = RBACRepository(db_path)
                 roles = rbac.get_user_roles(user_id)
                 user_roles = {r.id for r in roles}
-                user_perms = set(rbac.get_effective_permissions(user_id))
+                user_perms = rbac.get_user_permissions(user_id)
             except Exception:
                 pass
             is_guest = (user_id.startswith("guest") or "guest" in user_roles)
@@ -209,14 +209,18 @@ class ContributionStateMachine:
                 rbac = RBACRepository(db_path)
                 roles = rbac.get_user_roles(user_id)
                 user_roles = {r.id for r in roles}
-                user_perms = set(rbac.get_effective_permissions(user_id))
+                user_perms = rbac.get_user_permissions(user_id)
             except Exception:
                 pass
             is_guest = False
         elif isinstance(user, dict):
             user_id = str(user.get("id") or user.get("user_id") or "")
-            user_perms = set(user.get("permissions") or [])
-            user_roles = {r.get("id") if isinstance(r, dict) else str(r) for r in user.get("roles", [])}
+            user_perms = {str(p) for p in (user.get("permissions") or [])}
+            user_roles = {
+                str(r.get("id") or "") if isinstance(r, dict) else str(r)
+                for r in user.get("roles", [])
+            }
+            user_roles.discard("")
             is_guest = bool(user.get("is_guest", False))
 
         is_super_admin = "super_admin" in user_roles
