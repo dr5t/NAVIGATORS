@@ -1349,27 +1349,38 @@
         </div>
     </dialog>
 
-    <!-- Authentication Modal Dialog (Sign In / Register) -->
+    <!-- Authentication Modal Dialog (Sign In / Register / Guest) -->
     <dialog id="authDialog" aria-labelledby="authTitle" style="max-width: 420px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); padding: 20px;">
         <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
             <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-emerald);">ACCOUNT AUTHENTICATION</span>
-            <button id="btnCloseAuth" class="icon-button" style="color:white; border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+            <button id="btnCloseAuth" class="icon-button" style="color:white; border:none; background:none; font-size:20px; cursor:pointer;" aria-label="Close dialog">×</button>
         </div>
-        <h2 id="authTitle" style="font-size:18px; font-weight:700; color:var(--text-primary); margin:0 0 14px 0;">Sign In / Register</h2>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <button type="button" id="tabAuthLogin" class="button secondary" style="flex: 1; padding: 6px 12px; font-size: 12px; border-color: var(--accent-emerald); color: var(--accent-emerald); background: rgba(16,185,129,0.1);">Sign In</button>
+            <button type="button" id="tabAuthRegister" class="button secondary" style="flex: 1; padding: 6px 12px; font-size: 12px; border-color: var(--border-color); color: var(--text-secondary); background: var(--bg-surface);">Create Account</button>
+        </div>
+        <h2 id="authTitle" style="font-size:18px; font-weight:700; color:var(--text-primary); margin:0 0 14px 0;">Sign In to Account</h2>
+        <div id="authErrorBanner" style="display: none; padding: 8px 12px; border-radius: 6px; background: rgba(239,68,68,0.12); border: 1px solid #ef4444; color: #fca5a5; font-size: 11px; margin-bottom: 12px;" role="alert"></div>
         
         <form id="formAccountAuth" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
-            <div>
-                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Display Name *</label>
-                <input type="text" id="inputAuthName" required placeholder="e.g. Shaurya Tiwari" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            <div id="groupAuthName" style="display: none;">
+                <label for="inputAuthName" style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Display Name *</label>
+                <input type="text" id="inputAuthName" placeholder="e.g. Alex River" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
             </div>
 
             <div>
-                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Email Address *</label>
+                <label for="inputAuthEmail" style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Email Address *</label>
                 <input type="email" id="inputAuthEmail" required placeholder="e.g. user@navigators.dev" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
             </div>
 
+            <div>
+                <label for="inputAuthPassword" style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Password *</label>
+                <input type="password" id="inputAuthPassword" required minlength="8" placeholder="At least 8 characters" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
             <div style="display: flex; gap: 10px; margin-top: 6px;">
-                <button type="submit" class="button primary" style="flex: 1; padding: 8px;">Authenticate Account</button>
+                <button type="submit" id="btnSubmitAuth" class="button primary" style="flex: 1; padding: 8px;">Sign In</button>
+                <button type="button" id="btnAuthGuest" class="button secondary" style="padding: 8px 12px;">Guest Mode</button>
             </div>
         </form>
     </dialog>
@@ -2359,11 +2370,60 @@
                 });
             }
 
-            // Auth Button Handler
+            // Auth Button Handler & Modal Wiring
+            let authMode = 'login'; // 'login' or 'register'
+            const tabAuthLogin = document.getElementById('tabAuthLogin');
+            const tabAuthRegister = document.getElementById('tabAuthRegister');
+            const groupAuthName = document.getElementById('groupAuthName');
+            const authTitle = document.getElementById('authTitle');
+            const btnSubmitAuth = document.getElementById('btnSubmitAuth');
+            const btnAuthGuest = document.getElementById('btnAuthGuest');
+            const authErrorBanner = document.getElementById('authErrorBanner');
+
+            function setAuthMode(mode) {
+                authMode = mode;
+                if (authErrorBanner) authErrorBanner.style.display = 'none';
+                if (mode === 'login') {
+                    if (tabAuthLogin) {
+                        tabAuthLogin.style.borderColor = 'var(--accent-emerald)';
+                        tabAuthLogin.style.color = 'var(--accent-emerald)';
+                        tabAuthLogin.style.background = 'rgba(16,185,129,0.1)';
+                    }
+                    if (tabAuthRegister) {
+                        tabAuthRegister.style.borderColor = 'var(--border-color)';
+                        tabAuthRegister.style.color = 'var(--text-secondary)';
+                        tabAuthRegister.style.background = 'var(--bg-surface)';
+                    }
+                    if (groupAuthName) groupAuthName.style.display = 'none';
+                    if (authTitle) authTitle.textContent = 'Sign In to Account';
+                    if (btnSubmitAuth) btnSubmitAuth.textContent = 'Sign In';
+                } else {
+                    if (tabAuthRegister) {
+                        tabAuthRegister.style.borderColor = 'var(--accent-emerald)';
+                        tabAuthRegister.style.color = 'var(--accent-emerald)';
+                        tabAuthRegister.style.background = 'rgba(16,185,129,0.1)';
+                    }
+                    if (tabAuthLogin) {
+                        tabAuthLogin.style.borderColor = 'var(--border-color)';
+                        tabAuthLogin.style.color = 'var(--text-secondary)';
+                        tabAuthLogin.style.background = 'var(--bg-surface)';
+                    }
+                    if (groupAuthName) groupAuthName.style.display = 'block';
+                    if (authTitle) authTitle.textContent = 'Create Navigators Account';
+                    if (btnSubmitAuth) btnSubmitAuth.textContent = 'Create Account';
+                }
+            }
+
+            if (tabAuthLogin) tabAuthLogin.addEventListener('click', () => setAuthMode('login'));
+            if (tabAuthRegister) tabAuthRegister.addEventListener('click', () => setAuthMode('register'));
+
             if (btnAuthAction) {
-                btnAuthAction.addEventListener('click', () => {
+                btnAuthAction.addEventListener('click', async () => {
                     const acc = getAccountState();
                     if (acc.signedIn) {
+                        if (window.auth) {
+                            await window.auth.logout();
+                        }
                         setAccountState({
                             role: 'Guest',
                             name: 'Guest Session',
@@ -2374,6 +2434,7 @@
                         const mapStatus = document.getElementById('mapStatus');
                         if (mapStatus) mapStatus.textContent = 'Signed out of account session.';
                     } else if (authDialog) {
+                        setAuthMode('login');
                         authDialog.showModal();
                     }
                 });
@@ -2383,22 +2444,91 @@
                 btnCloseAuth.addEventListener('click', () => authDialog.close());
             }
 
+            if (btnAuthGuest) {
+                btnAuthGuest.addEventListener('click', async () => {
+                    if (window.auth) {
+                        await window.auth.startGuestSession();
+                    }
+                    setAccountState({
+                        role: 'Guest',
+                        name: 'Guest Session',
+                        email: '',
+                        signedIn: false,
+                        userId: 'guest_local_01'
+                    });
+                    if (authDialog) authDialog.close();
+                    const mapStatus = document.getElementById('mapStatus');
+                    if (mapStatus) mapStatus.textContent = 'Operating in Guest mode (place:read enabled).';
+                });
+            }
+
             if (formAccountAuth) {
-                formAccountAuth.addEventListener('submit', (e) => {
+                formAccountAuth.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const name = document.getElementById('inputAuthName')?.value.trim();
+                    if (authErrorBanner) authErrorBanner.style.display = 'none';
+
                     const email = document.getElementById('inputAuthEmail')?.value.trim();
-                    if (name && email) {
+                    const password = document.getElementById('inputAuthPassword')?.value;
+                    const name = document.getElementById('inputAuthName')?.value.trim();
+
+                    if (!email || !password) return;
+
+                    if (btnSubmitAuth) {
+                        btnSubmitAuth.disabled = true;
+                        btnSubmitAuth.textContent = 'Authenticating...';
+                    }
+
+                    try {
+                        let resultUser;
+                        if (authMode === 'register') {
+                            if (!name) throw new Error('Please enter your display name.');
+                            if (window.auth) {
+                                const res = await window.auth.register(name, email, password);
+                                resultUser = res.user;
+                            } else {
+                                resultUser = { id: 'usr_' + Date.now().toString(36), name: name, email: email, role: 'user' };
+                            }
+                        } else {
+                            if (window.auth) {
+                                const res = await window.auth.login(email, password);
+                                resultUser = res.user;
+                            } else {
+                                resultUser = { id: 'usr_' + Date.now().toString(36), name: email.split('@')[0], email: email, role: 'user' };
+                            }
+                        }
+
+                        const roleNameMap = {
+                            guest: 'Guest',
+                            user: 'Registered User',
+                            local_contributor: 'Local Contributor',
+                            internal_contributor: 'Internal Contributor',
+                            moderator: 'Community Moderator',
+                            team_admin: 'Team Admin',
+                            super_admin: 'Super Admin'
+                        };
+                        const displayRole = roleNameMap[resultUser.role] || resultUser.role || 'Registered User';
+
                         setAccountState({
-                            role: 'Registered User',
-                            name: name,
-                            email: email,
+                            role: displayRole,
+                            name: resultUser.name,
+                            email: resultUser.email,
                             signedIn: true,
-                            userId: 'usr_' + Date.now().toString(36)
+                            userId: resultUser.id
                         });
+
                         if (authDialog) authDialog.close();
                         const mapStatus = document.getElementById('mapStatus');
-                        if (mapStatus) mapStatus.textContent = `Authenticated as "${name}" (${email}).`;
+                        if (mapStatus) mapStatus.textContent = `Authenticated as "${resultUser.name}" (${resultUser.email}).`;
+                    } catch (err) {
+                        if (authErrorBanner) {
+                            authErrorBanner.textContent = err.message || 'Authentication error occurred.';
+                            authErrorBanner.style.display = 'block';
+                        }
+                    } finally {
+                        if (btnSubmitAuth) {
+                            btnSubmitAuth.disabled = false;
+                            btnSubmitAuth.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
+                        }
                     }
                 });
             }

@@ -46,6 +46,49 @@ CREATE TABLE IF NOT EXISTS user_roles (
     PRIMARY KEY (user_id, role_id)
 );
 
+-- 6. Authentication Identities (Extensible multi-provider credentials)
+CREATE TABLE IF NOT EXISTS auth_identities (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL, -- 'local_password', 'google', 'apple', 'github'
+    identifier TEXT NOT NULL, -- email or external subject id
+    credential_hash TEXT, -- hashed password / secret
+    metadata_json TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    UNIQUE (provider, identifier)
+);
+
+-- 7. Sessions Table (Secure server-managed sessions)
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    token_hash TEXT UNIQUE NOT NULL,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE, -- NULL for anonymous guest sessions
+    is_guest INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    last_seen_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    user_agent TEXT,
+    ip_address TEXT
+);
+
+-- 8. Community Contributions Table (Ownership & moderation lifecycle)
+CREATE TABLE IF NOT EXISTS contributions (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    resource_type TEXT NOT NULL, -- 'place', 'road_hazard', 'amenity'
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending_review', 'pending', 'approved', 'published', 'rejected', 'withdrawn')),
+    title TEXT NOT NULL,
+    data_json TEXT NOT NULL DEFAULT '{}',
+    reviewed_by TEXT REFERENCES users(id),
+    review_notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    reviewed_at TEXT,
+    published_at TEXT
+);
+
 -- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
@@ -54,6 +97,13 @@ CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_id
 CREATE INDEX IF NOT EXISTS idx_role_permissions_perm ON role_permissions(permission_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role_id);
+CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_identities_lookup ON auth_identities(provider, identifier);
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(revoked_at, expires_at);
+CREATE INDEX IF NOT EXISTS idx_contributions_owner ON contributions(owner_id);
+CREATE INDEX IF NOT EXISTS idx_contributions_status ON contributions(status);
 
 -- Trigger: auto-update updated_at on user modification
 CREATE TRIGGER IF NOT EXISTS trg_users_updated_at
@@ -62,6 +112,15 @@ FOR EACH ROW
 BEGIN
     UPDATE users SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
+
+-- Trigger: auto-update updated_at on contribution modification
+CREATE TRIGGER IF NOT EXISTS trg_contributions_updated_at
+AFTER UPDATE ON contributions
+FOR EACH ROW
+BEGIN
+    UPDATE contributions SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
+END;
+
 
 -- ========================================================
 -- Seed Initial Roles
@@ -123,6 +182,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('user', 'place:read'),
     ('user', 'contribution:create'),
     ('user', 'contribution:read'),
+    ('user', 'contribution:update'),
     ('user', 'contribution:withdraw'),
     ('user', 'user:read');
 
