@@ -6,31 +6,45 @@
    ========================================================================== */
 
 :root {
-    /* Color Palette - Obsidian & Midnight Emerald */
+    /* Restrained Color Tokens System */
+    --bg-base: #0b0f19;
     --bg-dark: #0b0f19;
     --bg-surface: #111827;
     --bg-surface-elevated: #1f2937;
     --bg-glass: rgba(17, 24, 39, 0.85);
     --bg-glass-heavy: rgba(11, 15, 25, 0.92);
-    --border-glass: rgba(255, 255, 255, 0.12);
-    --border-glass-light: rgba(255, 255, 255, 0.06);
 
     /* Text Tokens */
     --text-primary: #f9fafb;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
 
-    /* Signal & Accent Tokens */
+    /* Border Tokens */
+    --border-color: rgba(255, 255, 255, 0.12);
+    --border-glass: rgba(255, 255, 255, 0.12);
+    --border-glass-light: rgba(255, 255, 255, 0.06);
+
+    /* Accent & Semantic State Tokens */
+    --accent-primary: #10b981;
     --accent-emerald: #10b981;
     --accent-cyan: #06b6d4;
     --accent-amber: #f59e0b;
     --accent-red: #ef4444;
-    --accent-orange: #f97316;
+
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #06b6d4;
+
+    /* Map & HUD Overlay Tokens */
+    --map-overlay-bg: rgba(11, 15, 25, 0.85);
+    --map-overlay-border: rgba(255, 255, 255, 0.12);
 
     /* GNSS State Colors */
-    --gnss-active: #10b981;
-    --gnss-denied: #ef4444;
-    --gnss-reacq: #f59e0b;
+    --gnss-active: var(--color-success);
+    --gnss-denied: var(--color-error);
+    --gnss-reacq: var(--color-warning);
+
 
     /* Fonts & Typography System */
     --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
