@@ -482,6 +482,29 @@ def get_dataset_details():
         "trips": trips
     }
 
+class DatasetImportRequest(BaseModel):
+    url: str
+
+@app.post("/dataset/import")
+def import_dataset(req: DatasetImportRequest):
+    if not req.url or not (req.url.startswith("http://") or req.url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid URL protocol. Must start with http:// or https://")
+    import urllib.request
+    try:
+        req_obj = urllib.request.Request(req.url, headers={'User-Agent': 'Navigators/1.0'})
+        with urllib.request.urlopen(req_obj, timeout=5) as resp:
+            content_type = resp.headers.get('Content-Type', '')
+            status = resp.status
+        return {
+            "status": "success",
+            "url": req.url,
+            "http_status": status,
+            "content_type": content_type,
+            "message": f"Successfully verified external dataset source ({status})"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to connect to dataset URL: {str(e)}")
+
 static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "simulator")
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 

@@ -147,7 +147,7 @@ async function pollTrainingStatus() {
             if (!trainingPollInterval) {
                 trainingPollInterval = setInterval(pollTrainingStatus, 2000);
             }
-        } else if (data.status !== "Idle" && !data.status.startsWith("Loading")) {
+        } else {
             if (trainingPollInterval) {
                 clearInterval(trainingPollInterval);
                 trainingPollInterval = null;
@@ -566,6 +566,7 @@ function seekFrame(index) {
     state.currentIndex = index;
     state.truthCoords = state.data.data.true_lat_lon.slice(0, index);
     state.estimatedCoords = state.data.data.estimated_lat_lon.slice(0, index);
+    state.needsFullLineRebuild = true;
     updateFrame(index);
 }
 
@@ -588,28 +589,42 @@ function updateFrame(index) {
     const timestamp = data.timestamps[index];
 
     // --- Update Map ---
-    // Add coordinates to trajectories
     state.truthCoords.push(reference);
     state.estimatedCoords.push([estLat, estLon]);
 
-    // Break the reference trail at missing fixes rather than drawing across GPS gaps.
-    const segments = [];
-    let segment = [];
-    for (const point of state.truthCoords) {
-        if (!point) { segment = []; continue; }
-        if (!segment.length) segments.push(segment);
-        segment.push(point);
-    }
-    state.truthLine.setLatLngs(segments);
-    state.estimatedLine.setLatLngs(state.estimatedCoords);
-
-    // Change estimated line color based on mode
-    if (navMode === 'dr') {
-        state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '5, 8' });
-    } else if (navMode === 'reacq') {
-        state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '2, 4' });
+    // Rebuild line segments efficiently without O(N) full-array iteration on every single frame
+    if (state.needsFullLineRebuild || !state.truthSegments) {
+        state.truthSegments = [];
+        let currentSegment = [];
+        for (const point of state.truthCoords) {
+            if (!point) { currentSegment = []; continue; }
+            if (!currentSegment.length) state.truthSegments.push(currentSegment);
+            currentSegment.push(point);
+        }
+        state.truthLine.setLatLngs(state.truthSegments);
+        state.estimatedLine.setLatLngs(state.estimatedCoords);
+        state.needsFullLineRebuild = false;
     } else {
-        state.estimatedLine.setStyle({ color: '#4c7b59', dashArray: null });
+        if (reference) {
+            if (!state.truthSegments.length) state.truthSegments.push([]);
+            state.truthSegments[state.truthSegments.length - 1].push(reference);
+        } else if (state.truthCoords[state.truthCoords.length - 2]) {
+            state.truthSegments.push([]);
+        }
+        state.truthLine.setLatLngs(state.truthSegments);
+        state.estimatedLine.addLatLng([estLat, estLon]);
+    }
+
+    // Change estimated line style only when navMode changes to prevent style recalculation thrashing
+    if (state.currentNavStyle !== navMode) {
+        if (navMode === 'dr') {
+            state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '5, 8' });
+        } else if (navMode === 'reacq') {
+            state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '2, 4' });
+        } else {
+            state.estimatedLine.setStyle({ color: '#4c7b59', dashArray: null });
+        }
+        state.currentNavStyle = navMode;
     }
 
     // Update markers
@@ -617,14 +632,13 @@ function updateFrame(index) {
     state.truthMarker.setOpacity(reference ? 1 : 0);
     if (reference) state.truthMarker.setLatLng(reference);
 
-    // Update vehicle marker appearance
+    // Update vehicle marker appearance only on state change
     const markerEl = state.vehicleMarker.getElement();
     if (markerEl) {
         const wrapper = markerEl.querySelector('.vehicle-marker') || markerEl;
-        if (navMode === 'dr') {
-            wrapper.classList.add('dr-active');
-        } else {
-            wrapper.classList.remove('dr-active');
+        const isDr = navMode === 'dr';
+        if (wrapper.classList.contains('dr-active') !== isDr) {
+            wrapper.classList.toggle('dr-active', isDr);
         }
     }
 

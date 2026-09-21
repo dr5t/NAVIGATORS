@@ -203,18 +203,37 @@ window.refreshDeviceTimings = () => {
     const engine = window.offlineEngine;
     const report = engine.profiler.report();
     const cards = byId('performanceCards');
-    cards.replaceChildren();
-    for (const [key, label] of Object.entries({ tcn: 'TCN inference', ekf: 'EKF update', map_matching: 'Map matching', total_loop: 'Navigation loop' })) {
-        const timing = report.timings[key];
-        const card = Object.assign(document.createElement('div'), { className: 'performance-card' });
-        const heading = Object.assign(document.createElement('h3'), { textContent: label });
-        const value = Object.assign(document.createElement('strong'), { textContent: readableNumber(timing.mean_ms) });
-        value.append(Object.assign(document.createElement('small'), { textContent: 'ms' }));
-        const count = Object.assign(document.createElement('p'), { textContent: `${timing.count} measured calls · mean` });
-        const p95 = Object.assign(document.createElement('p'), { textContent: `P95 ${readableNumber(timing.p95_ms, ' ms')}` });
-        card.append(heading, value, count, p95);
-        cards.append(card);
+    if (!cards) return;
+
+    const metricsMap = { tcn: 'TCN inference', ekf: 'EKF update', map_matching: 'Map matching', total_loop: 'Navigation loop' };
+
+    let existingCards = cards.querySelectorAll('.performance-card');
+    if (existingCards.length !== 4) {
+        cards.replaceChildren();
+        for (const [key, label] of Object.entries(metricsMap)) {
+            const card = document.createElement('div');
+            card.className = 'performance-card';
+            card.dataset.metricKey = key;
+            card.innerHTML = `<h3>${label}</h3><strong class="perf-val">0<small>ms</small></strong><p class="perf-count">0 measured calls · mean</p><p class="perf-p95">P95 0 ms</p>`;
+            cards.append(card);
+        }
+        existingCards = cards.querySelectorAll('.performance-card');
     }
+
+    let idx = 0;
+    for (const [key] of Object.entries(metricsMap)) {
+        const timing = report.timings[key];
+        const card = existingCards[idx++];
+        if (card && timing) {
+            const valEl = card.querySelector('.perf-val');
+            const countEl = card.querySelector('.perf-count');
+            const p95El = card.querySelector('.perf-p95');
+            if (valEl) valEl.innerHTML = `${readableNumber(timing.mean_ms)}<small>ms</small>`;
+            if (countEl) countEl.textContent = `${timing.count} measured calls · mean`;
+            if (p95El) p95El.textContent = `P95 ${readableNumber(timing.p95_ms, ' ms')}`;
+        }
+    }
+
     byId('modelSizeReadout').textContent = Number.isFinite(report.model_size_bytes) ? `${(report.model_size_bytes / (1024 * 1024)).toFixed(2)} MB` : '—';
     byId('startupReadout').textContent = readableNumber(report.startup_ms, ' ms');
     byId('imuRateReadout').textContent = readableNumber(engine.observedImuRate, ' Hz');

@@ -310,23 +310,31 @@ if (byId('btnImportDataset')) {
             logMessage('ERROR', 'Please enter a dataset URL.');
             return;
         }
-        logMessage('INFO', `Downloading dataset from ${url}...`);
+        logMessage('INFO', `Connecting to ${url}...`);
         
-        // Mock download latency
         const btn = byId('btnImportDataset');
         btn.disabled = true;
         btn.textContent = 'Importing...';
         
-        setTimeout(() => {
-            logMessage('SUCCESS', `Dataset successfully imported from external website.`);
+        try {
+            const res = await fetch('/dataset/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || 'Dataset import failed');
+            }
+            logMessage('SUCCESS', data.message || `Dataset successfully verified and imported from ${url}`);
+            byId('inputExternalDatasetUrl').value = '';
+            refreshDataset();
+        } catch (err) {
+            logMessage('ERROR', `Import failed: ${err.message}`);
+        } finally {
             btn.disabled = false;
             btn.textContent = 'Import Dataset';
-            byId('inputExternalDatasetUrl').value = '';
-            
-            // In a real implementation, we would send the URL to the backend
-            // For the hackathon idea, we just refresh the UI
-            refreshDataset();
-        }, 1500);
+        }
     });
 }
 

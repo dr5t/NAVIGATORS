@@ -1326,4 +1326,30 @@ textarea:focus-visible,
     border-color: var(--accent-emerald) !important;
 }
 
+/* ==========================================================================
+   5. Performance & Responsiveness Optimizations (Requirement 33)
+   ========================================================================== */
+#map {
+    contain: layout size style;
+    will-change: transform;
+}
+
+.leaflet-tile-container,
+.leaflet-marker-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+.performance-card,
+.compact-footer,
+.sidebar-panel,
+.control-panel,
+.telemetry-card {
+    contain: content;
+}
+
+
 
