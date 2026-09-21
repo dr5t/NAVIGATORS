@@ -195,7 +195,27 @@ CREATE TABLE IF NOT EXISTS device_sync_queue (
     synced_at TEXT
 );
 
+-- ========================================================
+-- Phase 12: Internal Contributor Request & Approval Tables
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS internal_contributor_requests (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    experience TEXT NOT NULL,
+    requested_scope TEXT NOT NULL DEFAULT 'trajectories_and_models',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+    rejection_reason TEXT,
+    reviewed_by TEXT REFERENCES users(id),
+    reviewed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 -- Indices for performance
+CREATE INDEX IF NOT EXISTS idx_icr_user_id ON internal_contributor_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_icr_status ON internal_contributor_requests(status);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource);
@@ -253,6 +273,14 @@ BEGIN
     UPDATE contributions SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
+-- Trigger: auto-update updated_at on internal_contributor_requests modification
+CREATE TRIGGER IF NOT EXISTS trg_icr_updated_at
+AFTER UPDATE ON internal_contributor_requests
+FOR EACH ROW
+BEGIN
+    UPDATE internal_contributor_requests SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
+END;
+
 
 -- ========================================================
 -- Seed Initial Roles
@@ -263,24 +291,24 @@ INSERT OR IGNORE INTO roles (id, name, description) VALUES
     ('local_contributor', 'Local Contributor', 'Verified local community editor with place and road contribution permissions'),
     ('internal_contributor', 'Internal Contributor', 'Technical field contributor with trajectory recording and ML evaluation access'),
     ('moderator', 'Community Moderator', 'Reviewer authorized to approve or reject community submissions and manage place data'),
-    ('team_admin', 'Team Administrator', 'Engineering lead with ML training, model deployment, and role assignment permissions'),
-    ('super_admin', 'Super Administrator', 'Platform governance administrator with universal access across all resources');
+    ('team_admin', 'Engineering Team Admin', 'Full engineering lifecycle administrator with dataset, model deployment, and role privileges'),
+    ('super_admin', 'Super Administrator', 'Unrestricted administrative governance and security control');
 
 -- ========================================================
--- Seed Permissions Catalog (24 granular capabilities)
+-- Seed Permissions Catalog
 -- ========================================================
 INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
-    ('place:create', 'place', 'create', 'Add new places, amenities, and POIs to map'),
-    ('place:read', 'place', 'read', 'Query and view places, amenities, and POIs'),
-    ('place:update', 'place', 'update', 'Modify place details, metadata, and operating hours'),
-    ('place:delete', 'place', 'delete', 'Remove places from canonical map data'),
+    ('place:create', 'place', 'create', 'Create and submit community place contributions'),
+    ('place:read', 'place', 'read', 'Read published canonical places and public map metadata'),
+    ('place:update', 'place', 'update', 'Suggest or execute modifications to existing places'),
+    ('place:delete', 'place', 'delete', 'Archive, soft delete, or remove place listings'),
 
-    ('contribution:create', 'contribution', 'create', 'Submit new place edits, hazard reports, or road change proposals'),
-    ('contribution:read', 'contribution', 'read', 'View community contributions and review statuses'),
-    ('contribution:update', 'contribution', 'update', 'Edit pending contributions before review'),
-    ('contribution:withdraw', 'contribution', 'withdraw', 'Withdraw own pending contribution'),
-    ('contribution:approve', 'contribution', 'approve', 'Approve contribution and synchronize to canonical map data'),
-    ('contribution:reject', 'contribution', 'reject', 'Reject contribution with moderation rationale'),
+    ('contribution:create', 'contribution', 'create', 'Draft community places or edit proposals'),
+    ('contribution:read', 'contribution', 'read', 'View own contributions or access moderation review queue'),
+    ('contribution:update', 'contribution', 'update', 'Modify content of active draft submissions'),
+    ('contribution:withdraw', 'contribution', 'withdraw', 'Withdraw or cancel submitted contribution proposals'),
+    ('contribution:approve', 'contribution', 'approve', 'Accept community contribution into canonical map'),
+    ('contribution:reject', 'contribution', 'reject', 'Reject community contribution with stated reason'),
 
     ('dataset:create', 'dataset', 'create', 'Upload or record new sensor trajectory datasets'),
     ('dataset:read', 'dataset', 'read', 'Inspect and download trajectory recordings and ground truth'),
@@ -308,7 +336,12 @@ INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
     ('audit:read', 'audit', 'read', 'Inspect immutable platform audit logs'),
     ('sync:pull', 'sync', 'pull', 'Pull canonical map updates and changelog deltas'),
     ('sync:push', 'sync', 'push', 'Push local device queue changes to server'),
-    ('package:build', 'package', 'build', 'Build and release offline map packages');
+    ('package:build', 'package', 'build', 'Build and release offline map packages'),
+
+    ('internal_contributor:request', 'contributor', 'request', 'Submit application for internal contributor role'),
+    ('internal_contributor:review', 'contributor', 'review', 'View and triage internal contributor applications'),
+    ('internal_contributor:approve', 'contributor', 'approve', 'Approve internal contributor access request and promote role'),
+    ('internal_contributor:reject', 'contributor', 'reject', 'Reject internal contributor access request with reason');
 
 -- ========================================================
 -- Seed Role Permissions Mapping
@@ -328,6 +361,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('user', 'report:create'),
     ('user', 'sync:pull'),
     ('user', 'sync:push'),
+    ('user', 'internal_contributor:request'),
     ('user', 'user:read');
 
 -- 3. Local Contributor permissions
@@ -342,6 +376,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('local_contributor', 'report:create'),
     ('local_contributor', 'sync:pull'),
     ('local_contributor', 'sync:push'),
+    ('local_contributor', 'internal_contributor:request'),
     ('local_contributor', 'user:read');
 
 -- 4. Internal Contributor permissions
@@ -418,6 +453,9 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'sync:pull'),
     ('team_admin', 'sync:push'),
     ('team_admin', 'package:build'),
+    ('team_admin', 'internal_contributor:review'),
+    ('team_admin', 'internal_contributor:approve'),
+    ('team_admin', 'internal_contributor:reject'),
     ('team_admin', 'user:read'),
     ('team_admin', 'user:update'),
     ('team_admin', 'role:assign');

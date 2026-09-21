@@ -255,10 +255,14 @@ def test_api_contributions_ownership_flow(monkeypatch, temp_db: Path, auth_servi
         req=UpdateContributionRequest(title="Updated City Library"),
         context=session_47,
     )
+    assert update_resp is not None
+    assert update_resp["contribution"] is not None
     assert update_resp["contribution"]["title"] == "Updated City Library"
 
     # User 47 submits draft for review
     submit_resp = api_submit_contribution(contrib_id=contrib_id, context=session_47)
+    assert submit_resp is not None
+    assert submit_resp["contribution"] is not None
     assert submit_resp["contribution"]["status"] in ("pending", "pending_review")
 
     # Moderator reviews and approves
@@ -267,6 +271,8 @@ def test_api_contributions_ownership_flow(monkeypatch, temp_db: Path, auth_servi
         req=ReviewContributionRequest(decision="approved", notes="Verified location and data"),
         context=session_mod,
     )
+    assert review_resp is not None
+    assert review_resp["contribution"] is not None
     assert review_resp["contribution"]["status"] == "approved"
     assert review_resp["contribution"]["reviewed_by"] == mod.id
 

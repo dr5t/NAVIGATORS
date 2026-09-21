@@ -402,6 +402,7 @@ def test_suggest_edit_workflow_and_version_increment(
 
     # Before publication, canonical place remains unchanged
     unchanged = place_repo.get_place(canonical.id)
+    assert unchanged is not None
     assert unchanged.opening_hours == "09:00 - 18:00"
     assert unchanged.version == 1
 
@@ -411,6 +412,7 @@ def test_suggest_edit_workflow_and_version_increment(
 
     # 4. Canonical place has been updated to Version 2
     updated = place_repo.get_place(canonical.id)
+    assert updated is not None
     assert updated.version == 2
     assert updated.opening_hours == "24/7"
     assert updated.phone == "+91 11 9999 8888"
@@ -544,6 +546,8 @@ def test_draft_update_owner_vs_non_owner(
         ),
         context=session_owner,
     )
+    assert res is not None
+    assert res["contribution"] is not None
     assert res["contribution"]["title"] == "Updated Draft Name"
     assert res["contribution"]["data"]["opening_hours"] == "08:00 - 22:00"
 
