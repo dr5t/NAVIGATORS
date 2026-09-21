@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS contributions (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     resource_type TEXT NOT NULL, -- 'place', 'road_hazard', 'amenity'
-    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending_review', 'pending', 'approved', 'published', 'rejected', 'withdrawn')),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending_review', 'pending', 'changes_requested', 'approved', 'published', 'rejected', 'withdrawn')),
     title TEXT NOT NULL,
     data_json TEXT NOT NULL DEFAULT '{}',
     target_resource_id TEXT REFERENCES places(id) ON DELETE SET NULL,
@@ -121,6 +121,78 @@ CREATE TABLE IF NOT EXISTS contributions (
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     reviewed_at TEXT,
     published_at TEXT
+);
+
+-- 11. Platform Audit Logs Table (Full mutation and state transition traceability)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id TEXT PRIMARY KEY,
+    actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
+    old_state TEXT,
+    new_state TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    ip_hash TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- 12. Community Reports & Flagging Table (User issue reporting on places and contributions)
+CREATE TABLE IF NOT EXISTS reports (
+    id TEXT PRIMARY KEY,
+    reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_type TEXT NOT NULL CHECK (target_type IN ('place', 'contribution', 'user')),
+    target_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    details TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    resolved_by TEXT REFERENCES users(id),
+    resolution_notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    resolved_at TEXT
+);
+
+-- ========================================================
+-- Canonical Map Pipeline & Offline Synchronization Tables
+-- ========================================================
+
+-- Canonical Changelog: Monotonically increasing sequence stream for incremental delta synchronization
+CREATE TABLE IF NOT EXISTS canonical_changelog (
+    sequence_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    resource_type TEXT NOT NULL DEFAULT 'place',
+    resource_id TEXT NOT NULL,
+    action TEXT NOT NULL CHECK (action IN ('create', 'update', 'delete', 'restore')),
+    version INTEGER NOT NULL,
+    data_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- Offline Map Packages: Pre-compiled standalone map packages for offline sync
+CREATE TABLE IF NOT EXISTS offline_map_packages (
+    id TEXT PRIMARY KEY,
+    package_version INTEGER NOT NULL,
+    region TEXT NOT NULL DEFAULT 'global',
+    format TEXT NOT NULL DEFAULT 'sqlite' CHECK (format IN ('sqlite', 'json_bundle')),
+    file_path TEXT NOT NULL,
+    checksum_sha256 TEXT NOT NULL,
+    record_count INTEGER NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- Device Sync Queue: Tracking offline sync queues submitted by devices
+CREATE TABLE IF NOT EXISTS device_sync_queue (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    client_sequence INTEGER NOT NULL,
+    operation TEXT NOT NULL CHECK (operation IN ('add_place', 'suggest_edit', 'report')),
+    payload_json TEXT NOT NULL,
+    base_version INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'synced', 'conflict', 'rejected')),
+    conflict_reason TEXT,
+    server_resource_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    synced_at TEXT
 );
 
 -- Indices for performance
@@ -143,6 +215,19 @@ CREATE INDEX IF NOT EXISTS idx_place_history_place ON place_history(place_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_owner ON contributions(owner_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_status ON contributions(status);
 CREATE INDEX IF NOT EXISTS idx_contributions_target ON contributions(target_resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_reports_reporter ON reports(reporter_id);
+CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+CREATE INDEX IF NOT EXISTS idx_canonical_changelog_seq ON canonical_changelog(sequence_id);
+CREATE INDEX IF NOT EXISTS idx_canonical_changelog_res ON canonical_changelog(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_offline_map_packages_ver ON offline_map_packages(package_version);
+CREATE INDEX IF NOT EXISTS idx_offline_map_packages_region ON offline_map_packages(region);
+CREATE INDEX IF NOT EXISTS idx_device_sync_queue_dev ON device_sync_queue(device_id);
+CREATE INDEX IF NOT EXISTS idx_device_sync_queue_status ON device_sync_queue(status);
 
 -- Trigger: auto-update updated_at on user modification
 CREATE TRIGGER IF NOT EXISTS trg_users_updated_at
@@ -214,7 +299,16 @@ INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
     ('user:read', 'user', 'read', 'View user profiles, identifiers, and role statuses'),
     ('user:update', 'user', 'update', 'Modify user profile settings and account states'),
 
-    ('role:assign', 'role', 'assign', 'Assign or revoke roles and permissions for accounts');
+    ('role:assign', 'role', 'assign', 'Assign or revoke roles and permissions for accounts'),
+
+    ('contribution:request_changes', 'contribution', 'request_changes', 'Request revisions on pending community contributions'),
+    ('report:create', 'report', 'create', 'Submit community flag or report on map data'),
+    ('report:read', 'report', 'read', 'Inspect community reports triage queue'),
+    ('report:resolve', 'report', 'resolve', 'Resolve or dismiss community reports'),
+    ('audit:read', 'audit', 'read', 'Inspect immutable platform audit logs'),
+    ('sync:pull', 'sync', 'pull', 'Pull canonical map updates and changelog deltas'),
+    ('sync:push', 'sync', 'push', 'Push local device queue changes to server'),
+    ('package:build', 'package', 'build', 'Build and release offline map packages');
 
 -- ========================================================
 -- Seed Role Permissions Mapping
@@ -231,6 +325,9 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('user', 'contribution:read'),
     ('user', 'contribution:update'),
     ('user', 'contribution:withdraw'),
+    ('user', 'report:create'),
+    ('user', 'sync:pull'),
+    ('user', 'sync:push'),
     ('user', 'user:read');
 
 -- 3. Local Contributor permissions
@@ -242,6 +339,9 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('local_contributor', 'contribution:read'),
     ('local_contributor', 'contribution:update'),
     ('local_contributor', 'contribution:withdraw'),
+    ('local_contributor', 'report:create'),
+    ('local_contributor', 'sync:pull'),
+    ('local_contributor', 'sync:push'),
     ('local_contributor', 'user:read');
 
 -- 4. Internal Contributor permissions
@@ -260,6 +360,9 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('internal_contributor', 'training:read'),
     ('internal_contributor', 'model:create'),
     ('internal_contributor', 'model:read'),
+    ('internal_contributor', 'report:create'),
+    ('internal_contributor', 'sync:pull'),
+    ('internal_contributor', 'sync:push'),
     ('internal_contributor', 'user:read');
 
 -- 5. Moderator permissions
@@ -274,6 +377,14 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('moderator', 'contribution:withdraw'),
     ('moderator', 'contribution:approve'),
     ('moderator', 'contribution:reject'),
+    ('moderator', 'contribution:request_changes'),
+    ('moderator', 'report:create'),
+    ('moderator', 'report:read'),
+    ('moderator', 'report:resolve'),
+    ('moderator', 'audit:read'),
+    ('moderator', 'sync:pull'),
+    ('moderator', 'sync:push'),
+    ('moderator', 'package:build'),
     ('moderator', 'user:read');
 
 -- 6. Team Admin permissions
@@ -288,6 +399,11 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'contribution:withdraw'),
     ('team_admin', 'contribution:approve'),
     ('team_admin', 'contribution:reject'),
+    ('team_admin', 'contribution:request_changes'),
+    ('team_admin', 'report:create'),
+    ('team_admin', 'report:read'),
+    ('team_admin', 'report:resolve'),
+    ('team_admin', 'audit:read'),
     ('team_admin', 'dataset:create'),
     ('team_admin', 'dataset:read'),
     ('team_admin', 'dataset:update'),
@@ -299,6 +415,9 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'model:update'),
     ('team_admin', 'model:approve'),
     ('team_admin', 'model:deploy'),
+    ('team_admin', 'sync:pull'),
+    ('team_admin', 'sync:push'),
+    ('team_admin', 'package:build'),
     ('team_admin', 'user:read'),
     ('team_admin', 'user:update'),
     ('team_admin', 'role:assign');

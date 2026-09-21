@@ -357,7 +357,7 @@ class PlaceRepository:
         changed_by: Optional[str],
         summary: Optional[str],
     ) -> None:
-        """Internal helper to write an immutable history audit entry."""
+        """Internal helper to write an immutable history audit entry and stream to canonical changelog."""
         hid = f"plch_{secrets.token_hex(6)}"
         now = datetime.now(timezone.utc).isoformat()
         snapshot = json.dumps(place.to_dict())
@@ -372,6 +372,27 @@ class PlaceRepository:
                 """,
                 (hid, place.id, place.version, action, changed_by, snapshot, summary, now),
             )
+
+        # Stream modification into canonical changelog for delta sync
+        try:
+            from src.db.canonical import CanonicalRepository
+            action_map = {
+                "created": "create",
+                "updated": "update",
+                "soft_deleted": "delete",
+                "restored": "restore",
+            }
+            canon_action = action_map.get(action, action)
+            canon_repo = CanonicalRepository(self.db_path)
+            canon_repo.record_change(
+                resource_type="place",
+                resource_id=place.id,
+                action=canon_action,
+                version=place.version,
+                data=place.to_dict(),
+            )
+        except Exception:
+            pass
 
     def publish_from_contribution(self, contribution: Any, publisher: Optional[Any] = None) -> Place:
         """

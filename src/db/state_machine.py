@@ -29,6 +29,7 @@ class ContributionState:
     APPROVED = "approved"
     PUBLISHED = "published"
     REJECTED = "rejected"
+    CHANGES_REQUESTED = "changes_requested"
     WITHDRAWN = "withdrawn"
 
     ALL = {
@@ -39,6 +40,7 @@ class ContributionState:
         APPROVED,
         PUBLISHED,
         REJECTED,
+        CHANGES_REQUESTED,
         WITHDRAWN,
     }
 
@@ -100,6 +102,30 @@ class ContributionStateMachine:
             required_permission="contribution:reject",
             reviewer_only=True,
             description="Reviewer rejects contribution with rationale",
+        ),
+        # 4b. Reviewer requests changes from author
+        (ContributionState.PENDING_REVIEW, ContributionState.CHANGES_REQUESTED): TransitionRule(
+            source=ContributionState.PENDING_REVIEW,
+            target=ContributionState.CHANGES_REQUESTED,
+            required_permission="contribution:request_changes",
+            reviewer_only=True,
+            description="Reviewer requests revisions on contribution from author",
+        ),
+        # 4c. Author resubmits after making requested changes
+        (ContributionState.CHANGES_REQUESTED, ContributionState.PENDING_REVIEW): TransitionRule(
+            source=ContributionState.CHANGES_REQUESTED,
+            target=ContributionState.PENDING_REVIEW,
+            required_permission="contribution:update",
+            owner_only=True,
+            description="Author resubmits revised contribution for moderation review",
+        ),
+        # 4d. Author withdraws contribution in changes_requested status
+        (ContributionState.CHANGES_REQUESTED, ContributionState.WITHDRAWN): TransitionRule(
+            source=ContributionState.CHANGES_REQUESTED,
+            target=ContributionState.WITHDRAWN,
+            required_permission="contribution:withdraw",
+            owner_only=True,
+            description="Author withdraws contribution after revision request",
         ),
         # 5. Canonical map publisher synchronizes approved data to live map
         (ContributionState.APPROVED, ContributionState.PUBLISHED): TransitionRule(

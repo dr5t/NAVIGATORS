@@ -6,6 +6,7 @@ enforced strictly via the ContributionStateMachine.
 
 import json
 import sqlite3
+import secrets
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -78,6 +79,30 @@ class ContributionRepository:
             raise RuntimeError(f"Failed to create contribution {contribution_id}.")
         return item
 
+    def create_contribution(
+        self,
+        owner_id: str,
+        resource_type: str,
+        title: str,
+        data: Optional[Dict[str, Any]] = None,
+        status: str = ContributionState.DRAFT,
+        target_resource_id: Optional[str] = None,
+        action: str = "create",
+        contribution_id: Optional[str] = None,
+    ) -> Contribution:
+        """Convenience factory method generating a unique ID if omitted."""
+        cid = contribution_id or f"contrib_{secrets.token_hex(6)}"
+        return self.create(
+            contribution_id=cid,
+            owner_id=owner_id,
+            resource_type=resource_type,
+            title=title,
+            data=data,
+            status=status,
+            target_resource_id=target_resource_id,
+            action=action,
+        )
+
     def get(self, contribution_id: str) -> Optional[Contribution]:
         """Fetch contribution by unique ID."""
         with get_db(self.db_path) as conn:
@@ -89,6 +114,10 @@ class ContributionRepository:
             if not row:
                 return None
             return Contribution(**dict(row))
+
+    def get_contribution(self, contribution_id: str) -> Optional[Contribution]:
+        """Alias for get()."""
+        return self.get(contribution_id)
 
     def update_content(
         self,
@@ -166,7 +195,7 @@ class ContributionRepository:
             user_id = user
 
         with get_db(self.db_path) as conn:
-            if target_state in (ContributionState.APPROVED, ContributionState.REJECTED):
+            if target_state in (ContributionState.APPROVED, ContributionState.REJECTED, ContributionState.CHANGES_REQUESTED):
                 conn.execute(
                     """
                     UPDATE contributions
@@ -197,6 +226,22 @@ class ContributionRepository:
         updated = self.get(contribution_id)
         if not updated:
             raise RuntimeError(f"State transition to '{target_state}' failed.")
+
+        # Record immutable audit log
+        try:
+            from src.db.audit import AuditRepository
+            audit_repo = AuditRepository(self.db_path)
+            audit_repo.log(
+                action=f"contribution:{target_state}",
+                resource_type="contribution",
+                resource_id=contribution_id,
+                actor_id=user_id,
+                old_state=item.status,
+                new_state=target_state,
+                metadata={"title": item.title, "notes": notes, "action": item.action},
+            )
+        except Exception:
+            pass
 
         if target_state == ContributionState.PUBLISHED and updated.resource_type == "place":
             try:
@@ -235,6 +280,51 @@ class ContributionRepository:
     def reject(self, contribution_id: str, reviewer: Any, notes: Optional[str] = None) -> Contribution:
         """Reviewer rejects contribution with rationale."""
         return self.transition_state(contribution_id, ContributionState.REJECTED, reviewer, notes=notes)
+
+    def request_changes(self, contribution_id: str, reviewer: Any, notes: Optional[str] = None) -> Contribution:
+        """Reviewer requests revisions on contribution with feedback notes."""
+        return self.transition_state(contribution_id, ContributionState.CHANGES_REQUESTED, reviewer, notes=notes)
+
+    def get_diff_summary(self, contribution_id: str) -> Dict[str, Any]:
+        """
+        Compute a structured diff comparing the contribution's data payload
+        against its target canonical place (or all proposed fields for new additions).
+        """
+        item = self.get(contribution_id)
+        if not item:
+            return {}
+
+        proposed_data = item.to_dict().get("data", {})
+        diff: Dict[str, Any] = {
+            "action": item.action,
+            "target_resource_id": item.target_resource_id,
+            "changes": {},
+        }
+
+        if item.action == "create" or not item.target_resource_id:
+            for k, v in proposed_data.items():
+                diff["changes"][k] = {"old": None, "new": v}
+            return diff
+
+        try:
+            from src.db.places import PlaceRepository
+            place_repo = PlaceRepository(self.db_path)
+            canonical = place_repo.get_place(item.target_resource_id, include_deleted=True)
+            if not canonical:
+                for k, v in proposed_data.items():
+                    diff["changes"][k] = {"old": None, "new": v}
+                return diff
+
+            canonical_dict = canonical.to_dict()
+            for k, new_v in proposed_data.items():
+                old_v = canonical_dict.get(k)
+                if old_v != new_v:
+                    diff["changes"][k] = {"old": old_v, "new": new_v}
+        except Exception:
+            for k, v in proposed_data.items():
+                diff["changes"][k] = {"old": None, "new": v}
+
+        return diff
 
     def review(
         self,

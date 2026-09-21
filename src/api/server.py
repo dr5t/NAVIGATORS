@@ -30,11 +30,17 @@ from api.training import router as training_router
 from api.auth import router as auth_router
 from api.contributions import router as contributions_router
 from api.places import router as places_router
+from api.moderation import router as moderation_router
+from api.reports import router as reports_router
+from api.sync import router as sync_router
 app.include_router(recordings_router)
 app.include_router(training_router)
 app.include_router(auth_router)
 app.include_router(contributions_router)
 app.include_router(places_router)
+app.include_router(moderation_router)
+app.include_router(reports_router)
+app.include_router(sync_router)
 
 app.add_middleware(
     CORSMiddleware,

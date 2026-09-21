@@ -97,6 +97,14 @@ def get_optional_session(authorization: Optional[str] = Header(None)) -> Optiona
         return None
 
 
+def _extract_query_val(val: Any, default: Any = None) -> Any:
+    """Extract actual value if val is a FastAPI Query object, or return default."""
+    if hasattr(val, "default"):
+        res = val.default
+        return default if res is ... else res
+    return default if val is None else val
+
+
 # =============================================================================
 # 1. Place Creation & Contribution Flow
 # =============================================================================
@@ -175,14 +183,14 @@ def list_canonical_places(
         raise HTTPException(status_code=status_code, detail=decision.reason)
 
     places = place_repo.list_places(
-        category=category,
-        search=q,
-        min_lat=min_lat,
-        max_lat=max_lat,
-        min_lon=min_lon,
-        max_lon=max_lon,
-        limit=limit,
-        offset=offset,
+        category=_extract_query_val(category),
+        search=_extract_query_val(q),
+        min_lat=_extract_query_val(min_lat),
+        max_lat=_extract_query_val(max_lat),
+        min_lon=_extract_query_val(min_lon),
+        max_lon=_extract_query_val(max_lon),
+        limit=_extract_query_val(limit, 50),
+        offset=_extract_query_val(offset, 0),
     )
     return {
         "places": [p.to_dict() for p in places],
@@ -229,9 +237,11 @@ def get_pending_contributions(
         status_code = 401 if decision.code in ("UNAUTHENTICATED", "ACCOUNT_INACTIVE") else 403
         raise HTTPException(status_code=status_code, detail=decision.reason)
 
-    pending_items = contrib_repo.list(status=ContributionState.PENDING_REVIEW, limit=limit, offset=offset)
+    lim = _extract_query_val(limit, 50)
+    off = _extract_query_val(offset, 0)
+    pending_items = contrib_repo.list(status=ContributionState.PENDING_REVIEW, limit=lim, offset=off)
     # Also include 'submitted' if any
-    submitted_items = contrib_repo.list(status=ContributionState.SUBMITTED, limit=limit, offset=offset)
+    submitted_items = contrib_repo.list(status=ContributionState.SUBMITTED, limit=lim, offset=off)
     all_pending = pending_items + submitted_items
 
     return {

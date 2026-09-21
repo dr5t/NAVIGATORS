@@ -217,7 +217,8 @@ def test_public_users_see_only_published_canonical_places(
     monkeypatch.setattr(places_mod, "authz_service", test_authz)
 
     # 1. Create a draft contribution (should NOT be visible to public)
-    contrib_repo.create("contrib_unpub", "usr_dummy", "place", "Unpublished Draft", status=ContributionState.DRAFT)
+    dummy_author, _, _ = auth_service.register("dummy_unpub@navigators.dev", "Password123!", "Dummy Author")
+    contrib_repo.create("contrib_unpub", dummy_author.id, "place", "Unpublished Draft", status=ContributionState.DRAFT)
 
     # 2. Create a published canonical place
     p1 = place_repo.create_place(
@@ -236,10 +237,10 @@ def test_public_users_see_only_published_canonical_places(
         latitude=28.6150,
         longitude=77.2100,
     )
-    place_repo.soft_delete_place(p2.id, changed_by="staff", reason="Decommissioned")
+    place_repo.soft_delete_place(p2.id, changed_by=dummy_author.id, reason="Decommissioned")
 
     # Public user queries places
-    guest_session = auth_service.create_guest_session()
+    guest_session, _ = auth_service.create_guest_session()
     res = api_list_canonical_places(context=guest_session)
 
     assert res["count"] == 1
@@ -447,7 +448,7 @@ def test_soft_delete_and_restore_cycle(
     monkeypatch.setattr(places_mod, "authz_service", test_authz)
 
     moderator, session_mod, _ = auth_service.register("staff_arch@navigators.dev", "Password123!", "Staff", role_id="moderator")
-    guest_session = auth_service.create_guest_session()
+    guest_session, _ = auth_service.create_guest_session()
 
     place = place_repo.create_place(
         name="Historic Landmark",
@@ -494,3 +495,115 @@ def test_soft_delete_and_restore_cycle(
     # 6. Public query now sees the restored place again
     pub_list_after = api_list_canonical_places(context=guest_session)
     assert any(p["id"] == place.id for p in pub_list_after["places"])
+
+
+def test_draft_update_owner_vs_non_owner(
+    monkeypatch,
+    temp_db: Path,
+    auth_service: AuthService,
+    contrib_repo: ContributionRepository,
+):
+    """
+    Validates:
+      - Owner can update their own draft contribution.
+      - Non-owner cannot update someone else's draft contribution.
+    """
+    import src.api.contributions as contrib_mod
+    from src.api.contributions import update_contribution, UpdateContributionRequest
+    test_authz = AuthorizationService(temp_db)
+    monkeypatch.setattr(contrib_mod, "contrib_repo", contrib_repo)
+    monkeypatch.setattr(contrib_mod, "auth_service", auth_service)
+    monkeypatch.setattr(contrib_mod, "authz_service", test_authz)
+
+    owner, session_owner, _ = auth_service.register("owner_draft@navigators.dev", "Password123!", "Draft Owner")
+    other_user, session_other, _ = auth_service.register("intruder@navigators.dev", "Password123!", "Intruder")
+
+    contrib = contrib_repo.create(
+        contribution_id="contrib_draft_edit",
+        owner_id=owner.id,
+        resource_type="place",
+        title="Original Draft Name",
+        data={"category": "fuel", "name": "Original Station"},
+        status=ContributionState.DRAFT,
+    )
+
+    # 1. Direct authorization service check
+    decision_owner = test_authz.can(user=session_owner, action="contribution:update", resource=contrib)
+    assert decision_owner.allowed is True
+
+    decision_intruder = test_authz.can(user=session_other, action="contribution:update", resource=contrib)
+    assert decision_intruder.allowed is False
+    assert decision_intruder.code == "NOT_OWNER"
+
+    # 2. Owner can successfully update their draft via API
+    res = update_contribution(
+        contrib_id=contrib.id,
+        req=UpdateContributionRequest(
+            title="Updated Draft Name",
+            data={"category": "fuel", "name": "Updated Station", "opening_hours": "08:00 - 22:00"},
+        ),
+        context=session_owner,
+    )
+    assert res["contribution"]["title"] == "Updated Draft Name"
+    assert res["contribution"]["data"]["opening_hours"] == "08:00 - 22:00"
+
+    # 3. Non-owner cannot update the draft via API (HTTP 403)
+    with pytest.raises(HTTPException) as exc_authz:
+        update_contribution(
+            contrib_id=contrib.id,
+            req=UpdateContributionRequest(title="Hacked Title"),
+            context=session_other,
+        )
+    assert exc_authz.value.status_code == 403
+
+
+def test_direct_staff_update_and_history_recording(
+    monkeypatch,
+    temp_db: Path,
+    auth_service: AuthService,
+    place_repo: PlaceRepository,
+):
+    """
+    Moderator or admin with place:update permission can directly PATCH a published place.
+    The mutation increments version to 2 and writes an immutable history snapshot.
+    """
+    import src.api.places as places_mod
+    test_authz = AuthorizationService(temp_db)
+    monkeypatch.setattr(places_mod, "place_repo", place_repo)
+    monkeypatch.setattr(places_mod, "auth_service", auth_service)
+    monkeypatch.setattr(places_mod, "authz_service", test_authz)
+
+    mod, session_mod, _ = auth_service.register("staff_patcher@navigators.dev", "Password123!", "Staff Patcher", role_id="moderator")
+
+    canonical = place_repo.create_place(
+        name="Apollo Clinic",
+        category="hospital",
+        latitude=28.6200,
+        longitude=77.2100,
+        phone="+91 11 4444 5555",
+        created_by=mod.id,
+    )
+    assert canonical.version == 1
+
+    # Staff directly updates phone and website
+    res = api_direct_update_place(
+        place_id=canonical.id,
+        req=DirectUpdatePlaceRequest(
+            phone="+91 11 8888 9999",
+            website="https://apolloclinic.example.com",
+            change_summary="Updated emergency contact details",
+        ),
+        context=session_mod,
+    )
+    patched = res["place"]
+    assert patched["version"] == 2
+    assert patched["phone"] == "+91 11 8888 9999"
+    assert patched["website"] == "https://apolloclinic.example.com"
+
+    # History snapshot inspection
+    history = place_repo.get_place_history(canonical.id)
+    assert len(history) == 2
+    assert history[0].version == 2
+    assert history[0].action == "updated"
+    assert history[0].change_summary == "Updated emergency contact details"
+    assert history[0].changed_by == mod.id

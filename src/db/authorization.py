@@ -68,6 +68,8 @@ class AuthorizationService:
         is_guest = False
         user_perms: Set[str] = set()
         user_roles: List[str] = []
+        if isinstance(user, tuple) and len(user) == 2 and isinstance(user[0], SessionContext):
+            user = user[0]
 
         if user is None:
             is_guest = True

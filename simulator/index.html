@@ -114,12 +114,12 @@
                     <!-- Speed & Heading Pill -->
                     <div class="telemetry-pill">
                         <div class="speed-badge">
-                            <strong id="speedValue">—</strong>
+                            <strong id="speedValue">--</strong>
                             <span>km/h</span>
                         </div>
                         <div class="heading-badge">
                             <svg><use href="#i-compass"/></svg>
-                            <span id="headingValue">—°</span>
+                            <span id="headingValue">--°</span>
                         </div>
                     </div>
 
@@ -140,6 +140,11 @@
                 </div>
 
                 <div style="display:flex; align-items:center; gap:10px;">
+                    <!-- Network Status / Sync Toggle (Separates connectivity from navigation) -->
+                    <button id="btnNetworkSyncToggle" class="btn-network-sync" title="Network state controls synchronization, never navigation" style="display:flex; align-items:center; gap:6px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.4); color: var(--accent-emerald); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        <span id="syncStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-emerald); display: inline-block;"></span>
+                        <span id="syncStatusText">ONLINE</span>
+                    </button>
                     <!-- Primary Navigation Start Toggle -->
                 <button id="btnStartLive" class="btn-engine">
                     <svg><use href="#i-play"/></svg>
@@ -246,22 +251,22 @@
                         <!-- Quality & Position Card -->
                         <div class="nav-card">
                             <h3 id="positionMetricLabel">Position Uncertainty</h3>
-                            <div class="card-metric"><span id="posErrorValue">—</span> <small style="font-size:12px;">m</small></div>
+                            <div class="card-metric"><span id="posErrorValue">--</span> <small style="font-size:12px;">m</small></div>
                             <div class="progress-bar-bg"><div id="posErrorBar" class="progress-bar-fill"></div></div>
                         </div>
 
                         <!-- Drift & Confidence Card -->
                         <div class="nav-card">
                             <h3 id="driftMetricLabel">Estimated Drift</h3>
-                            <div class="card-metric"><span id="driftValue">—</span><small style="font-size:12px;">%</small> <span id="driftBadge" class="card-badge">—</span></div>
-                            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Confidence: <strong id="confidenceValue" style="color:var(--text-primary);">—</strong></div>
+                            <div class="card-metric"><span id="driftValue">--</span><small style="font-size:12px;">%</small> <span id="driftBadge" class="card-badge">--</span></div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Confidence: <strong id="confidenceValue" style="color:var(--text-primary);">--</strong></div>
                             <div class="progress-bar-bg" style="margin-top:4px;"><div id="confidenceBar" class="progress-bar-fill"></div></div>
                         </div>
 
                         <!-- Coordinates Card -->
                         <div class="nav-card">
                             <h3>Current Coordinates</h3>
-                            <div class="card-metric" style="font-size:14px;" id="positionCoordinates">—</div>
+                            <div class="card-metric" style="font-size:14px;" id="positionCoordinates">--</div>
                             <div style="font-size:11px; color:var(--text-muted); margin-top:4px;" id="gnssDescription">Acquire a fix to initialize position.</div>
                         </div>
                     </div>
@@ -447,10 +452,12 @@
                             <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0;">Contribute</h2>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Help keep map data and road networks accurate</div>
                         </div>
-                        <!-- Area Switcher (Community vs Internal) -->
+                        <!-- Area Switcher (Community vs Internal vs Moderation vs Sync) -->
                         <div class="contribute-mode-toggle" style="display: flex; background: var(--bg-surface); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
                             <button id="btnContribCommunity" class="btn-toggle active" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: var(--accent-emerald); color: var(--bg-main); font-weight: 600; cursor: pointer;">Community</button>
                             <button id="btnContribInternal" class="btn-toggle" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Internal ML / Data</button>
+                            <button id="btnContribModeration" class="btn-toggle" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Moderation</button>
+                            <button id="btnContribSync" class="btn-toggle" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Offline & Sync</button>
                         </div>
                     </div>
 
@@ -603,6 +610,118 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- AREA 3: MODERATOR INTERFACE (Review, Approve, Reject, Request Changes) -->
+                    <div id="areaModerationPanel" class="contribute-area" hidden>
+                        <div class="nav-card" style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <span class="tiny-label" style="color: var(--accent-cyan); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">GOVERNANCE & TRIAGE</span>
+                                    <h3 style="font-size: 14px; font-weight: 700; color: white; margin: 2px 0 0 0;">Moderation Workspace</h3>
+                                </div>
+                                <span id="modUserRoleBadge" class="badge" style="font-size: 10px; background: rgba(6,182,212,0.15); color: var(--accent-cyan); padding: 3px 8px; border-radius: 4px; font-weight: 600;">Moderator</span>
+                            </div>
+
+                            <!-- Queue Status Filter Pills -->
+                            <div style="display: flex; gap: 6px; margin-bottom: 12px; background: var(--bg-surface); padding: 4px; border-radius: 6px; border: 1px solid var(--border-color);">
+                                <button id="btnModQueuePending" class="btn-toggle active" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: var(--accent-cyan); color: var(--bg-main); font-weight: 600; cursor: pointer;">Pending</button>
+                                <button id="btnModQueueApproved" class="btn-toggle" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Approved</button>
+                                <button id="btnModQueueRejected" class="btn-toggle" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Rejected</button>
+                                <button id="btnModQueueReported" class="btn-toggle" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Reported</button>
+                            </div>
+
+                            <!-- Moderation Queue Items -->
+                            <div id="moderationQueueContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 2px;">
+                                <div style="font-size: 11px; color: var(--text-muted); padding: 12px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                                    Loading moderation triage items...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Moderation Audit Trail -->
+                        <div class="nav-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h4 style="margin: 0; color: white; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Recent Governance Audit Trail</h4>
+                                <button id="btnRefreshAuditLogs" style="font-size: 10px; padding: 2px 6px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">Refresh</button>
+                            </div>
+                            <div id="moderationAuditLogContainer" style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                                <div style="color: var(--text-muted); padding: 6px; text-align: center;">No recent audit actions.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AREA 4: OFFLINE SYNCHRONIZATION & CANONICAL MAP PACKAGES -->
+                    <div id="areaSyncPanel" class="contribute-area" hidden>
+                        <div class="nav-card" style="margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <span class="tiny-label" style="color: var(--accent-emerald); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">CANONICAL MAP PIPELINE</span>
+                                    <h3 style="font-size: 14px; font-weight: 700; color: white; margin: 2px 0 0 0;">Offline Sync Engine</h3>
+                                </div>
+                                <span id="syncModePill" class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 3px 8px; border-radius: 4px; font-weight: 600;">Engine Active</span>
+                            </div>
+
+                            <!-- Network Decoupling Architecture Card -->
+                            <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; margin-bottom: 12px; line-height: 1.4;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <strong style="color: var(--text-primary);">Network Independence Principle</strong>
+                                    <span class="badge" style="font-size: 9px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 1px 6px; border-radius: 3px;">Active</span>
+                                </div>
+                                <div style="color: var(--text-secondary);">
+                                    Internet connectivity never controls GNSS/DR/EKF sensor fusion or map matching. Navigation operates continuously offline using local map storage. Connectivity solely controls synchronization.
+                                </div>
+                            </div>
+
+                            <!-- Sync Status Metrics Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
+                                <div style="background: var(--bg-surface); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center;">
+                                    <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Network State</div>
+                                    <strong id="syncNetworkStateVal" style="color: var(--accent-emerald); font-size: 13px;">ONLINE</strong>
+                                </div>
+                                <div style="background: var(--bg-surface); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center;">
+                                    <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Latest Sequence</div>
+                                    <strong id="syncLatestSeqVal" style="color: white; font-size: 13px;">#0</strong>
+                                </div>
+                                <div style="background: var(--bg-surface); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center;">
+                                    <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Pending Queue</div>
+                                    <strong id="syncPendingCountVal" style="color: var(--accent-amber); font-size: 13px;">0 items</strong>
+                                </div>
+                            </div>
+
+                            <!-- Sync Actions -->
+                            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                <button id="btnTriggerManualSync" class="button primary" style="flex: 1; padding: 6px 12px; font-size: 12px;">
+                                    Sync Now (Push & Pull)
+                                </button>
+                                <button id="btnToggleSimNetwork" class="button secondary" style="flex: 1; padding: 6px 12px; font-size: 12px;">
+                                    Toggle Offline Mode
+                                </button>
+                            </div>
+
+                            <!-- Offline Package Section -->
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <strong style="font-size: 12px; color: white;">Offline Map Package</strong>
+                                    <span id="offlinePkgVerBadge" class="badge" style="font-size: 10px; background: rgba(255,255,255,0.06); color: var(--text-muted); padding: 2px 6px; border-radius: 4px;">Loading...</span>
+                                </div>
+                                <div id="offlinePkgMetaText" style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 8px;">
+                                    Checking for latest offline map bundle...
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btnDownloadPkgAction" class="button secondary" style="flex: 1; padding: 5px 10px; font-size: 11px;">Download Standalone DB</button>
+                                    <button id="btnBuildPkgAction" class="button secondary" style="flex: 1; padding: 5px 10px; font-size: 11px;">Recompile Package</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sync Activity Stream -->
+                        <div class="nav-card">
+                            <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Changelog Delta Stream</h3>
+                            <div id="syncDeltaListContainer" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">
+                                <div style="font-size: 11px; color: var(--text-muted); padding: 8px; text-align: center;">No sync activity yet.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- TAB 4: NAVIGATOR LAB -->
@@ -642,10 +761,10 @@
                     <section id="metricsCard" class="playback-metrics" hidden>
                         <span class="tiny-label">SAVED METRICS · NOT LIVE ACCURACY</span>
                         <div class="metrics-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:8px;">
-                            <div>ATE RMSE<strong id="ateRmse">—</strong></div>
-                            <div>CEP50<strong id="cep50">—</strong></div>
-                            <div>CEP95<strong id="cep95">—</strong></div>
-                            <div>Distance<strong id="totalDistance">—</strong></div>
+                            <div>ATE RMSE<strong id="ateRmse">--</strong></div>
+                            <div>CEP50<strong id="cep50">--</strong></div>
+                            <div>CEP95<strong id="cep95">--</strong></div>
+                            <div>Distance<strong id="totalDistance">--</strong></div>
                         </div>
                     </section>
 
@@ -1234,9 +1353,9 @@
                     <div class="report-notice" id="deviceIdentity">Start engine to collect measurements.</div>
                     <div id="performanceCards" class="performance-cards"></div>
                     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px;">
-                        <div>Model size: <strong id="modelSizeReadout">—</strong></div>
-                        <div>Model startup: <strong id="startupReadout">—</strong></div>
-                        <div>Observed IMU rate: <strong id="imuRateReadout">—</strong></div>
+                        <div>Model size: <strong id="modelSizeReadout">--</strong></div>
+                        <div>Model startup: <strong id="startupReadout">--</strong></div>
+                        <div>Observed IMU rate: <strong id="imuRateReadout">--</strong></div>
                     </div>
                     <div style="margin-top:16px;">
                         <label class="button secondary upload-label">
@@ -1344,8 +1463,8 @@
             <div>Model Version: <strong id="aiDetailsVersion" style="color:white;">v1.2 (559K Parameter TCN)</strong></div>
             <div>Inference State: <strong id="aiDetailsState" style="color:var(--accent-emerald);">IDLE</strong></div>
             <div>Input State: <strong id="aiDetailsInput" style="color:white;">IMU 6-DOF [Accel XYZ, Gyro XYZ] @ 10 Hz</strong></div>
-            <div>Estimated Speed: <strong id="aiDetailsSpeed" style="color:white;">—</strong></div>
-            <div>Runtime: <strong id="aiDetailsRuntime" style="color:white;">ONNX WebAssembly</strong> (<span id="aiDetailsLatency">— ms</span>)</div>
+            <div>Estimated Speed: <strong id="aiDetailsSpeed" style="color:white;">--</strong></div>
+            <div>Runtime: <strong id="aiDetailsRuntime" style="color:white;">ONNX WebAssembly</strong> (<span id="aiDetailsLatency">-- ms</span>)</div>
         </div>
     </dialog>
 
@@ -1701,7 +1820,7 @@
                         
                         const latency = engine.profiler?.metrics?.tcn?.last;
                         const latencyEl = document.getElementById('aiDetailsLatency');
-                        if (latencyEl) latencyEl.textContent = (typeof latency === 'number' && latency > 0) ? `${latency.toFixed(1)} ms` : '— ms';
+                        if (latencyEl) latencyEl.textContent = (typeof latency === 'number' && latency > 0) ? `${latency.toFixed(1)} ms` : '-- ms';
                     }
                     aiDetailsDialog.showModal();
                 });
@@ -1880,27 +1999,269 @@
             // Contribute Section Area Toggle & User Action Handlers
             const btnContribCommunity = document.getElementById('btnContribCommunity');
             const btnContribInternal = document.getElementById('btnContribInternal');
+            const btnContribModeration = document.getElementById('btnContribModeration');
+            const btnContribSync = document.getElementById('btnContribSync');
             const areaCommunity = document.getElementById('areaCommunityContributions');
             const areaInternal = document.getElementById('areaInternalContributions');
+            const areaModeration = document.getElementById('areaModerationPanel');
+            const areaSync = document.getElementById('areaSyncPanel');
 
-            if (btnContribCommunity && btnContribInternal && areaCommunity && areaInternal) {
-                btnContribCommunity.addEventListener('click', () => {
-                    btnContribCommunity.style.background = 'var(--accent-emerald)';
-                    btnContribCommunity.style.color = 'var(--bg-main)';
-                    btnContribInternal.style.background = 'transparent';
-                    btnContribInternal.style.color = 'var(--text-muted)';
-                    areaCommunity.hidden = false;
-                    areaInternal.hidden = true;
-                });
-                btnContribInternal.addEventListener('click', () => {
-                    btnContribInternal.style.background = 'rgba(6,182,212,0.2)';
-                    btnContribInternal.style.color = 'var(--accent-cyan)';
-                    btnContribCommunity.style.background = 'transparent';
-                    btnContribCommunity.style.color = 'var(--text-muted)';
-                    areaCommunity.hidden = true;
-                    areaInternal.hidden = false;
+            function selectContribArea(area) {
+                if (btnContribCommunity) {
+                    btnContribCommunity.style.background = area === 'community' ? 'var(--accent-emerald)' : 'transparent';
+                    btnContribCommunity.style.color = area === 'community' ? 'var(--bg-main)' : 'var(--text-muted)';
+                }
+                if (btnContribInternal) {
+                    btnContribInternal.style.background = area === 'internal' ? 'rgba(6,182,212,0.2)' : 'transparent';
+                    btnContribInternal.style.color = area === 'internal' ? 'var(--accent-cyan)' : 'var(--text-muted)';
+                }
+                if (btnContribModeration) {
+                    btnContribModeration.style.background = area === 'moderation' ? 'var(--accent-cyan)' : 'transparent';
+                    btnContribModeration.style.color = area === 'moderation' ? 'var(--bg-main)' : 'var(--text-muted)';
+                }
+                if (btnContribSync) {
+                    btnContribSync.style.background = area === 'sync' ? 'var(--accent-emerald)' : 'transparent';
+                    btnContribSync.style.color = area === 'sync' ? 'var(--bg-main)' : 'var(--text-muted)';
+                }
+                if (areaCommunity) areaCommunity.hidden = area !== 'community';
+                if (areaInternal) areaInternal.hidden = area !== 'internal';
+                if (areaModeration) areaModeration.hidden = area !== 'moderation';
+                if (areaSync) areaSync.hidden = area !== 'sync';
+
+                if (area === 'moderation') {
+                    if (window.loadModerationQueue) window.loadModerationQueue(window.currentModQueueStatus || 'pending');
+                    if (window.loadModerationAuditLogs) window.loadModerationAuditLogs();
+                } else if (area === 'sync') {
+                    if (window.loadSyncStatus) window.loadSyncStatus();
+                }
+            }
+
+            if (btnContribCommunity) btnContribCommunity.addEventListener('click', () => selectContribArea('community'));
+            if (btnContribInternal) btnContribInternal.addEventListener('click', () => selectContribArea('internal'));
+            if (btnContribModeration) btnContribModeration.addEventListener('click', () => selectContribArea('moderation'));
+            if (btnContribSync) btnContribSync.addEventListener('click', () => selectContribArea('sync'));
+
+            // =========================================================================
+            // Offline Synchronization & Network Decoupling Engine (Phases 9 & 10)
+            // =========================================================================
+            let isNetworkOnline = true;
+            let lastKnownSequence = parseInt(localStorage.getItem('navigators_last_sync_sequence') || '0', 10);
+
+            function getDeviceSyncQueue() {
+                try {
+                    return JSON.parse(localStorage.getItem('navigators_sync_queue') || '[]');
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function setDeviceSyncQueue(q) {
+                localStorage.setItem('navigators_sync_queue', JSON.stringify(q));
+                updateSyncUIIndicators();
+            }
+
+            function updateSyncUIIndicators() {
+                const dot = document.getElementById('syncStatusDot');
+                const text = document.getElementById('syncStatusText');
+                const netVal = document.getElementById('syncNetworkStateVal');
+                const pendingVal = document.getElementById('syncPendingCountVal');
+                const btnNet = document.getElementById('btnNetworkSyncToggle');
+                const queue = getDeviceSyncQueue();
+
+                if (dot && text) {
+                    if (isNetworkOnline) {
+                        dot.style.background = 'var(--accent-emerald)';
+                        text.textContent = 'ONLINE';
+                        if (btnNet) {
+                            btnNet.style.background = 'rgba(16,185,129,0.12)';
+                            btnNet.style.borderColor = 'rgba(16,185,129,0.4)';
+                            btnNet.style.color = 'var(--accent-emerald)';
+                        }
+                    } else {
+                        dot.style.background = 'var(--accent-amber)';
+                        text.textContent = 'OFFLINE';
+                        if (btnNet) {
+                            btnNet.style.background = 'rgba(245,158,11,0.12)';
+                            btnNet.style.borderColor = 'rgba(245,158,11,0.4)';
+                            btnNet.style.color = 'var(--accent-amber)';
+                        }
+                    }
+                }
+                if (netVal) {
+                    netVal.textContent = isNetworkOnline ? 'ONLINE' : 'OFFLINE';
+                    netVal.style.color = isNetworkOnline ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+                }
+                if (pendingVal) {
+                    pendingVal.textContent = `${queue.length} items`;
+                    pendingVal.style.color = queue.length > 0 ? 'var(--accent-amber)' : 'var(--text-muted)';
+                }
+                const seqVal = document.getElementById('syncLatestSeqVal');
+                if (seqVal) seqVal.textContent = `#${lastKnownSequence}`;
+            }
+
+            function toggleNetworkConnectivity() {
+                isNetworkOnline = !isNetworkOnline;
+                updateSyncUIIndicators();
+                const note = isNetworkOnline 
+                    ? 'Network restored to ONLINE. Triggering synchronization engine...' 
+                    : 'Switched to OFFLINE mode. Navigation (EKF/DR) continues uninterrupted using local storage.';
+                logTelemetryEvent('NETWORK', note);
+
+                if (isNetworkOnline) {
+                    executeSyncEngine();
+                }
+            }
+
+            const btnNetworkSyncToggle = document.getElementById('btnNetworkSyncToggle');
+            if (btnNetworkSyncToggle) btnNetworkSyncToggle.addEventListener('click', toggleNetworkConnectivity);
+
+            const btnToggleSimNetwork = document.getElementById('btnToggleSimNetwork');
+            if (btnToggleSimNetwork) btnToggleSimNetwork.addEventListener('click', toggleNetworkConnectivity);
+
+            async function executeSyncEngine() {
+                if (!isNetworkOnline) {
+                    alert('Cannot synchronize while in OFFLINE mode. Switch to ONLINE to sync.');
+                    return;
+                }
+
+                const queue = getDeviceSyncQueue();
+                const token = getAuthToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                // 1. Push local changes if any
+                if (queue.length > 0) {
+                    try {
+                        const pushBody = {
+                            device_id: 'web_simulator_client',
+                            client_timestamp: new Date().toISOString(),
+                            items: queue,
+                        };
+                        const pushRes = await fetch('/api/v1/sync/push', {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify(pushBody),
+                        });
+                        if (pushRes.ok) {
+                            const data = await pushRes.json();
+                            logTelemetryEvent('SYNC', `Pushed ${data.synced_count} offline changes to server`);
+                            setDeviceSyncQueue([]);
+                        }
+                    } catch (err) {
+                        console.error('Sync push failed:', err);
+                    }
+                }
+
+                // 2. Pull canonical deltas
+                try {
+                    const pullRes = await fetch(`/api/v1/sync/pull?since_sequence=${lastKnownSequence}&limit=100`, { headers });
+                    if (pullRes.ok) {
+                        const pullData = await pullRes.json();
+                        lastKnownSequence = pullData.latest_sequence;
+                        localStorage.setItem('navigators_last_sync_sequence', lastKnownSequence.toString());
+                        renderSyncDeltas(pullData.changes || []);
+                        logTelemetryEvent('SYNC', `Pulled ${pullData.count} deltas up to sequence #${lastKnownSequence}`);
+                    }
+                } catch (err) {
+                    console.error('Sync pull failed:', err);
+                }
+
+                // 3. Update Package Status
+                window.loadSyncStatus();
+                updateSyncUIIndicators();
+            }
+
+            function renderSyncDeltas(changes) {
+                const container = document.getElementById('syncDeltaListContainer');
+                if (!container) return;
+                if (!changes || changes.length === 0) {
+                    container.innerHTML = '<div style="font-size:11px; color:var(--text-muted); padding:8px; text-align:center;">Delta stream up to date. No pending server changes.</div>';
+                    return;
+                }
+                container.innerHTML = changes.map(c => {
+                    const timeStr = c.created_at ? new Date(c.created_at).toLocaleTimeString() : '';
+                    return `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:4px; font-size:11px;">
+                            <div>
+                                <span class="badge" style="font-size:9px; background:rgba(6,182,212,0.15); color:var(--accent-cyan); padding:1px 4px; border-radius:3px; text-transform:uppercase;">${c.action}</span>
+                                <strong style="color:white; margin-left:6px;">${c.data?.name || c.resource_id}</strong>
+                                <span style="color:var(--text-muted); font-size:10px;">(v${c.version})</span>
+                            </div>
+                            <div style="color:var(--text-muted); font-size:10px;">Seq #${c.sequence_id} · ${timeStr}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.loadSyncStatus = async function() {
+                try {
+                    const res = await fetch('/api/v1/sync/status');
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.latest_sequence) {
+                            lastKnownSequence = Math.max(lastKnownSequence, data.latest_sequence);
+                            localStorage.setItem('navigators_last_sync_sequence', lastKnownSequence.toString());
+                        }
+                        const pkg = data.latest_package;
+                        const badge = document.getElementById('offlinePkgVerBadge');
+                        const metaText = document.getElementById('offlinePkgMetaText');
+                        if (pkg) {
+                            if (badge) badge.textContent = `v${pkg.package_version} (${pkg.region})`;
+                            if (metaText) {
+                                const sizeKb = (pkg.size_bytes / 1024).toFixed(1);
+                                metaText.innerHTML = `<strong>Records:</strong> ${pkg.record_count} places | <strong>Size:</strong> ${sizeKb} KB | <strong>Format:</strong> ${pkg.format.toUpperCase()}<br/><span style="font-family:monospace; font-size:10px; color:var(--text-muted);">SHA256: ${pkg.checksum_sha256.substring(0, 16)}...</span>`;
+                            }
+                            window.currentOfflinePackageId = pkg.id;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching sync status:', err);
+                }
+                updateSyncUIIndicators();
+            };
+
+            const btnTriggerManualSync = document.getElementById('btnTriggerManualSync');
+            if (btnTriggerManualSync) btnTriggerManualSync.addEventListener('click', executeSyncEngine);
+
+            const btnDownloadPkgAction = document.getElementById('btnDownloadPkgAction');
+            if (btnDownloadPkgAction) {
+                btnDownloadPkgAction.addEventListener('click', () => {
+                    if (window.currentOfflinePackageId) {
+                        window.location.href = `/api/v1/sync/package/download/${window.currentOfflinePackageId}`;
+                    } else {
+                        alert('No offline map package found. Recompile one first.');
+                    }
                 });
             }
+
+            const btnBuildPkgAction = document.getElementById('btnBuildPkgAction');
+            if (btnBuildPkgAction) {
+                btnBuildPkgAction.addEventListener('click', async () => {
+                    const token = getAuthToken();
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    try {
+                        const res = await fetch('/api/v1/sync/package/build', {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify({ region: 'global', format: 'sqlite' }),
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            alert(`Offline map package v${data.package.package_version} compiled successfully.`);
+                            window.loadSyncStatus();
+                        } else {
+                            const err = await res.json();
+                            alert(`Failed to compile package: ${err.detail || 'Access denied'}`);
+                        }
+                    } catch (e) {
+                        alert('Error triggering package compilation.');
+                    }
+                });
+            }
+
+            // Initialize sync indicators
+            updateSyncUIIndicators();
 
             const communityContribList = document.getElementById('communityContribList');
             function logCommunityContribution(title, desc) {
@@ -2014,6 +2375,318 @@
                 }
             };
 
+            // =========================================================================
+            // Moderation Workspace Logic (Queues, Diff Inspection, Approve/Reject/RequestChanges)
+            // =========================================================================
+            window.currentModQueueStatus = 'pending';
+
+            const btnModQueuePending = document.getElementById('btnModQueuePending');
+            const btnModQueueApproved = document.getElementById('btnModQueueApproved');
+            const btnModQueueRejected = document.getElementById('btnModQueueRejected');
+            const btnModQueueReported = document.getElementById('btnModQueueReported');
+            const modQueueContainer = document.getElementById('moderationQueueContainer');
+            const modAuditLogContainer = document.getElementById('moderationAuditLogContainer');
+            const btnRefreshAuditLogs = document.getElementById('btnRefreshAuditLogs');
+
+            function updateModQueueTabStyles(activeTab) {
+                const tabs = [
+                    { btn: btnModQueuePending, name: 'pending', color: 'var(--accent-cyan)' },
+                    { btn: btnModQueueApproved, name: 'approved', color: 'var(--accent-emerald)' },
+                    { btn: btnModQueueRejected, name: 'rejected', color: 'var(--accent-rose)' },
+                    { btn: btnModQueueReported, name: 'reported', color: 'var(--accent-amber)' },
+                ];
+                tabs.forEach(t => {
+                    if (t.btn) {
+                        const isActive = t.name === activeTab;
+                        t.btn.style.background = isActive ? t.color : 'transparent';
+                        t.btn.style.color = isActive ? 'var(--bg-main)' : 'var(--text-muted)';
+                    }
+                });
+            }
+
+            if (btnModQueuePending) btnModQueuePending.addEventListener('click', () => {
+                window.currentModQueueStatus = 'pending';
+                updateModQueueTabStyles('pending');
+                window.loadModerationQueue('pending');
+            });
+            if (btnModQueueApproved) btnModQueueApproved.addEventListener('click', () => {
+                window.currentModQueueStatus = 'approved';
+                updateModQueueTabStyles('approved');
+                window.loadModerationQueue('approved');
+            });
+            if (btnModQueueRejected) btnModQueueRejected.addEventListener('click', () => {
+                window.currentModQueueStatus = 'rejected';
+                updateModQueueTabStyles('rejected');
+                window.loadModerationQueue('rejected');
+            });
+            if (btnModQueueReported) btnModQueueReported.addEventListener('click', () => {
+                window.currentModQueueStatus = 'reported';
+                updateModQueueTabStyles('reported');
+                window.loadModerationReports();
+            });
+            if (btnRefreshAuditLogs) btnRefreshAuditLogs.addEventListener('click', () => {
+                window.loadModerationAuditLogs();
+            });
+
+            window.loadModerationQueue = async (status = 'pending') => {
+                if (!modQueueContainer) return;
+                modQueueContainer.innerHTML = '<div style="font-size: 11px; color: var(--text-muted); padding: 12px; text-align: center;">Loading triage queue...</div>';
+
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch(`/api/v1/moderation/contributions?status=${status}`, { headers });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        modQueueContainer.innerHTML = `<div style="font-size: 11px; color: var(--accent-rose); padding: 10px; background: rgba(244,63,94,0.06); border-radius: 4px;">Error: ${err.detail || 'Access restricted to moderators.'}</div>`;
+                        return;
+                    }
+                    const data = await res.json();
+                    const items = data.items || [];
+                    if (items.length === 0) {
+                        modQueueContainer.innerHTML = `<div style="font-size: 11px; color: var(--text-muted); padding: 16px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 4px;">No items in "${status}" queue.</div>`;
+                        return;
+                    }
+
+                    modQueueContainer.innerHTML = items.map(it => {
+                        const loc = it.location || {};
+                        const author = it.author || {};
+                        const ev = it.evidence || {};
+                        const changes = it.changes || {};
+                        const actionBadge = it.action === 'update' ? '<span class="badge" style="font-size: 9px; background: rgba(6,182,212,0.15); color: var(--accent-cyan); padding: 1px 5px; border-radius: 3px;">Suggest Edit</span>' : '<span class="badge" style="font-size: 9px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 1px 5px; border-radius: 3px;">New Place</span>';
+                        
+                        let changesHtml = '';
+                        const changeKeys = Object.keys(changes);
+                        if (changeKeys.length > 0) {
+                            changesHtml = `
+                                <div style="margin-top: 6px; padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px;">
+                                    <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">Proposed Changes:</strong>
+                                    ${changeKeys.map(k => {
+                                        const c = changes[k];
+                                        if (c.old !== null && c.old !== undefined) {
+                                            return `<div><span style="color:var(--text-muted);">${k}:</span> <span style="text-decoration:line-through;color:var(--accent-rose);">${c.old}</span> → <span style="color:var(--accent-emerald);">${c.new}</span></div>`;
+                                        }
+                                        return `<div><span style="color:var(--text-muted);">${k}:</span> <span style="color:var(--accent-emerald);">${c.new}</span></div>`;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+
+                        const buttons = status === 'pending' ? `
+                            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                                <button onclick="window.modApproveContribution('${it.id}')" style="flex: 1; font-size: 10px; padding: 5px; background: var(--accent-emerald); color: black; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Approve</button>
+                                <button onclick="window.modRequestChangesContribution('${it.id}')" style="flex: 1; font-size: 10px; padding: 5px; background: var(--accent-amber); color: black; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Request Changes</button>
+                                <button onclick="window.modRejectContribution('${it.id}')" style="flex: 1; font-size: 10px; padding: 5px; background: var(--accent-rose); color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Reject</button>
+                            </div>
+                        ` : '';
+
+                        return `
+                            <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <strong style="font-size: 13px; color: white;">${it.title || 'Untitled Place'}</strong>
+                                            ${actionBadge}
+                                        </div>
+                                        <div style="color: var(--text-muted); font-size: 10px; margin-top: 2px;">
+                                            Submitted by <strong style="color:var(--text-secondary);">${author.name || author.id}</strong> · ${new Date(it.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}
+                                        </div>
+                                    </div>
+                                    <span class="badge" style="font-size: 9px; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,0.06); color: var(--text-secondary);">${it.status}</span>
+                                </div>
+                                <div style="margin-top: 6px; color: var(--text-secondary); font-size: 11px;">
+                                    <div><strong>Location:</strong> ${loc.latitude ? `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}` : 'No coordinates'} ${loc.address ? `(${loc.address})` : ''}</div>
+                                    ${ev.notes ? `<div><strong>Notes:</strong> ${ev.notes}</div>` : ''}
+                                    ${ev.opening_hours ? `<div><strong>Hours:</strong> ${ev.opening_hours}</div>` : ''}
+                                    ${ev.phone ? `<div><strong>Phone:</strong> ${ev.phone}</div>` : ''}
+                                </div>
+                                ${changesHtml}
+                                ${buttons}
+                            </div>
+                        `;
+                    }).join('');
+                } catch (err) {
+                    modQueueContainer.innerHTML = '<div style="font-size: 11px; color: var(--accent-rose); padding: 10px;">Failed to fetch moderation queue.</div>';
+                }
+            };
+
+            window.loadModerationReports = async () => {
+                if (!modQueueContainer) return;
+                modQueueContainer.innerHTML = '<div style="font-size: 11px; color: var(--text-muted); padding: 12px; text-align: center;">Loading reported items...</div>';
+
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch('/api/v1/moderation/reports?status=pending', { headers });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        modQueueContainer.innerHTML = `<div style="font-size: 11px; color: var(--accent-rose); padding: 10px;">Error: ${err.detail || 'Access restricted to moderators.'}</div>`;
+                        return;
+                    }
+                    const data = await res.json();
+                    const reports = data.reports || [];
+                    if (reports.length === 0) {
+                        modQueueContainer.innerHTML = '<div style="font-size: 11px; color: var(--text-muted); padding: 16px; text-align: center;">No pending community reports.</div>';
+                        return;
+                    }
+
+                    modQueueContainer.innerHTML = reports.map(r => `
+                        <div style="padding: 10px; background: rgba(245,158,11,0.04); border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; font-size: 11px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: var(--accent-amber);">Flagged ${r.target_type.toUpperCase()}: ${r.target_id}</strong>
+                                <span class="badge" style="font-size: 9px; background: rgba(245,158,11,0.2); color: var(--accent-amber); padding: 1px 5px; border-radius: 3px;">${r.status}</span>
+                            </div>
+                            <div style="margin-top: 4px; color: white;"><strong>Reason:</strong> ${r.reason}</div>
+                            ${r.details ? `<div style="color: var(--text-muted); font-size: 10px; margin-top: 2px;">${r.details}</div>` : ''}
+                            <div style="color: var(--text-muted); font-size: 10px; margin-top: 4px;">Reported by: ${r.reporter ? r.reporter.name : r.reporter_id} · ${new Date(r.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                                <button onclick="window.modResolveReport('${r.id}', 'resolved')" style="flex: 1; font-size: 10px; padding: 4px; background: var(--accent-emerald); color: black; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Resolve Flag</button>
+                                <button onclick="window.modResolveReport('${r.id}', 'dismissed')" style="flex: 1; font-size: 10px; padding: 4px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Dismiss</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (err) {
+                    modQueueContainer.innerHTML = '<div style="font-size: 11px; color: var(--accent-rose); padding: 10px;">Failed to fetch reports.</div>';
+                }
+            };
+
+            window.loadModerationAuditLogs = async () => {
+                if (!modAuditLogContainer) return;
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch('/api/v1/moderation/audit-logs?limit=5', { headers });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const logs = data.audit_logs || [];
+                    if (logs.length === 0) {
+                        modAuditLogContainer.innerHTML = '<div style="color: var(--text-muted); padding: 6px; text-align: center;">No recent audit actions recorded.</div>';
+                        return;
+                    }
+                    modAuditLogContainer.innerHTML = logs.map(l => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 3px; border-left: 2px solid var(--accent-cyan);">
+                            <div>
+                                <span style="font-weight: 600; color: white;">${l.action}</span>
+                                <span style="color: var(--text-muted); font-size: 10px;"> on ${l.resource_type}:${l.resource_id.slice(-6)}</span>
+                            </div>
+                            <span style="color: var(--text-muted); font-size: 9px;">${new Date(l.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</span>
+                        </div>
+                    `).join('');
+                } catch (err) {
+                    console.warn('Failed to load audit logs', err);
+                }
+            };
+
+            window.modApproveContribution = async (id) => {
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch(`/api/v1/moderation/contributions/${id}/approve`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ notes: 'Approved via Moderation Workspace' }),
+                    });
+                    if (res.ok) {
+                        window.loadModerationQueue(window.currentModQueueStatus || 'pending');
+                        window.loadModerationAuditLogs();
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        alert(`Approval failed: ${err.detail || 'Permission denied'}`);
+                    }
+                } catch (e) {
+                    alert('Approval request failed: ' + e.message);
+                }
+            };
+
+            window.modRejectContribution = async (id) => {
+                const reason = prompt('Please enter mandatory rejection rationale:');
+                if (!reason || reason.trim().length < 3) {
+                    alert('Rejection rationale is required.');
+                    return;
+                }
+
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch(`/api/v1/moderation/contributions/${id}/reject`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ reason: reason.trim() }),
+                    });
+                    if (res.ok) {
+                        window.loadModerationQueue(window.currentModQueueStatus || 'pending');
+                        window.loadModerationAuditLogs();
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        alert(`Rejection failed: ${err.detail || 'Permission denied'}`);
+                    }
+                } catch (e) {
+                    alert('Rejection request failed: ' + e.message);
+                }
+            };
+
+            window.modRequestChangesContribution = async (id) => {
+                const notes = prompt('Enter detailed revision notes for the author:');
+                if (!notes || notes.trim().length < 3) {
+                    alert('Revision notes are required.');
+                    return;
+                }
+
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch(`/api/v1/moderation/contributions/${id}/request-changes`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ notes: notes.trim() }),
+                    });
+                    if (res.ok) {
+                        window.loadModerationQueue(window.currentModQueueStatus || 'pending');
+                        window.loadModerationAuditLogs();
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        alert(`Request changes failed: ${err.detail || 'Permission denied'}`);
+                    }
+                } catch (e) {
+                    alert('Request changes failed: ' + e.message);
+                }
+            };
+
+            window.modResolveReport = async (id, decision) => {
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                try {
+                    const res = await fetch(`/api/v1/moderation/reports/${id}/resolve`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ decision, notes: `Marked ${decision} by moderator` }),
+                    });
+                    if (res.ok) {
+                        window.loadModerationReports();
+                        window.loadModerationAuditLogs();
+                    } else {
+                        const err = await res.json().catch(() => ({}));
+                        alert(`Report resolution failed: ${err.detail || 'Permission denied'}`);
+                    }
+                } catch (e) {
+                    alert('Report resolution failed: ' + e.message);
+                }
+            };
+
             async function savePlaceSubmission(state) {
                 const name = document.getElementById('inputPlaceName').value.trim();
                 const category = document.getElementById('selectPlaceCategory').value;
@@ -2054,25 +2727,37 @@
                 };
 
                 let savedId = 'place_' + Date.now();
-                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
-                if (token) {
-                    try {
-                        const res = await fetch('/api/v1/places', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify(payload)
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.contribution && data.contribution.id) {
-                                savedId = data.contribution.id;
+                if (!isNetworkOnline) {
+                    const queue = getDeviceSyncQueue();
+                    queue.push({
+                        client_id: 'sync_offline_' + Date.now(),
+                        client_sequence: queue.length + 1,
+                        operation: 'add_place',
+                        payload: payload,
+                    });
+                    setDeviceSyncQueue(queue);
+                    logTelemetryEvent('SYNC', `Enqueued offline place contribution '${name}'`);
+                } else {
+                    const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                    if (token) {
+                        try {
+                            const res = await fetch('/api/v1/places', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify(payload)
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.contribution && data.contribution.id) {
+                                    savedId = data.contribution.id;
+                                }
                             }
+                        } catch (err) {
+                            console.warn('Failed to persist place to backend, caching locally:', err);
                         }
-                    } catch (err) {
-                        console.warn('Failed to persist place to backend, caching locally:', err);
                     }
                 }
 
@@ -2080,7 +2765,7 @@
                     id: savedId,
                     name, category, categoryName: categoryMap[category] || category,
                     location: locationStr, hours, phone, website, photo,
-                    state,
+                    state: isNetworkOnline ? state : 'Queued Offline',
                     created_at: new Date().toISOString()
                 };
 
@@ -2094,9 +2779,13 @@
 
                 const mapStatus = document.getElementById('mapStatus');
                 if (mapStatus) {
-                    mapStatus.textContent = state === 'Pending Review' 
-                        ? `Submitted "${name}" for community review.` 
-                        : `Saved draft for "${name}".`;
+                    if (!isNetworkOnline) {
+                        mapStatus.textContent = `Offline mode active: "${name}" enqueued locally for sync.`;
+                    } else {
+                        mapStatus.textContent = state === 'Pending Review' 
+                            ? `Submitted "${name}" for community review.` 
+                            : `Saved draft for "${name}".`;
+                    }
                 }
                 return true;
             }
@@ -2131,13 +2820,29 @@
             document.getElementById('btnActionReportIssue')?.addEventListener('click', () => {
                 const issue = prompt('Describe the map issue or road hazard:');
                 if (issue) {
+                    if (!isNetworkOnline) {
+                        const queue = getDeviceSyncQueue();
+                        queue.push({
+                            client_id: 'sync_rep_' + Date.now(),
+                            client_sequence: queue.length + 1,
+                            operation: 'report',
+                            payload: {
+                                target_type: 'place',
+                                target_id: 'current_viewport',
+                                reason: 'inaccurate_data',
+                                details: issue,
+                            },
+                        });
+                        setDeviceSyncQueue(queue);
+                        logTelemetryEvent('SYNC', `Enqueued offline report: ${issue}`);
+                    }
                     const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
                     items.unshift({
                         id: 'issue_' + Date.now(),
                         name: `Map Issue: ${issue}`,
                         categoryName: 'Hazard Report',
                         location: 'Current Viewport',
-                        state: 'Pending Review',
+                        state: isNetworkOnline ? 'Pending Review' : 'Queued Offline',
                         created_at: new Date().toISOString()
                     });
                     localStorage.setItem('navigators_place_submissions', JSON.stringify(items));

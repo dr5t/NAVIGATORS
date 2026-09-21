@@ -61,15 +61,39 @@ def init_db(db_path: str | Path | None = None) -> None:
         schema_sql = f.read()
 
     with get_db(db_path) as conn:
-        # Migrate existing contributions table if new columns are missing before executing schema script
+        # Migrate existing contributions table if check constraints or columns are outdated
         table_check = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='contributions'"
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='contributions'"
         ).fetchone()
-        if table_check:
-            columns = [row["name"] for row in conn.execute("PRAGMA table_info(contributions)").fetchall()]
-            if "target_resource_id" not in columns:
-                conn.execute("ALTER TABLE contributions ADD COLUMN target_resource_id TEXT REFERENCES places(id) ON DELETE SET NULL")
-            if "action" not in columns:
-                conn.execute("ALTER TABLE contributions ADD COLUMN action TEXT NOT NULL DEFAULT 'create'")
+        if table_check and table_check["sql"]:
+            current_sql = table_check["sql"]
+            if "changes_requested" not in current_sql or "published_at" not in current_sql:
+                conn.execute("PRAGMA foreign_keys = OFF")
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS contributions_migrated (
+                        id TEXT PRIMARY KEY,
+                        owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        resource_type TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending_review', 'pending', 'changes_requested', 'approved', 'published', 'rejected', 'withdrawn')),
+                        title TEXT NOT NULL,
+                        data_json TEXT NOT NULL DEFAULT '{}',
+                        target_resource_id TEXT REFERENCES places(id) ON DELETE SET NULL,
+                        action TEXT NOT NULL DEFAULT 'create' CHECK (action IN ('create', 'update', 'delete')),
+                        reviewed_by TEXT REFERENCES users(id),
+                        review_notes TEXT,
+                        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                        updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                        reviewed_at TEXT,
+                        published_at TEXT
+                    )
+                """)
+                cols = [row["name"] for row in conn.execute("PRAGMA table_info(contributions)").fetchall()]
+                target_cols = ['id', 'owner_id', 'resource_type', 'status', 'title', 'data_json', 'target_resource_id', 'action', 'reviewed_by', 'review_notes', 'created_at', 'updated_at', 'reviewed_at', 'published_at']
+                common_cols = [c for c in target_cols if c in cols]
+                cols_str = ", ".join(common_cols)
+                conn.execute(f"INSERT INTO contributions_migrated ({cols_str}) SELECT {cols_str} FROM contributions")
+                conn.execute("DROP TABLE contributions")
+                conn.execute("ALTER TABLE contributions_migrated RENAME TO contributions")
+                conn.execute("PRAGMA foreign_keys = ON")
 
         conn.executescript(schema_sql)
