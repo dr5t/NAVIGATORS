@@ -1969,7 +1969,28 @@
                 }).join('');
             }
 
-            window.approvePlaceSubmission = (id) => {
+            window.approvePlaceSubmission = async (id) => {
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                // Attempt API approve + publish if ID is a server contribution
+                if (id && id.startsWith('contrib_')) {
+                    try {
+                        await fetch(`/api/v1/contributions/${id}/approve`, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify({ notes: 'Approved via Community Place Manager' })
+                        });
+                        await fetch(`/api/v1/contributions/${id}/publish`, {
+                            method: 'POST',
+                            headers
+                        });
+                    } catch (e) {
+                        console.warn('Backend approval failed, updating locally', e);
+                    }
+                }
+
                 const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
                 const item = items.find(i => i.id === id);
                 if (item) {
@@ -1993,24 +2014,72 @@
                 }
             };
 
-            function savePlaceSubmission(state) {
+            async function savePlaceSubmission(state) {
                 const name = document.getElementById('inputPlaceName').value.trim();
                 const category = document.getElementById('selectPlaceCategory').value;
-                const location = document.getElementById('inputPlaceLocation').value.trim();
+                const locationStr = document.getElementById('inputPlaceLocation').value.trim();
                 const hours = document.getElementById('inputPlaceHours').value.trim();
                 const phone = document.getElementById('inputPlacePhone').value.trim();
                 const website = document.getElementById('inputPlaceWebsite').value.trim();
                 const photo = document.getElementById('inputPlacePhoto').value.trim();
 
-                if (!name || !location) {
+                if (!name || !locationStr) {
                     alert('Place name and location coordinates are required.');
                     return false;
                 }
 
+                let lat = 0.0, lon = 0.0;
+                const coords = locationStr.split(',').map(s => parseFloat(s.trim()));
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    lat = coords[0];
+                    lon = coords[1];
+                } else if (window.state && window.state.map) {
+                    const center = window.state.map.getCenter();
+                    lat = center.lat;
+                    lon = center.lng;
+                }
+
+                const isPending = (state === 'Pending Review');
+                const payload = {
+                    name,
+                    category,
+                    latitude: lat,
+                    longitude: lon,
+                    address: locationStr,
+                    opening_hours: hours || null,
+                    phone: phone || null,
+                    website: website || null,
+                    metadata: photo ? { photo } : {},
+                    submit_now: isPending
+                };
+
+                let savedId = 'place_' + Date.now();
+                const token = window.authManager ? window.authManager.getToken() : localStorage.getItem('navigators_session_token');
+                if (token) {
+                    try {
+                        const res = await fetch('/api/v1/places', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.contribution && data.contribution.id) {
+                                savedId = data.contribution.id;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Failed to persist place to backend, caching locally:', err);
+                    }
+                }
+
                 const newEntry = {
-                    id: 'place_' + Date.now(),
+                    id: savedId,
                     name, category, categoryName: categoryMap[category] || category,
-                    location, hours, phone, website, photo,
+                    location: locationStr, hours, phone, website, photo,
                     state,
                     created_at: new Date().toISOString()
                 };

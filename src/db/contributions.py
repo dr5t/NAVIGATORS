@@ -29,6 +29,8 @@ class Contribution:
     updated_at: str
     reviewed_at: Optional[str]
     published_at: Optional[str] = None
+    target_resource_id: Optional[str] = None
+    action: str = "create"
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -53,6 +55,8 @@ class ContributionRepository:
         title: str,
         data: Optional[Dict[str, Any]] = None,
         status: str = ContributionState.DRAFT,
+        target_resource_id: Optional[str] = None,
+        action: str = "create",
     ) -> Contribution:
         """Create a new contribution record (default status is 'draft')."""
         now = datetime.now(timezone.utc).isoformat()
@@ -61,10 +65,12 @@ class ContributionRepository:
         with get_db(self.db_path) as conn:
             conn.execute(
                 """
-                INSERT INTO contributions (id, owner_id, resource_type, status, title, data_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO contributions (
+                    id, owner_id, resource_type, status, title, data_json,
+                    target_resource_id, action, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (contribution_id, owner_id, resource_type, status, title.strip(), payload_str, now, now),
+                (contribution_id, owner_id, resource_type, status, title.strip(), payload_str, target_resource_id, action, now, now),
             )
 
         item = self.get(contribution_id)
@@ -191,6 +197,15 @@ class ContributionRepository:
         updated = self.get(contribution_id)
         if not updated:
             raise RuntimeError(f"State transition to '{target_state}' failed.")
+
+        if target_state == ContributionState.PUBLISHED and updated.resource_type == "place":
+            try:
+                from src.db.places import PlaceRepository
+                place_repo = PlaceRepository(self.db_path)
+                place_repo.publish_from_contribution(updated, publisher=user)
+            except Exception:
+                pass
+
         return updated
 
     # -------------------------------------------------------------------------

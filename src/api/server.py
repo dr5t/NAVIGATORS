@@ -29,10 +29,12 @@ from api.recordings import router as recordings_router
 from api.training import router as training_router
 from api.auth import router as auth_router
 from api.contributions import router as contributions_router
+from api.places import router as places_router
 app.include_router(recordings_router)
 app.include_router(training_router)
 app.include_router(auth_router)
 app.include_router(contributions_router)
+app.include_router(places_router)
 
 app.add_middleware(
     CORSMiddleware,

@@ -73,7 +73,39 @@ CREATE TABLE IF NOT EXISTS sessions (
     ip_address TEXT
 );
 
--- 8. Community Contributions Table (Ownership & moderation lifecycle)
+-- 8. Canonical Places Table (Live map data with versioning and soft-delete)
+CREATE TABLE IF NOT EXISTS places (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL, -- 'fuel', 'hospital', 'ev_charging', 'atm', 'pharmacy', 'restaurant', etc.
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    address TEXT,
+    opening_hours TEXT,
+    phone TEXT,
+    website TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'archived', 'soft_deleted')),
+    version INTEGER NOT NULL DEFAULT 1,
+    is_deleted INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- 9. Place Version History Table (Immutable audit trail of place mutations)
+CREATE TABLE IF NOT EXISTS place_history (
+    id TEXT PRIMARY KEY,
+    place_id TEXT NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+    version INTEGER NOT NULL,
+    action TEXT NOT NULL, -- 'created', 'updated', 'archived', 'soft_deleted', 'restored'
+    changed_by TEXT REFERENCES users(id),
+    snapshot_json TEXT NOT NULL,
+    change_summary TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- 10. Community Contributions Table (Ownership & moderation lifecycle)
 CREATE TABLE IF NOT EXISTS contributions (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -81,6 +113,8 @@ CREATE TABLE IF NOT EXISTS contributions (
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending_review', 'pending', 'approved', 'published', 'rejected', 'withdrawn')),
     title TEXT NOT NULL,
     data_json TEXT NOT NULL DEFAULT '{}',
+    target_resource_id TEXT REFERENCES places(id) ON DELETE SET NULL,
+    action TEXT NOT NULL DEFAULT 'create' CHECK (action IN ('create', 'update', 'delete')),
     reviewed_by TEXT REFERENCES users(id),
     review_notes TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
@@ -102,8 +136,13 @@ CREATE INDEX IF NOT EXISTS idx_auth_identities_lookup ON auth_identities(provide
 CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(revoked_at, expires_at);
+CREATE INDEX IF NOT EXISTS idx_places_category ON places(category);
+CREATE INDEX IF NOT EXISTS idx_places_coords ON places(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_places_status_deleted ON places(status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_place_history_place ON place_history(place_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_owner ON contributions(owner_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_status ON contributions(status);
+CREATE INDEX IF NOT EXISTS idx_contributions_target ON contributions(target_resource_id);
 
 -- Trigger: auto-update updated_at on user modification
 CREATE TRIGGER IF NOT EXISTS trg_users_updated_at
@@ -111,6 +150,14 @@ AFTER UPDATE ON users
 FOR EACH ROW
 BEGIN
     UPDATE users SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
+END;
+
+-- Trigger: auto-update updated_at on place modification
+CREATE TRIGGER IF NOT EXISTS trg_places_updated_at
+AFTER UPDATE ON places
+FOR EACH ROW
+BEGIN
+    UPDATE places SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
 -- Trigger: auto-update updated_at on contribution modification

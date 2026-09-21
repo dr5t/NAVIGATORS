@@ -61,4 +61,15 @@ def init_db(db_path: str | Path | None = None) -> None:
         schema_sql = f.read()
 
     with get_db(db_path) as conn:
+        # Migrate existing contributions table if new columns are missing before executing schema script
+        table_check = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='contributions'"
+        ).fetchone()
+        if table_check:
+            columns = [row["name"] for row in conn.execute("PRAGMA table_info(contributions)").fetchall()]
+            if "target_resource_id" not in columns:
+                conn.execute("ALTER TABLE contributions ADD COLUMN target_resource_id TEXT REFERENCES places(id) ON DELETE SET NULL")
+            if "action" not in columns:
+                conn.execute("ALTER TABLE contributions ADD COLUMN action TEXT NOT NULL DEFAULT 'create'")
+
         conn.executescript(schema_sql)
