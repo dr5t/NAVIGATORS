@@ -160,7 +160,7 @@ window.updateConsoleTelemetry = data => {
     } : saved ? {
         statusIMU: 'Saved', statusAI: 'Saved', statusEKF: 'Saved', statusConstraints: data.zupt_active ? 'ZUPT saved' : 'Saved', statusMap: 'Saved',
     } : {
-        statusIMU: 'Active', statusAI: data.ai_error ? 'Error' : data.ai_active ? 'Active' : data.zupt_active ? 'Paused' : 'Buffering',
+        statusIMU: 'Active', statusAI: data.ai_error ? 'Error' : data.ai_active ? 'AI Speed · Active' : data.zupt_active ? 'Gated (ZUPT)' : 'Buffering',
         statusEKF: 'Active', statusConstraints: data.zupt_active ? 'ZUPT active' : data.nhc_active ? 'NHC active' : 'Monitoring',
         statusMap: data.map_matched ? 'Matched' : 'Searching',
     };
@@ -323,11 +323,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     byId('travelMode').dispatchEvent(new Event('change'));
     byId('mapSource').addEventListener('change', () => window.updateMapSource());
-    window.addEventListener('online', () => window.updateMapSource());
-    window.addEventListener('offline', () => window.updateMapSource());
+    window.addEventListener('online', () => { window.updateMapSource(); window.refreshOfflineMapsUI?.(); });
+    window.addEventListener('offline', () => { window.updateMapSource(); window.refreshOfflineMapsUI?.(); });
     byId('btnSaveArea').addEventListener('click', async () => {
         const button = byId('btnSaveArea'), notice = byId('mapNetworkStatus');
+        const netBadge = byId('offlineNetStatusBadge');
         button.disabled = true;
+        if (netBadge) {
+            netBadge.dataset.downloading = 'true';
+            netBadge.textContent = 'Downloading';
+            netBadge.style.background = 'rgba(6,182,212,0.15)';
+            netBadge.style.color = 'var(--accent-cyan)';
+        }
         notice.textContent = 'Downloading a 2 km square around the map center…';
         try {
             if (!navigator.onLine) throw new Error('Reconnect to download streets first.');
@@ -343,7 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
             notice.textContent = `Area not saved: ${error.message}`; 
             notice.style.color = 'red';
         }
-        finally { button.disabled = false; }
+        finally { 
+            button.disabled = false; 
+            if (netBadge) delete netBadge.dataset.downloading;
+            window.refreshOfflineMapsUI?.();
+        }
     });
     document.querySelectorAll('[data-view]').forEach(button => {
         button.title = workspaceViews[button.dataset.view][0];
@@ -551,4 +562,75 @@ window.updateMapSource = (failed = false) => {
     }
     byId('mapNetworkStatus').textContent = online ? 'Online streets · save this area before disconnecting'
         : failed ? 'Online map unavailable · showing downloaded streets' : 'Offline streets · downloaded area only';
+    window.refreshOfflineMapsUI?.();
 };
+
+window.refreshOfflineMapsUI = async () => {
+    const netBadge = byId('offlineNetStatusBadge');
+    const storageVal = byId('offlineStorageValue');
+    const lastUpdatedVal = byId('offlineLastUpdated');
+    const downloadedList = byId('downloadedAreasList');
+
+    const isOnline = navigator.onLine;
+    if (netBadge && !netBadge.dataset.downloading) {
+        netBadge.textContent = isOnline ? 'Online' : 'Offline';
+        netBadge.style.background = isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)';
+        netBadge.style.color = isOnline ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+    }
+
+    let cacheItem = null;
+    let cacheSize = 0;
+    try {
+        if (typeof caches !== 'undefined') {
+            const cache = await caches.open('navigators-map-data-v1');
+            const resp = await cache.match('./data/road_network.json');
+            if (resp) {
+                const text = await resp.text();
+                cacheSize = text.length;
+                cacheItem = JSON.parse(text);
+            }
+        }
+    } catch (e) {
+        console.warn('Failed checking local map cache:', e);
+    }
+
+    if (cacheItem && cacheItem.origin) {
+        const dateObj = cacheItem.downloaded_at ? new Date(cacheItem.downloaded_at) : null;
+        const dateStr = dateObj ? `${dateObj.toLocaleDateString()} ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 'Unknown';
+        const ageDays = dateObj ? (Date.now() - dateObj.getTime()) / (1000 * 3600 * 24) : 0;
+        const needsUpdate = ageDays > 30;
+
+        if (storageVal) storageVal.textContent = `${(cacheSize / 1024).toFixed(1)} KB`;
+        if (lastUpdatedVal) lastUpdatedVal.textContent = dateStr;
+
+        if (downloadedList) {
+            downloadedList.innerHTML = `
+                <div class="offline-area-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(16,185,129,0.06); border: 1px solid var(--accent-emerald); border-radius: 6px;">
+                    <div>
+                        <strong style="color: var(--text-primary); font-size: 12px;">Saved Region (${cacheItem.roads?.length || 0} roads)</strong>
+                        <div style="font-size: 11px; color: var(--text-muted);">${Math.abs(cacheItem.origin.lat).toFixed(4)}° N, ${Math.abs(cacheItem.origin.lon).toFixed(4)}° E</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="badge" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: ${needsUpdate ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)'}; color: ${needsUpdate ? 'var(--accent-amber)' : 'var(--accent-emerald)'};">
+                            ${needsUpdate ? 'Needs Update' : 'Downloaded'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        if (storageVal) storageVal.textContent = '0 KB';
+        if (lastUpdatedVal) lastUpdatedVal.textContent = 'Never';
+        if (downloadedList) {
+            downloadedList.innerHTML = `
+                <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                    No downloaded maps on this device. Move map to target region and click Download Area.
+                </div>
+            `;
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => window.refreshOfflineMapsUI?.(), 200);
+});

@@ -3,39 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms & Conditions | Navigators IDR</title>
-    <link rel="stylesheet" href="index.css">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-</head>
-<body class="legal-body">
-    <a href="./" onclick="event.preventDefault(); window.location.replace('./');" class="back-link">← Return to App</a>
-    <h1>Terms & Conditions</h1>
+    <title>Terms & Conditions | Navigators</title>
+    <meta name="description" content="Terms and Conditions for using Navigators dead reckoning positioning software.">
     
-    <p>Last updated: September 2026</p>
+    <!-- Open Graph Metadata -->
+    <meta property="og:title" content="Terms & Conditions | Navigators">
+    <meta property="og:description" content="Terms and conditions for Navigators dead reckoning positioning software.">
+    <meta property="og:type" content="website">
 
-    <h2>1. Acceptance of Terms</h2>
-    <p>By accessing and using the Navigators Inertial Dead Reckoning (IDR) Simulator, you agree to be bound by these Terms and Conditions. This application is a prototype built for demonstration purposes.</p>
+    <!-- Favicon & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="index.css">
+    <style>
+        .page-container {
+            max-width: 840px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+            color: var(--text-primary);
+        }
+        .page-header {
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 16px;
+        }
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        .content-section {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .content-section h2 {
+            font-size: 18px;
+            color: var(--accent-emerald);
+            margin-top: 12px;
+        }
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+        .nav-back:hover { text-decoration: underline; }
+        .legal-placeholder-box {
+            padding: 12px 16px;
+            background: rgba(245,158,11,0.08);
+            border: 1px dashed var(--accent-amber);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+        }
+        .legal-placeholder-title {
+            color: var(--accent-amber);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .page-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-glass);
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <a href="./" class="nav-back">&larr; Return to Navigation Map</a>
+        
+        <header class="page-header">
+            <h1>Terms and Conditions</h1>
+            <p>Last updated: September 2026 · Navigators Application License</p>
+        </header>
 
-    <h2>2. Device Sensor Permissions</h2>
-    <p>To function correctly, this application requires explicit access to your device's hardware sensors. We request and utilize the following permissions:</p>
-    <ul>
-        <li><strong>Geolocation API:</strong> Used strictly to initialize your starting position and to provide absolute ground truth updates when a high-accuracy signal is available.</li>
-        <li><strong>DeviceMotion (Accelerometer):</strong> Used to measure linear acceleration. This data is fed into our local AI model to estimate your walking speed and velocity when GPS is denied.</li>
-        <li><strong>DeviceOrientation (Gyroscope & Compass):</strong> Used to determine your absolute heading (direction) and rotation rates to map your trajectory over time.</li>
-    </ul>
+        <main class="content-section">
+            <h2>1. Software Operating Scope</h2>
+            <p>Navigators provides infrastructure-independent inertial dead reckoning positioning software designed to maintain continuous position estimation during GNSS signal outages. By accessing or utilizing the software, you agree to comply with these Terms and Conditions.</p>
 
-    <h2>3. Data Processing & Privacy</h2>
-    <p><strong>Your privacy is protected by our architecture.</strong> Unlike traditional navigation apps, Navigators IDR is an Edge-AI application. This means:</p>
-    <ul>
-        <li>All AI inference (speed estimation) and sensor fusion (Extended Kalman Filter) happens <strong>locally in your browser</strong>.</li>
-        <li>Your real-time location and motion data is <strong>never uploaded to external servers</strong> during normal use.</li>
-        <li>The only time data is transmitted is if you explicitly choose to "Record Trip Data", which sends the recorded sensor logs to your local PC for model training.</li>
-    </ul>
+            <h2>2. Hardware Permissions & Sensor Grant</h2>
+            <p>Operation requires granting client browser permissions for location (Geolocation API) and inertial motion hardware (DeviceMotion / DeviceOrientation). All telemetry data processed by the application is evaluated locally on-device.</p>
 
-    <h2>4. Limitation of Liability</h2>
-    <p>This software is a prototype demonstrating infrastructure-independent navigation. The estimated positions provided during GNSS outages are mathematical approximations. Do not rely on this application for critical navigation, safety of life, or emergency routing.</p>
+            <h2>3. Safety Disclaimer & Limitation of Liability</h2>
+            <p>Dead reckoning calculations during GNSS signal denial represent mathematical and neural network estimates. Navigators is not a certified life-safety or sole-source navigation instrument. Users assume full responsibility for vehicle and pedestrian safety.</p>
 
-    <h2>5. Modifications</h2>
-    <p>We reserve the right to modify these terms or the functionality of the application at any time.</p>
+            <h2>4. Community Contributions Policy</h2>
+            <p>User-submitted place additions, hazard reports, or map modifications are submitted for moderation and review. Submissions remain subject to approval prior to canonical map data synchronization.</p>
+
+            <h2>5. Governing Law & Dispute Resolution</h2>
+            <div class="legal-placeholder-box">
+                <div class="legal-placeholder-title">[LEGAL PLACEHOLDER - TO BE COMPLETED PRIOR TO COMMERCIAL DEPLOYMENT]</div>
+                <div><strong>Governing Jurisdiction & Choice of Law:</strong> [PLACEHOLDER FOR DESIGNATED GOVERNING JURISDICTION AND STATE LAWS]</div>
+                <div><strong>Dispute Venue:</strong> [PLACEHOLDER FOR DESIGNATED ARBITRATION TRIBUNAL OR COURT VENUE]</div>
+            </div>
+        </main>
+
+        <footer class="page-footer">
+            <span>Developed by Navigators</span>
+            <span>Navigators Navigation System</span>
+        </footer>
+    </div>
 </body>
 </html>

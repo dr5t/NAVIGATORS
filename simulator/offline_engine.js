@@ -929,7 +929,7 @@ class OfflineEngine {
         }
 
         if (data.status === 'active' && typeof updateNavMode === 'function') {
-            updateNavMode(data.nav_mode);
+            updateNavMode(data.nav_mode, data.position_error);
             updateGnssStatus(data.gnss_available);
             if (data.nav_mode === 'reacq') document.getElementById('gnssStatusText').textContent = 'REACQUIRED';
             updateSpeed(Number.isFinite(data.speed) ? data.speed * 3.6 : null, data.heading);

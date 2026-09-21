@@ -181,7 +181,7 @@ function initMap() {
     state.map = L.map('map', {
         center: [0, 0],
         zoom: 2,
-        zoomControl: false,
+        zoomControl: true,
         attributionControl: true,
     });
 
@@ -347,7 +347,7 @@ function initControls() {
             if (window.dataRecorder && window.dataRecorder.isRecording) {
                 window.dataRecorder.stopRecording();
             }
-            btn.textContent = 'Start Offline Engine';
+            btn.textContent = 'Start Navigation';
             btn.style.color = '';
             btn.classList.remove('running');
             statusEl.textContent = 'Engine stopped';
@@ -367,7 +367,7 @@ function initControls() {
             document.getElementById('stepLength').disabled = true;
             btn.disabled = true;
             btn.setAttribute('aria-busy', 'true');
-            btn.textContent = 'Loading local engine…';
+            btn.textContent = 'Initializing sensors...';
             statusEl.closest('details').open = true;
             statusEl.style.color = '';
             document.getElementById('sessionHint').textContent = 'Loading model and requesting sensor access';
@@ -385,7 +385,7 @@ function initControls() {
                 btn.removeAttribute('aria-busy');
             }
             if (success) {
-                btn.textContent = 'Stop Engine';
+                btn.textContent = 'Stop Navigation';
                 btn.classList.add('running');
                 statusEl.textContent = 'Running Locally';
                 document.getElementById('sessionHint').textContent = window.offlineEngine.navigationMode === 'walking' ? 'Waiting for GPS · hold the phone screen-up with its top forward' : 'Calibrating phone sensors';
@@ -401,7 +401,7 @@ function initControls() {
                 document.getElementById('playbackControls').style.opacity = '0.3';
                 document.getElementById('playbackControls').style.pointerEvents = 'none';
             } else {
-                btn.textContent = 'Retry engine';
+                btn.textContent = 'Retry Navigation';
                 const errMsg = window.offlineEngine.lastError || 'Unable to start. Check motion and location permissions, then retry.';
                 statusEl.textContent = errMsg;
                 statusEl.style.color = 'var(--accent-red)';
@@ -653,24 +653,59 @@ function updateFrame(index) {
 // ========================================================
 // Telemetry Updates
 // ========================================================
-function updateNavMode(mode) {
+let lastToastMode = null;
+let toastTimeout = null;
+
+function showNavToast(title, body, durationMs = 2500) {
+    const toast = document.getElementById('navToast');
+    if (!toast) return;
+    toast.innerHTML = `<strong>${title}</strong><p>${body}</p>`;
+    toast.hidden = false;
+    toast.classList.add('visible');
+
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => { toast.hidden = true; }, 200);
+    }, durationMs);
+}
+
+function updateNavMode(mode, accuracy = 0) {
     const indicator = document.getElementById('navModeIndicator');
+    if (!indicator) return;
     indicator.className = 'nav-mode-indicator';
 
-    const label = indicator.querySelector('.mode-label');
+    const label = indicator.querySelector('.mode-label') || indicator;
+
+    if (lastToastMode !== mode) {
+        if (mode === 'dr' && lastToastMode !== null) {
+            showNavToast('Dead Reckoning Active', 'GNSS signal lost. Navigation continues.', 2500);
+        } else if ((mode === 'reacq' || (mode === 'gnss_ins' && lastToastMode === 'dr')) && lastToastMode !== null) {
+            showNavToast('GNSS Restored', 'Position correction resumed.', 2500);
+        }
+        lastToastMode = mode;
+    }
 
     switch (mode) {
         case 'gnss_ins':
-            indicator.classList.add('gnss-ins');
-            label.textContent = 'NORMAL · GNSS + INS';
+            if (accuracy > 15) {
+                indicator.classList.add('reacquisition');
+                label.textContent = 'GNSS Degraded';
+            } else {
+                indicator.classList.add('gnss-ins');
+                label.textContent = 'GNSS + INS';
+            }
             break;
         case 'dr':
             indicator.classList.add('dead-reckoning');
-            label.textContent = 'DEAD RECKONING';
+            label.textContent = 'Dead Reckoning';
             break;
         case 'reacq':
             indicator.classList.add('reacquisition');
-            label.textContent = 'RE-ACQUIRING';
+            label.textContent = 'Reacquiring GNSS';
+            break;
+        default:
+            label.textContent = 'STANDBY';
             break;
     }
 }
@@ -696,10 +731,23 @@ function updateGnssStatus(available) {
 }
 
 function updateSpeed(speedKmh, headingRad) {
-    document.getElementById('speedValue').textContent = Number.isFinite(speedKmh) ? speedKmh.toFixed(1) : '—';
+    const speedEl = document.getElementById('speedValue');
+    const headingEl = document.getElementById('headingValue');
 
-    const headingDeg = ((headingRad * 180 / Math.PI) % 360 + 360) % 360;
-    document.getElementById('headingValue').textContent = Number.isFinite(headingRad) ? `${headingDeg.toFixed(0)}°` : '—';
+    if (speedEl) {
+        speedEl.textContent = Number.isFinite(speedKmh) ? `${Math.round(speedKmh)}` : 'Speed unavailable';
+    }
+
+    if (headingEl) {
+        if (Number.isFinite(headingRad)) {
+            const headingDeg = ((headingRad * 180 / Math.PI) % 360 + 360) % 360;
+            const cardinalDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(headingDeg / 45) % 8;
+            headingEl.textContent = `${cardinalDirs[index]} ${headingDeg.toFixed(0)}°`;
+        } else {
+            headingEl.textContent = 'Heading unavailable';
+        }
+    }
 }
 
 function updatePositionError(error) {

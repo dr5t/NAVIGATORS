@@ -412,6 +412,26 @@ def get_dashboard():
     dashboard_path = os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "mac_dashboard.html")
     return FileResponse(dashboard_path)
 
+@app.get("/privacy")
+def get_privacy_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "privacy.html"))
+
+@app.get("/terms")
+def get_terms_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "terms.html"))
+
+@app.get("/cookies")
+def get_cookies_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "cookies.html"))
+
+@app.get("/about")
+def get_about_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "about.html"))
+
+@app.get("/contact")
+def get_contact_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "contact.html"))
+
 @app.get("/dataset/details")
 def get_dataset_details():
     import json

@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security | Navigators</title>
-    <meta name="description" content="Security architecture and data isolation standards for Navigators.">
+    <title>Contact & Support | Navigators</title>
+    <meta name="description" content="Contact and support information for Navigators.">
     
     <!-- Open Graph Metadata -->
-    <meta property="og:title" content="Security | Navigators">
-    <meta property="og:description" content="Local processing and security controls in Navigators navigation system.">
+    <meta property="og:title" content="Contact & Support | Navigators">
+    <meta property="og:description" content="Technical support and feedback for Navigators navigation system.">
     <meta property="og:type" content="website">
 
     <!-- Favicon & Manifest -->
@@ -17,9 +17,9 @@
     <link rel="stylesheet" href="index.css">
     <style>
         .page-container {
-            max-width: 800px;
+            max-width: 840px;
             margin: 0 auto;
-            padding: 40px 20px 80px;
+            padding: 40px 24px 80px;
             color: var(--text-primary);
         }
         .page-header {
@@ -58,6 +58,23 @@
             margin-bottom: 24px;
         }
         .nav-back:hover { text-decoration: underline; }
+        .legal-placeholder-box {
+            padding: 12px 16px;
+            background: rgba(245,158,11,0.08);
+            border: 1px dashed var(--accent-amber);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+        }
+        .legal-placeholder-title {
+            color: var(--accent-amber);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
         .page-footer {
             margin-top: 60px;
             padding-top: 20px;
@@ -74,16 +91,24 @@
         <a href="./" class="nav-back">&larr; Return to Navigation Map</a>
         
         <header class="page-header">
-            <h1>Security Architecture</h1>
-            <p>Last updated: September 2026</p>
+            <h1>Contact and Support</h1>
+            <p>Get in touch with the Navigators engineering team.</p>
         </header>
 
         <main class="content-section">
-            <h2>1. Local Processing Isolation</h2>
-            <p>Navigators operates on an edge processing model. Neural network calculations, Extended Kalman Filtering, and map-matching algorithms run in isolated client WebAssembly environments.</p>
+            <h2>Technical Support & Engineering Inquiries</h2>
+            <p>For technical inquiries regarding sensor calibration, WebAssembly ONNX model evaluation, map tile caching, or system integration, please submit an issue in the official project repository or contact the engineering team.</p>
 
-            <h2>2. Content Security Policy</h2>
-            <p>Strict Content Security Policy headers ensure WebAssembly execution is bounded, prohibiting unauthorized third party scripts or remote data leaks.</p>
+            <h2>Community Map Edits & Moderation</h2>
+            <p>To report road hazards, suggest turn restrictions, or contribute new place locations, use the inline <strong>Contribute</strong> panel directly within the map application interface.</p>
+
+            <h2>Formal Contact Channels</h2>
+            <div class="legal-placeholder-box">
+                <div class="legal-placeholder-title">[LEGAL PLACEHOLDER - TO BE COMPLETED PRIOR TO COMMERCIAL DEPLOYMENT]</div>
+                <div><strong>Support Email:</strong> [PLACEHOLDER FOR OFFICIAL SUPPORT EMAIL ADDRESS]</div>
+                <div><strong>Engineering Office Location:</strong> [PLACEHOLDER FOR PHYSICAL OFFICE AND POSTAL ADDRESS]</div>
+                <div><strong>Security Disclosure Contact:</strong> [PLACEHOLDER FOR SECURITY DISCLOSURE PGP KEY / PGP EMAIL]</div>
+            </div>
         </main>
 
         <footer class="page-footer">

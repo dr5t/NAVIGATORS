@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cookie Policy | Navigators</title>
-    <meta name="description" content="Cookie and storage policy for Navigators offline navigation application.">
+    <title>About | Navigators</title>
+    <meta name="description" content="About Navigators intelligent dead reckoning and infrastructure-independent navigation system.">
     
     <!-- Open Graph Metadata -->
-    <meta property="og:title" content="Cookie Policy | Navigators">
-    <meta property="og:description" content="Functional local storage and map caching policy without tracking cookies.">
+    <meta property="og:title" content="About | Navigators">
+    <meta property="og:description" content="AI-assisted continuous positioning during GNSS signal outages.">
     <meta property="og:type" content="website">
 
     <!-- Favicon & Manifest -->
@@ -97,29 +97,28 @@
         <a href="./" class="nav-back">&larr; Return to Navigation Map</a>
         
         <header class="page-header">
-            <h1>Cookie and Storage Policy</h1>
-            <p>Last updated: September 2026 · Functional Storage Disclosures</p>
+            <h1>About Navigators</h1>
+            <p>Continuous positioning when GNSS signals stop · SIH26168 IDR Core</p>
         </header>
 
         <main class="content-section">
-            <h2>1. Local Storage Technologies</h2>
-            <p>Navigators utilizes local browser storage mechanisms (CacheStorage, IndexedDB, and localStorage) to deliver offline navigation and client-side neural network inference. Navigators does not deploy advertising cookies, tracking pixels, or third-party behavioral analytics scripts.</p>
+            <h2>System Overview</h2>
+            <p>Navigators is an intelligent dead reckoning navigation system engineered to maintain continuous position accuracy when GNSS signals become unavailable. By combining vehicle IMU motion sensors with a Temporal Convolutional Network (TCN) AI velocity estimator and a 15-state Extended Kalman Filter (EKF), Navigators provides continuous trajectory tracking across tunnels, urban canyons, and denied environments.</p>
 
-            <h2>2. Functional Storage Categories</h2>
+            <h2>Technical Architecture</h2>
+            <p>The core pipeline executes on-device across four integrated modules:</p>
             <ul>
-                <li><strong>Map Cache (`navigators-map-data-v1`):</strong> Stores downloaded OpenStreetMap vector street geometry for offline navigation.</li>
-                <li><strong>Neural Network Model Artifacts:</strong> Caches ONNX WebAssembly model weights (`model.onnx`, `norm_stats.json`) for on-device velocity inference.</li>
-                <li><strong>User Preferences & Bookmarks:</strong> Persists user-saved places (`navigators_saved_places`), community submissions (`navigators_place_submissions`), and account state (`navigators_user_account`).</li>
+                <li><strong>6-DOF IMU Telemetry:</strong> Sampled @ 10 Hz for linear acceleration and rotational rates.</li>
+                <li><strong>TCN AI Speed Estimator:</strong> Temporal Convolutional Network (559K parameters) executing via ONNX WebAssembly SIMD.</li>
+                <li><strong>15-State Extended Kalman Filter:</strong> Sensor fusion error state update correcting velocity, position, and sensor bias.</li>
+                <li><strong>Geometric Map Matcher:</strong> Constrains trajectories to local OpenStreetMap street geometry.</li>
             </ul>
 
-            <h2>3. Managing & Clearing Storage</h2>
-            <p>Users maintain complete control over local data storage. Storage can be audited or purged at any time using the <em>Clear Local Storage</em> action in the Account Profile tab or directly via browser developer settings.</p>
-
-            <h2>4. Commercial Analytics Disclosures</h2>
+            <h2>Project Governance</h2>
             <div class="legal-placeholder-box">
                 <div class="legal-placeholder-title">[LEGAL PLACEHOLDER - TO BE COMPLETED PRIOR TO COMMERCIAL DEPLOYMENT]</div>
-                <div><strong>Third-Party Service Integration:</strong> [PLACEHOLDER FOR COMPLIANT ANALYTICS SERVICE DISCLOSURES IF ADDED IN PRODUCTION]</div>
-                <div><strong>Consent Management Provider (CMP) Reference:</strong> [PLACEHOLDER FOR CMP REGISTRATION NUMBER]</div>
+                <div><strong>Engineering Organization:</strong> Navigators SIH26168 Development Team</div>
+                <div><strong>Project Repository & Documentation:</strong> [PLACEHOLDER FOR PRODUCTION REPOSITORY ENDPOINT AND ORGANIZATIONAL TAX ID]</div>
             </div>
         </main>
 

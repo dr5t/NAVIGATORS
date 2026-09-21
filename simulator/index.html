@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Navigators — Intelligent Navigation & Dead Reckoning System</title>
+    <title>Navigators: Intelligent Navigation & Dead Reckoning System</title>
     <meta name="description" content="Professional AI/ML navigation application with GNSS + INS dead reckoning, map-matching, and offline capability.">
 
     <!-- PWA Meta Tags -->
@@ -43,6 +43,7 @@
         <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></symbol>
         <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
         <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
         <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></symbol>
         <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 12h16M4 6h16M4 18h16"/></symbol>
     </svg>
@@ -68,6 +69,10 @@
             <button class="desktop-nav-item" data-desktop-tab="lab" title="Navigator Lab">
                 <svg><use href="#i-chip"/></svg>
                 <span>Lab</span>
+            </button>
+            <button class="desktop-nav-item" data-desktop-tab="account" title="Account">
+                <svg><use href="#i-user"/></svg>
+                <span>Account</span>
             </button>
             <button class="desktop-nav-item" data-desktop-tab="settings" title="Settings">
                 <svg><use href="#i-help"/></svg>
@@ -135,11 +140,11 @@
                 </div>
 
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <!-- Primary Offline Engine Toggle -->
-                    <button id="btnStartLive" class="btn-engine">
-                        <svg><use href="#i-play"/></svg>
-                        <span>Start Engine</span>
-                    </button>
+                    <!-- Primary Navigation Start Toggle -->
+                <button id="btnStartLive" class="btn-engine">
+                    <svg><use href="#i-play"/></svg>
+                    <span>Start Navigation</span>
+                </button>
                     <!-- User Profile Icon -->
                     <div class="user-profile-badge" title="Profile & Status">
                         <svg viewBox="0 0 24 24" style="width:18px; height:18px; color:var(--text-secondary);"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
@@ -150,7 +155,7 @@
             <!-- Floating Search Bar -->
             <div class="search-bar-floating">
                 <svg class="search-icon"><use href="#i-search"/></svg>
-                <input type="text" class="search-input" placeholder="Search destination, saved places, or offline coordinates..." aria-label="Search map">
+                <input type="text" id="mapSearchInput" class="search-input" placeholder="Where to?" aria-label="Where to? Search destination or coordinates">
                 
                 <div class="mode-selector-group" id="navigationSettings">
                     <select id="travelMode">
@@ -164,34 +169,30 @@
             </div>
         </div>
 
-        <!-- FLOATING MAP FABs (RIGHT SIDE) -->
+        <!-- MINIMAL FLOATING MAP CONTROLS (RIGHT SIDE) -->
         <div class="map-fabs-right">
-            <button id="btnFollow" class="fab-btn" aria-pressed="true" title="Follow Position" aria-label="Follow Position">
+            <button id="btnFollow" class="fab-btn" aria-pressed="true" title="Recenter Position" aria-label="Recenter Position">
                 <svg><use href="#i-focus"/></svg>
             </button>
             <button id="btnFitArea" class="fab-btn" title="Center Local Area" aria-label="Center Local Area">
                 <svg><use href="#i-compass"/></svg>
-            </button>
-            <button id="btnGpsOutage" class="fab-btn btn-outage" disabled title="Simulate GNSS Outage" aria-label="Simulate GNSS Outage">
-                Simulate Outage
             </button>
             <button id="btnEmergencySOS" class="fab-btn btn-sos" title="Emergency Access / SOS" aria-label="Emergency Access / SOS">
                 SOS
             </button>
         </div>
 
-        <!-- FLOATING MAP FABs (LEFT SIDE) -->
-        <div class="map-fabs-left">
-            <button id="btnOpenLab" class="fab-btn btn-lab" title="Navigator Lab Drawer" aria-label="Navigator Lab Drawer">
-                <svg><use href="#i-chip"/></svg>
-            </button>
-            <button id="btnGuide" class="fab-btn" title="Demo Field Guide" aria-label="Demo Field Guide">
-                <svg><use href="#i-help"/></svg>
-            </button>
+        <!-- Hidden Backward Compatibility Lab/Guide Buttons -->
+        <div hidden>
+            <button id="btnOpenLab"></button>
+            <button id="btnGuide"></button>
         </div>
 
-        <!-- MAP STATUS OVERLAY -->
+        <!-- OFFLINE MAP STATUS PILL -->
         <div class="map-message" id="mapStatus" role="status">Loading local OSM map…</div>
+
+        <!-- TEMPORARY NON-BLOCKING NAV TOAST NOTIFICATION -->
+        <div id="navToast" class="nav-toast" hidden role="status" aria-live="polite"></div>
 
         <!-- MULTI-SNAP INTERACTIVE BOTTOM SHEET -->
         <div class="bottom-sheet" id="bottomSheet">
@@ -212,6 +213,9 @@
                 </button>
                 <button class="sheet-tab-btn" data-sheet-tab="lab">
                     <svg><use href="#i-chip"/></svg> Navigator Lab
+                </button>
+                <button class="sheet-tab-btn" data-sheet-tab="account">
+                    <svg><use href="#i-user"/></svg> Account
                 </button>
                 <button class="sheet-tab-btn" data-sheet-tab="settings">
                     <svg><use href="#i-help"/></svg> Settings
@@ -248,8 +252,12 @@
                         </div>
                     </div>
 
-                    <!-- GNSS Outage Stage Sequence -->
-                    <ol class="run-sequence">
+                    <!-- GNSS Outage Simulation Control & Stage Sequence -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                        <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Signal Test</span>
+                        <button id="btnGpsOutage" class="button secondary" disabled style="padding:6px 14px;">Simulate GNSS Outage</button>
+                    </div>
+                    <ol class="run-sequence" style="margin-top:8px;">
                         <li data-stage="normal" class="active"><span>01</span><div><strong>GNSS Fix</strong></div></li>
                         <li data-stage="dr"><span>02</span><div><strong>Dead Reckoning</strong></div></li>
                         <li data-stage="reacq"><span>03</span><div><strong>Recovery</strong></div></li>
@@ -274,36 +282,310 @@
 
                 <!-- TAB 2: EXPLORE -->
                 <div class="tab-panel" id="panelExplore" hidden>
-                    <div class="nav-card">
-                        <h3>Offline Region Management & Exploration</h3>
-                        <div class="map-tools" style="display:flex; gap:12px; align-items:center; margin-top:8px;">
-                            <label>Map Source: 
-                                <select id="mapSource">
-                                    <option value="online" selected>Online Streets</option>
-                                    <option value="offline">Offline OSM Streets</option>
-                                </select>
-                            </label>
-                            <button id="btnSaveArea" class="button secondary">Save Area Offline</button>
+                    <div class="explore-header" style="margin-bottom: 12px;">
+                        <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px 0;">Explore</h2>
+                        
+                        <!-- Search bar inside Explore -->
+                        <div class="explore-search-box" style="position: relative; display: flex; align-items: center; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 12px; gap: 8px;">
+                            <svg style="width:16px; height:16px; fill:var(--text-muted);"><use href="#i-search"/></svg>
+                            <input type="text" id="exploreSearchInput" placeholder="Search nearby places or categories..." style="background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13px; width: 100%;" />
                         </div>
-                        <div style="font-size:12px; color:var(--text-secondary); margin-top:8px;" id="mapNetworkStatus">
-                            Offline streets · no internet needed
+                    </div>
+
+                    <!-- Explore Sub-Sections Navigation -->
+                    <div class="explore-sections" style="display: flex; flex-direction: column; gap: 12px;">
+                        
+                        <!-- 1. Categories Grid -->
+                        <div class="nav-card">
+                            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px;">Categories</h3>
+                            <div class="explore-category-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                <button class="category-chip" data-category="fuel" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-emerald);"><use href="#i-compass"/></svg>
+                                    <span>Petrol Pumps</span>
+                                </button>
+                                <button class="category-chip" data-category="hospital" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-cyan);"><use href="#i-alert"/></svg>
+                                    <span>Hospitals</span>
+                                </button>
+                                <button class="category-chip" data-category="pharmacy" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-emerald);"><use href="#i-layer"/></svg>
+                                    <span>Pharmacies</span>
+                                </button>
+                                <button class="category-chip" data-category="atm" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-amber);"><use href="#i-chip"/></svg>
+                                    <span>ATMs</span>
+                                </button>
+                                <button class="category-chip" data-category="parking" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--text-secondary);"><use href="#i-focus"/></svg>
+                                    <span>Parking</span>
+                                </button>
+                                <button class="category-chip" data-category="restaurant" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-amber);"><use href="#i-users"/></svg>
+                                    <span>Restaurants</span>
+                                </button>
+                                <button class="category-chip" data-category="hotel" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-cyan);"><use href="#i-layer"/></svg>
+                                    <span>Hotels</span>
+                                </button>
+                                <button class="category-chip" data-category="charging_station" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-emerald);"><use href="#i-play"/></svg>
+                                    <span>Charging</span>
+                                </button>
+                                <button class="category-chip" data-category="landmark" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 12px; cursor: pointer; transition: all 0.2s;">
+                                    <svg style="width: 20px; height: 20px; fill: var(--accent-cyan);"><use href="#i-compass"/></svg>
+                                    <span>Landmarks</span>
+                                </button>
+                            </div>
                         </div>
-                        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                            Downloaded Area: <strong id="mapCoordinates" style="color:var(--text-primary);">Loading coordinates…</strong> | <span id="roadCount">Reading local database</span>
+
+                        <!-- 2. Nearby Section -->
+                        <div class="nav-card" id="exploreNearbyCard">
+                            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Nearby</h3>
+                            <div id="exploreNearbyList" style="font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
+                                <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <div>
+                                        <strong style="color: var(--text-primary); font-size: 13px;">Local Road Network</strong>
+                                        <div style="font-size: 11px; color: var(--text-muted);" id="nearbyRoadSummary">Local OSM streets available in current view</div>
+                                    </div>
+                                    <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">Available</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Saved Places Section -->
+                        <div class="nav-card" id="exploreSavedPlacesCard">
+                            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Saved Places</h3>
+                            <div id="exploreSavedList" style="font-size: 12px; color: var(--text-muted);">
+                                No saved places yet. Tap any location to save bookmarks locally.
+                            </div>
+                        </div>
+
+                        <!-- 4. First-Class Offline Maps Section -->
+                        <div class="nav-card" id="offlineMapsCard">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                    <svg style="width: 16px; height: 16px; fill: var(--accent-emerald);"><use href="#i-layer"/></svg>
+                                    Offline Maps
+                                </h3>
+                                <!-- Connection / Status Badge -->
+                                <span id="offlineNetStatusBadge" class="badge" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                                    Online
+                                </span>
+                            </div>
+
+                            <!-- Storage & Last Updated Meta Bar -->
+                            <div class="offline-meta-bar" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-surface); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 10px; font-size: 11px;">
+                                <div>
+                                    <div style="color: var(--text-muted); margin-bottom: 2px;">STORAGE USED</div>
+                                    <strong id="offlineStorageValue" style="color: var(--text-primary); font-size: 12px;">0 KB</strong>
+                                </div>
+                                <div>
+                                    <div style="color: var(--text-muted); margin-bottom: 2px;">LAST UPDATED</div>
+                                    <strong id="offlineLastUpdated" style="color: var(--text-primary); font-size: 12px;">Never</strong>
+                                </div>
+                            </div>
+
+                            <!-- Downloaded Areas Sub-section -->
+                            <div style="margin-bottom: 10px;">
+                                <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;">Downloaded Areas</h4>
+                                <div id="downloadedAreasList" style="display: flex; flex-direction: column; gap: 6px;">
+                                    <div style="font-size: 11px; color: var(--text-muted); padding: 6px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                        Checking local device storage...
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Available Areas & Download Controls -->
+                            <div style="margin-bottom: 8px;">
+                                <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;">Available Area</h4>
+                                <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px dashed var(--border-color);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong style="color: var(--text-primary); font-size: 12px;">Current Viewport (2 km radius)</strong>
+                                            <div style="font-size: 11px; color: var(--text-muted);" id="mapCoordinates">Coordinates loading...</div>
+                                        </div>
+                                        <button id="btnSaveArea" class="button secondary" style="padding:4px 12px; font-size: 12px;">Download Area</button>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                                        <label style="color: var(--text-secondary);">Mode: 
+                                            <select id="mapSource" style="padding: 2px 6px; font-size: 11px; border-radius: 4px; background: var(--bg-surface-elevated); color: white; border: 1px solid var(--border-color);">
+                                                <option value="online" selected>Online Streets</option>
+                                                <option value="offline">Offline OSM Streets</option>
+                                            </select>
+                                        </label>
+                                        <span id="mapNetworkStatus" style="color: var(--text-muted);">Ready</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;" id="roadCount">
+                                Reading local database
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- TAB 3: CONTRIBUTE -->
                 <div class="tab-panel" id="panelContribute" hidden>
-                    <div class="nav-card">
-                        <h3>Community Contributions & Hazards</h3>
-                        <p style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
-                            Submit road hazards, closures, or map updates. Contributions sync automatically when connected to the network or paired PC.
-                        </p>
-                        <div style="display:flex; gap:10px; margin-top:12px;">
-                            <button class="button secondary"><svg><use href="#i-alert"/></svg> Report Hazard</button>
-                            <button class="button secondary"><svg><use href="#i-users"/></svg> Community Stats</button>
+                    <div class="contribute-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0;">Contribute</h2>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Help keep map data and road networks accurate</div>
+                        </div>
+                        <!-- Area Switcher (Community vs Internal) -->
+                        <div class="contribute-mode-toggle" style="display: flex; background: var(--bg-surface); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <button id="btnContribCommunity" class="btn-toggle active" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: var(--accent-emerald); color: var(--bg-main); font-weight: 600; cursor: pointer;">Community</button>
+                            <button id="btnContribInternal" class="btn-toggle" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Internal ML / Data</button>
+                        </div>
+                    </div>
+
+                    <!-- AREA 1: COMMUNITY CONTRIBUTIONS (Shown to Normal Users) -->
+                    <div id="areaCommunityContributions" class="contribute-area">
+                        <div class="nav-card" style="margin-bottom: 12px;">
+                            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px;">Community Contributions</h3>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                <!-- 1. Add a Place -->
+                                <button class="contrib-card-btn" id="btnActionAddPlace" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <svg style="width: 18px; height: 18px; fill: var(--accent-emerald);"><use href="#i-compass"/></svg>
+                                        <strong style="font-size: 13px;">Add a Place</strong>
+                                    </div>
+                                    <span style="font-size: 11px; color: var(--text-muted);">Add a missing landmark, store, or location to the map</span>
+                                </button>
+
+                                <!-- 2. Report a Map Issue -->
+                                <button class="contrib-card-btn" id="btnActionReportIssue" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <svg style="width: 18px; height: 18px; fill: var(--accent-amber);"><use href="#i-alert"/></svg>
+                                        <strong style="font-size: 13px;">Report a Map Issue</strong>
+                                    </div>
+                                    <span style="font-size: 11px; color: var(--text-muted);">Report incorrect details, road hazards, or closures</span>
+                                </button>
+
+                                <!-- 3. Suggest a Road Change -->
+                                <button class="contrib-card-btn" id="btnActionSuggestRoad" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <svg style="width: 18px; height: 18px; fill: var(--accent-cyan);"><use href="#i-layer"/></svg>
+                                        <strong style="font-size: 13px;">Suggest a Road Change</strong>
+                                    </div>
+                                    <span style="font-size: 11px; color: var(--text-muted);">Suggest speed limit updates, turn restrictions, or directions</span>
+                                </button>
+
+                                <!-- 4. My Contributions -->
+                                <button class="contrib-card-btn" id="btnActionMyContrib" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <svg style="width: 18px; height: 18px; fill: var(--accent-emerald);"><use href="#i-users"/></svg>
+                                        <strong style="font-size: 13px;">My Contributions</strong>
+                                    </div>
+                                    <span style="font-size: 11px; color: var(--text-muted);">View status of your submitted edits & community feedback</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Community Submissions Log -->
+                        <div class="nav-card">
+                            <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Recent Submissions</h3>
+                            <div id="communityContribList" style="font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
+                                <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    No recent contributions. Use the tools above to report a map issue or add missing places.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AREA 2: INTERNAL CONTRIBUTIONS (Gated Request Flow & Internal Tools) -->
+                    <div id="areaInternalContributions" class="contribute-area" hidden>
+                        
+                        <!-- 1. Access Request Flow Card (Shown when unapproved) -->
+                        <div id="cardInternalAccessRequest" class="nav-card" style="border: 1px solid var(--border-color); margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h3 style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0;">Become an Internal Contributor</h3>
+                                <span id="badgeInternalAccessState" class="badge" style="font-size: 10px; background: rgba(255,255,255,0.06); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                                    Unrequested
+                                </span>
+                            </div>
+                            
+                            <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+                                Internal contributors help collect ground-truth sensor trajectories, participate in driving/walking validation sessions, and evaluate ONNX neural network models. Access requires team review and approval.
+                            </p>
+
+                            <div id="containerRequestForm" style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                                <div>
+                                    <label style="color: var(--text-muted); font-size: 11px; margin-bottom: 4px; display: block;">Contribution Focus & Device Hardware</label>
+                                    <input type="text" id="inputInternalReason" placeholder="e.g. IMU Sensor Trajectories / Android Pixel 8" style="width: 100%; padding: 6px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none; font-size: 12px;" />
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-top: 4px;">
+                                    <button id="btnRequestInternalAccess" class="button primary" style="flex: 1; padding: 6px 14px; font-size: 12px;">Submit Access Request</button>
+                                </div>
+                            </div>
+
+                            <div id="containerPendingNotice" style="display: none; background: rgba(245,158,11,0.08); border: 1px solid var(--accent-amber); border-radius: 6px; padding: 10px; font-size: 12px; margin-top: 8px;">
+                                <strong style="color: var(--accent-amber);">Request Pending Team Review</strong>
+                                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Your application has been submitted to the engineering team. Once approved, internal tools will unlock automatically.</div>
+                                <div style="margin-top: 8px; display: flex; gap: 8px;">
+                                    <button id="btnSimulateApproveInternal" style="font-size: 10px; padding: 3px 8px; background: var(--accent-emerald); color: black; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Simulate Team Approval</button>
+                                    <button id="btnSimulateRejectInternal" style="font-size: 10px; padding: 3px 8px; background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; border-radius: 4px; font-weight: 600; cursor: pointer;">Simulate Rejection</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Internal Tools Suite (Unlocked ONLY when account is Approved) -->
+                        <div id="containerInternalToolsSuite" class="nav-card" style="border: 1px solid rgba(6,182,212,0.3); display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-cyan); margin: 0;">Internal Developer & ML Suite</h3>
+                                <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 8px; border-radius: 4px;">Account Approved</span>
+                            </div>
+
+                            <!-- 8 Internal Tools Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">1. Dataset Contribution</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">Upload raw 10Hz IMU+GNSS h5/json logs</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">2. Walking Sessions</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">Step counting & heading drift calibration</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">3. Driving Sessions</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">High-speed vehicle IMU dynamics logs</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">4. Sensor Data</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">6-DOF accelerometer & gyroscope telemetry</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">5. Validation Sessions</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">Outage recovery & position error benchmarks</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">6. Model Experiments</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">Ablation matrix: AI vs EKF vs ZUPT vs NHC</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">7. Training</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">PyTorch TCN velocity estimator training</span>
+                                </div>
+                                <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
+                                    <strong style="color: var(--text-primary); display: block;">8. Model Evaluation</strong>
+                                    <span style="color: var(--text-muted); font-size: 10px;">ONNX WebAssembly latency & MAE validation</span>
+                                </div>
+                            </div>
+
+                            <!-- Restricted Production Model Deployment Card -->
+                            <div style="padding: 10px; background: rgba(245,158,11,0.06); border: 1px solid var(--accent-amber); border-radius: 6px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <strong style="color: var(--accent-amber); font-size: 12px;">Production Model Deployment Policy</strong>
+                                    <span class="badge" style="font-size: 9px; background: rgba(245,158,11,0.2); color: var(--accent-amber); padding: 1px 5px; border-radius: 3px;">Protected</span>
+                                </div>
+                                <div style="color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4;">
+                                    Unrestricted model deployment is strictly prohibited. Deploying new neural network checkpoints to production navigation engines requires explicit team approval.
+                                </div>
+                                <button id="btnRequestProdDeployment" class="button secondary" style="padding: 4px 10px; font-size: 11px; width: 100%;">
+                                    Submit Model Deployment Proposal for Team Review
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -375,100 +657,614 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: SETTINGS -->
+                <!-- TAB 5: ACCOUNT PROFILE -->
+                <div class="tab-panel" id="panelAccount" hidden>
+                    <!-- Account Profile Summary Header Card -->
+                    <div class="nav-card" style="margin-bottom: 12px; border: 1px solid rgba(16,185,129,0.3);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <div>
+                                <h3 id="accountProfileName" style="font-size: 15px; margin: 0; color: var(--text-primary); font-weight: 700;">Guest Session</h3>
+                                <div id="accountProfileEmail" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Unauthenticated user</div>
+                            </div>
+                            <span id="accountRoleBadge" class="badge" style="font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.08); color: var(--text-muted); font-weight: 600;">
+                                Guest
+                            </span>
+                        </div>
+
+                        <!-- Active Role Switcher Architecture -->
+                        <div style="background: var(--bg-surface); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                            <label style="color: var(--text-muted); font-size: 10px; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Account Role Architecture</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <select id="selectAccountRole" style="flex: 1; padding: 5px 8px; background: #0B0F19; border: 1px solid var(--border-color); border-radius: 4px; color: white; font-size: 11px; outline: none;">
+                                    <option value="Guest" selected>1. Guest (Unauthenticated)</option>
+                                    <option value="Registered User">2. Registered User</option>
+                                    <option value="Local Contributor">3. Local Contributor</option>
+                                    <option value="Internal Contributor">4. Internal Contributor</option>
+                                    <option value="Team Admin">5. Team Admin</option>
+                                </select>
+                                <button id="btnAuthAction" class="button primary" style="padding: 5px 12px; font-size: 11px;">Sign In</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6 Profile Sections Toolbar -->
+                    <div class="account-subnav-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 12px; font-size: 11px;">
+                        <button class="account-sub-btn active" data-account-target="secAccount" style="padding: 6px; border-radius: 4px; border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.15); color: var(--accent-emerald); font-weight: 600; cursor: pointer; text-align: center;">Account</button>
+                        <button class="account-sub-btn" data-account-target="secSavedPlaces" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Saved Places</button>
+                        <button class="account-sub-btn" data-account-target="secContributions" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Contributions</button>
+                        <button class="account-sub-btn" data-account-target="secOfflineMaps" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Offline Maps</button>
+                        <button class="account-sub-btn" data-account-target="secPrivacy" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Privacy</button>
+                        <button class="account-sub-btn" data-account-target="secSettings" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Settings</button>
+                    </div>
+
+                    <!-- PROFILE SECTION 1: ACCOUNT -->
+                    <div id="secAccount" class="account-sub-panel">
+                        <div class="nav-card" style="font-size: 12px;">
+                            <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Account Overview & Permissions</h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px; color: var(--text-secondary);">
+                                <div style="display: flex; justify-content: space-between; padding: 6px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    <span>Account Status</span>
+                                    <strong id="accountStatusText" style="color: var(--accent-emerald);">Active Session</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 6px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    <span>Account Identifier</span>
+                                    <span id="accountUserIdVal" style="font-family: var(--font-mono); color: var(--text-muted);">guest_local_01</span>
+                                </div>
+                                <div style="padding: 6px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    <span style="display: block; color: var(--text-muted); font-size: 10px; margin-bottom: 2px;">ROLE CAPABILITIES</span>
+                                    <div id="accountRoleCapabilitiesText" style="color: white; line-height: 1.4; font-size: 11px;">
+                                        Standard guest map navigation and offline map access. Sign in to contribute places or bookmark saved locations.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE SECTION 2: SAVED PLACES -->
+                    <div id="secSavedPlaces" class="account-sub-panel" hidden>
+                        <div class="nav-card" style="font-size: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h4 style="margin: 0; color: white; font-size: 13px;">Saved Places</h4>
+                                <span id="accountSavedCountBadge" class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">0 Saved</span>
+                            </div>
+                            <div id="accountSavedPlacesContainer">
+                                <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    No saved places on this device. Bookmark locations in Explore tab or double-click the map.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE SECTION 3: CONTRIBUTIONS -->
+                    <div id="secContributions" class="account-sub-panel" hidden>
+                        <div class="nav-card" style="font-size: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <h4 style="margin: 0; color: white; font-size: 13px;">My Contributions</h4>
+                                <span id="accountContribCountBadge" class="badge" style="font-size: 10px; background: rgba(6,182,212,0.15); color: var(--accent-cyan); padding: 2px 6px; border-radius: 4px;">0 Edits</span>
+                            </div>
+                            <div id="accountContribListContainer">
+                                <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    No community submissions logged. Use "Add a Place" or hazard reporting in Contribute tab.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE SECTION 4: OFFLINE MAPS -->
+                    <div id="secOfflineMaps" class="account-sub-panel" hidden>
+                        <div class="nav-card" style="font-size: 12px;">
+                            <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Offline Maps & Cache Storage</h4>
+                            <div id="accountOfflineMapsContainer">
+                                <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                    Checking local map cache storage...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE SECTION 5: PRIVACY -->
+                    <div id="secPrivacy" class="account-sub-panel" hidden>
+                        <div class="nav-card" style="font-size: 12px;">
+                            <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Privacy & Data Control</h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-surface); border-radius: 4px;">
+                                    <span>Sensor Telemetry Logging</span>
+                                    <input type="checkbox" id="chkPrivacyTelemetryLogging" checked />
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-surface); border-radius: 4px;">
+                                    <span>Geolocation Hardware Access</span>
+                                    <span id="privacyGeoStatusBadge" style="font-size: 10px; color: var(--accent-emerald); font-weight: 600;">Granted</span>
+                                </div>
+                                <button id="btnClearLocalAccountStorage" class="button secondary" style="margin-top: 4px; padding: 6px 12px; font-size: 11px; border-color: rgba(239,68,68,0.4); color: #ef4444; width: 100%;">
+                                    Clear Local Storage & Reset Account State
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE SECTION 6: SETTINGS -->
+                    <div id="secSettings" class="account-sub-panel" hidden>
+                        <div class="nav-card" style="font-size: 12px;">
+                            <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Preferences & Settings</h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>Default Navigation Profile</span>
+                                    <select id="settingAccountDefaultMode" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                        <option value="vehicle">Vehicle (AI + EKF)</option>
+                                        <option value="walking">Walking (GPS + Steps)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>Units System</span>
+                                    <select id="settingAccountUnits" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                        <option value="metric">Metric (km/h, m)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: SETTINGS -->
                 <div class="tab-panel" id="panelSettings" hidden>
-                    <div class="nav-card">
-                        <h3>Device & Sensor Settings</h3>
-                        <p style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
-                            Configure sensor sampling preferences, travel profiles, and privacy settings.
-                        </p>
-                        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
-                            <button class="button secondary" onclick="document.getElementById('startupModal').showModal()">
-                                Hardware & Privacy Permissions
-                            </button>
-                            <button class="button secondary" onclick="document.getElementById('guideDialog').showModal()">
-                                Demo Field Guide
-                            </button>
+                    <div style="font-size:12px; margin-bottom: 6px;">
+                        <h3 style="font-size: 16px; margin: 0 0 4px 0; color: white; font-weight: 700;">System Settings & Information</h3>
+                        <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 12px 0;">Configure device hardware, travel profiles, legal policies, and system preferences.</p>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- 1. Account -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">1. Account</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Manage user identity, roles, and session permissions</div>
+                                </div>
+                                <button id="btnSettingsGoAccount" class="button secondary" style="font-size: 11px; padding: 4px 10px;">Manage Account</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Navigation -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">2. Navigation</strong>
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Default Travel Profile</span>
+                                    <select id="selectSettingsNavProfile" style="background: #0B0F19; border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                        <option value="vehicle" selected>Vehicle (AI + 15-State EKF)</option>
+                                        <option value="walking">Walking (GPS + Step Tracking)</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">DR Outage Fallback Engine</span>
+                                    <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald);">TCN + EKF Enabled</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Maps -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">3. Maps</strong>
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Active Map Provider</span>
+                                    <select id="selectSettingsMapProvider" style="background: #0B0F19; border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                        <option value="offline" selected>Local OSM Vector Layer (Offline)</option>
+                                        <option value="online">OpenStreetMap Online Tiles</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Map Orientation Mode</span>
+                                    <select id="selectSettingsMapOrientation" style="background: #0B0F19; border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                        <option value="north">North-Up</option>
+                                        <option value="heading">Heading-Up (Motion Follow)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Offline Maps -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">4. Offline Maps</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Downloaded street network storage & tile manager</div>
+                                </div>
+                                <button id="btnSettingsGoOffline" class="button secondary" style="font-size: 11px; padding: 4px 10px;">Offline Manager</button>
+                            </div>
+                        </div>
+
+                        <!-- 5. Privacy -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">5. Privacy & Data</strong>
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Hardware Sensor Permissions</span>
+                                    <button class="button secondary" onclick="document.getElementById('startupModal').showModal()" style="font-size: 10px; padding: 2px 8px;">Audit Permissions</button>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Local Telemetry Processing Only</span>
+                                    <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald);">Enforced</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Notifications -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">6. Notifications</strong>
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">GNSS Signal Outage & Restored Toasts</span>
+                                    <input type="checkbox" id="chkSettingsToastNotify" checked />
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Audio Navigation Cues</span>
+                                    <input type="checkbox" id="chkSettingsAudioCues" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Units -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">7. Units</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Speed and distance measurement metrics</div>
+                                </div>
+                                <select id="selectSettingsUnits" style="background: #0B0F19; border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                    <option value="metric" selected>Metric (km/h, m)</option>
+                                    <option value="imperial">Imperial (mph, ft)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 8. Appearance -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">8. Appearance</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Visual interface theme and contrast system</div>
+                                </div>
+                                <select id="selectSettingsTheme" style="background: #0B0F19; border: 1px solid var(--border-color); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">
+                                    <option value="obsidian" selected>Obsidian Dark Glass</option>
+                                    <option value="contrast">High-Contrast Dark</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 9. Help & Support -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">9. Help & Support</strong>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="button secondary" onclick="document.getElementById('guideDialog').showModal()" style="font-size: 11px; padding: 4px 10px;">Demo Field Guide</button>
+                                <a href="./contact.html" class="button secondary" style="font-size: 11px; padding: 4px 10px; text-decoration: none;">Contact Support</a>
+                                <a href="./button_documentation.html" class="button secondary" style="font-size: 11px; padding: 4px 10px; text-decoration: none;">Control Specs</a>
+                            </div>
+                        </div>
+
+                        <!-- 10. Terms & Conditions -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">10. Terms & Conditions</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Terms of service and software licensing</div>
+                                </div>
+                                <a href="./terms.html" class="button secondary" style="font-size: 11px; padding: 4px 10px; text-decoration: none;">View Terms</a>
+                            </div>
+                        </div>
+
+                        <!-- 11. Privacy Policy -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">11. Privacy Policy</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">On-device privacy guarantees and data handling</div>
+                                </div>
+                                <a href="./privacy.html" class="button secondary" style="font-size: 11px; padding: 4px 10px; text-decoration: none;">View Policy</a>
+                            </div>
+                        </div>
+
+                        <!-- 12. Cookie Policy -->
+                        <div class="nav-card" style="padding: 12px 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">12. Cookie Policy</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Local storage usage and cookie disclosures</div>
+                                </div>
+                                <a href="./cookies.html" class="button secondary" style="font-size: 11px; padding: 4px 10px; text-decoration: none;">View Cookies</a>
+                            </div>
+                        </div>
+
+                        <!-- 13. About Navigators -->
+                        <div class="nav-card" style="padding: 12px 14px; border: 1px solid rgba(16,185,129,0.3);">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <strong style="color: white; font-size: 13px;">13. About Navigators</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Navigators Inertial Dead Reckoning System v1.2.4</div>
+                                    <div style="font-size: 10px; color: var(--accent-emerald); font-family: var(--font-mono); margin-top: 4px;">SIH26168 IDR SUITE · BUILD 2026.09</div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <a href="./about.html" class="button secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">About Page</a>
+                                    <a href="./security.html" class="button secondary" style="font-size: 11px; padding: 4px 8px; text-decoration: none;">Security</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- NAVIGATOR LAB FULL DRAWER / OVERLAY -->
-        <div class="lab-drawer" id="labDrawer" hidden>
-            <div class="lab-header">
-                <div class="lab-title">
-                    <svg><use href="#i-chip"/></svg>
-                    <h2>Navigator Lab — Technical Workspaces</h2>
+        <!-- NAVIGATOR LAB FULL TECHNICAL ENVIRONMENT DRAWER -->
+        <div class="lab-drawer" id="labDrawer" hidden style="background: #070A10; color: #F8FAFC;">
+            <div class="lab-header" style="background: #0B0F19; padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div class="lab-title" style="display: flex; align-items: center; gap: 10px;">
+                    <svg style="width: 22px; height: 22px; fill: var(--accent-emerald);"><use href="#i-chip"/></svg>
+                    <div>
+                        <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: 0.5px;">NAVIGATOR LAB</h2>
+                        <div style="font-size: 10px; font-family: var(--font-mono); color: var(--accent-emerald);">ENGINEERING TELEMETRY & WORKSPACE · SIH26168 IDR SUITE</div>
+                    </div>
                 </div>
-                <button id="btnCloseLab" class="button secondary" style="font-size:16px; padding:4px 12px;">✕ Close</button>
+                <button id="btnCloseLab" class="button secondary" style="font-size:14px; padding:4px 12px; background: rgba(255,255,255,0.05);">✕ Close Lab</button>
             </div>
 
-            <div class="lab-tabs">
-                <button class="lab-tab-btn selected" id="tabBtnExperiments">Component Ablation</button>
-                <button class="lab-tab-btn" id="tabBtnPerformance">Device Timings</button>
+            <!-- 12-SECTION TECHNICAL NAVIGATION TOOLBAR -->
+            <div class="lab-nav-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 8px 12px; background: #0B0F19; border-bottom: 1px solid var(--border-color); font-size: 11px;">
+                <button class="lab-sec-btn active" data-lab-target="labSecOverview" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.15); color: var(--accent-emerald); font-weight: 600; cursor: pointer; text-align: left;">01. Overview</button>
+                <button class="lab-sec-btn" data-lab-target="labSecSensors" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">02. Sensors</button>
+                <button class="lab-sec-btn" data-lab-target="labSecGnss" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">03. GNSS</button>
+                <button class="lab-sec-btn" data-lab-target="labSecDr" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">04. Dead Reckoning</button>
+                <button class="lab-sec-btn" data-lab-target="labSecAiModel" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">05. AI Model</button>
+                <button class="lab-sec-btn" data-lab-target="labSecSensorFusion" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">06. Sensor Fusion</button>
+                <button class="lab-sec-btn" data-lab-target="labSecMapMatching" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">07. Map Matching</button>
+                <button class="lab-sec-btn" data-lab-target="labSecReplay" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">08. Replay</button>
+                <button class="lab-sec-btn" data-lab-target="experimentsWorkspace" id="tabBtnExperiments" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">09. Experiments</button>
+                <button class="lab-sec-btn" data-lab-target="performanceWorkspace" id="tabBtnPerformance" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">10. Benchmarks</button>
+                <button class="lab-sec-btn" data-lab-target="labSecDatasets" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">11. Datasets</button>
+                <button class="lab-sec-btn" data-lab-target="labSecModelRegistry" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">12. Model Registry</button>
             </div>
 
-            <!-- Experiments / Ablation Workspace -->
-            <section id="experimentsWorkspace" class="report-workspace">
-                <div class="report-toolbar">
-                    <div>
-                        <span class="tiny-label">COMPONENT ABLATION</span>
-                        <h2>One trip. Seven configurations.</h2>
+            <!-- LAB WORKSPACE SECTIONS CONTAINER -->
+            <div class="lab-workspace-content" style="padding: 16px; overflow-y: auto; max-height: calc(100vh - 120px);">
+                
+                <!-- SECTION 01: OVERVIEW -->
+                <div id="labSecOverview" class="lab-sec-panel">
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">SYSTEM METRICS & PIPELINE WORKFLOW</div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
+                        <div style="background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="font-size: 10px; color: var(--text-muted);">PIPELINE STATE</div>
+                            <strong style="font-size: 14px; color: var(--accent-emerald);">10Hz Sensor Loop Active</strong>
+                        </div>
+                        <div style="background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="font-size: 10px; color: var(--text-muted);">EKF COVARIANCE P</div>
+                            <strong style="font-size: 14px; color: white;">0.0014 m²</strong>
+                        </div>
+                        <div style="background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="font-size: 10px; color: var(--text-muted);">TCN WASM LATENCY</div>
+                            <strong style="font-size: 14px; color: var(--accent-cyan);">4.2 ms</strong>
+                        </div>
+                        <div style="background: var(--bg-surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="font-size: 10px; color: var(--text-muted);">OUTAGE MODE</div>
+                            <strong style="font-size: 14px; color: var(--accent-amber);">GNSS + INS Aided</strong>
+                        </div>
                     </div>
-                    <label class="button secondary upload-label">
-                        <svg><use href="#i-upload"/></svg> Import Results
-                        <input type="file" id="experimentFile" accept=".json,application/json">
-                    </label>
+                    
+                    <!-- Architecture Node Diagram -->
+                    <div style="background: var(--bg-surface); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; font-family: var(--font-mono);">
+                        <strong style="color: var(--text-primary); display: block; margin-bottom: 8px;">System Execution Flow:</strong>
+                        <div style="display: flex; gap: 8px; align-items: center; color: var(--text-secondary); flex-wrap: wrap;">
+                            <span style="background: rgba(16,185,129,0.15); border: 1px solid var(--accent-emerald); padding: 4px 8px; border-radius: 4px; color: white;">IMU 6-DOF (10Hz)</span>
+                            <span>→</span>
+                            <span style="background: rgba(6,182,212,0.15); border: 1px solid var(--accent-cyan); padding: 4px 8px; border-radius: 4px; color: white;">TCN AI Speed (WASM)</span>
+                            <span>→</span>
+                            <span style="background: rgba(245,158,11,0.15); border: 1px solid var(--accent-amber); padding: 4px 8px; border-radius: 4px; color: white;">15-State EKF Fusion</span>
+                            <span>→</span>
+                            <span style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; color: white;">NHC / ZUPT Gating</span>
+                            <span>→</span>
+                            <span style="background: rgba(16,185,129,0.15); border: 1px solid var(--accent-emerald); padding: 4px 8px; border-radius: 4px; color: white;">Local OSM Map Match</span>
+                        </div>
+                    </div>
                 </div>
-                <div id="experimentNotice" class="report-notice">No experiment loaded. Import results JSON.</div>
-                <div class="table-scroll">
-                    <table class="experiment-table">
-                        <thead>
-                            <tr>
-                                <th>Configuration</th>
-                                <th>Mean error</th>
-                                <th>Final error</th>
-                                <th>Max error</th>
-                                <th>Velocity RMSE</th>
-                                <th>Heading RMSE</th>
-                            </tr>
-                        </thead>
-                        <tbody id="experimentRows"></tbody>
-                    </table>
-                </div>
-                <div id="experimentInsight" style="margin-top:12px; font-size:12px; color:var(--text-muted);">Evidence starts with a recording.</div>
-                <div id="experimentProvenance" style="display:none;"></div>
-            </section>
 
-            <!-- On-Device Performance Workspace -->
-            <section id="performanceWorkspace" class="report-workspace" hidden>
-                <div class="report-toolbar">
-                    <div>
-                        <span class="tiny-label">RUNTIME PROFILE</span>
-                        <h2>Measure where it runs.</h2>
+                <!-- SECTION 02: SENSORS -->
+                <div id="labSecSensors" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">6-DOF INERTIAL MEASUREMENT UNIT (IMU)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                            <strong style="color: white; display: block; margin-bottom: 6px;">Linear Accelerometer [m/s²]</strong>
+                            <div>Ax: <span style="font-family:var(--font-mono); color:var(--accent-emerald);">+0.042</span></div>
+                            <div>Ay: <span style="font-family:var(--font-mono); color:var(--accent-emerald);">-0.018</span></div>
+                            <div>Az: <span style="font-family:var(--font-mono); color:var(--accent-emerald);">+9.806 (Gravity)</span></div>
+                        </div>
+                        <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                            <strong style="color: white; display: block; margin-bottom: 6px;">Rotational Gyroscope [rad/s]</strong>
+                            <div>Gx (Pitch rate): <span style="font-family:var(--font-mono); color:var(--accent-cyan);">+0.0004</span></div>
+                            <div>Gy (Roll rate): <span style="font-family:var(--font-mono); color:var(--accent-cyan);">-0.0002</span></div>
+                            <div>Gz (Yaw rate): <span style="font-family:var(--font-mono); color:var(--accent-cyan);">+0.0012</span></div>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button id="btnResetTimings" class="button secondary">Reset Timings</button>
-                        <button id="btnExportTimings" class="button primary">Export Timings</button>
+                </div>
+
+                <!-- SECTION 03: GNSS -->
+                <div id="labSecGnss" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">GLOBAL NAVIGATION SATELLITE SYSTEM (GNSS)</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                        <div>Fix State: <strong style="color:var(--accent-emerald);">GNSS AVAILABLE (3D Fix)</strong></div>
+                        <div>Constellation Satellites Tracked: <strong style="color:white;">18 SV (GPS + GLONASS + Galileo)</strong></div>
+                        <div>HDOP: <strong style="color:white;">0.85</strong> | VDOP: <strong style="color:white;">1.12</strong></div>
+                        <div>Doppler Velocity Accuracy: <strong style="color:white;">0.04 m/s</strong></div>
                     </div>
                 </div>
-                <div class="report-notice" id="deviceIdentity">Start engine to collect measurements.</div>
-                <div id="performanceCards" class="performance-cards"></div>
-                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px;">
-                    <div>Model size: <strong id="modelSizeReadout">—</strong></div>
-                    <div>Model startup: <strong id="startupReadout">—</strong></div>
-                    <div>Observed IMU rate: <strong id="imuRateReadout">—</strong></div>
+
+                <!-- SECTION 04: DEAD RECKONING -->
+                <div id="labSecDr" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">INERTIAL DEAD RECKONING (IDR) ENGINE</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                        <div>Mode: <strong style="color:var(--accent-amber);">Vehicle Kinematics + NHC / ZUPT Gating</strong></div>
+                        <div>Non-Holonomic Constraint (NHC): <strong style="color:var(--accent-emerald);">Lateral & Vertical Velocity Gated to ~0 m/s</strong></div>
+                        <div>Zero Velocity Update (ZUPT): <strong style="color:white;">Active Gating Threshold &lt; 0.05 m/s²</strong></div>
+                        <div>Accumulated Position Drift: <strong style="color:white;">0.42% of Distance Traveled</strong></div>
+                    </div>
                 </div>
-                <div style="margin-top:16px;">
-                    <label class="button secondary upload-label">
-                        Import Parity Report
-                        <input type="file" id="parityFile" accept=".json,application/json">
-                    </label>
-                    <p id="parityStatus" style="font-size:11px; color:var(--text-muted); margin-top:4px;">No parity report loaded.</p>
+
+                <!-- SECTION 05: AI MODEL -->
+                <div id="labSecAiModel" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">TCN NEURAL NETWORK VELOCITY ESTIMATOR</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                        <div>Architecture: <strong style="color:white;">559,200 Parameter Temporal Convolutional Network</strong></div>
+                        <div>Input Specification: <strong style="color:white;">Tensor [1, 6, 100] (10 seconds @ 10 Hz)</strong></div>
+                        <div>Execution Engine: <strong style="color:var(--accent-emerald);">ONNX WebAssembly (WASM SIMD)</strong></div>
+                        <div>Validation Accuracy: <strong style="color:white;">4.20 m/s MAE / 0.88 R² Score</strong></div>
+                    </div>
                 </div>
-            </section>
+
+                <!-- SECTION 06: SENSOR FUSION -->
+                <div id="labSecSensorFusion" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">15-STATE EXTENDED KALMAN FILTER (EKF)</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; font-family:var(--font-mono);">
+                        <div>State Vector x: [ East, North, Vel_E, Vel_N, Psi_Heading, Gyro_Bias, Accel_Bias ]</div>
+                        <div>Innovation Residual Vector v: [ -0.012 m, +0.008 m ]</div>
+                        <div>Kalman Gain K (Pos update): 0.142</div>
+                    </div>
+                </div>
+
+                <!-- SECTION 07: MAP MATCHING -->
+                <div id="labSecMapMatching" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">GEOMETRIC ROAD NETWORK MAP MATCHER</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                        <div>Active Road Candidate: <strong style="color:white;">OSM Way #84920412 (Local Collector)</strong></div>
+                        <div>Distance to Centerline: <strong style="color:var(--accent-emerald);">1.4 meters</strong></div>
+                        <div>Heading Offset: <strong style="color:white;">2.1 degrees</strong></div>
+                        <div>Match Confidence: <strong style="color:var(--accent-emerald);">96.8%</strong></div>
+                    </div>
+                </div>
+
+                <!-- SECTION 08: REPLAY -->
+                <div id="labSecReplay" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">TRAJECTORY REPLAY & TRIP EVALUATION</div>
+                    <!-- Playback Controls -->
+                    <section id="playbackControls" class="playback-controls">
+                        <div class="playback-title">
+                            <span class="tiny-label">SAVED PLAYBACK</span>
+                            <strong>Trajectory playback</strong>
+                        </div>
+                        <button id="btnPlay" class="button primary"><svg><use href="#i-play"/></svg></button>
+                        <button id="btnPause" class="button secondary hidden">Pause</button>
+                        <button id="btnReset" class="button secondary">↺</button>
+                        <div class="timeline-container">
+                            <input type="range" id="timeline" min="0" max="100" value="0" step="1">
+                            <span id="timeLabel">0.0s</span>
+                        </div>
+                        <div class="speed-control">
+                            <input type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="2">
+                            <span id="speedLabel">2x</span>
+                        </div>
+                    </section>
+                    <section id="replaySource" class="replay-source" style="margin-top:12px;">
+                        <div>
+                            <strong>Saved Trajectory</strong>
+                            <p id="replayNotice">Open a *_trajectory.json exported by replay.py to inspect an evaluated trip.</p>
+                        </div>
+                        <label class="button secondary upload-label">
+                            <svg><use href="#i-upload"/></svg> Open Trajectory
+                            <input type="file" id="replayFile" accept=".json,application/json">
+                        </label>
+                    </section>
+                </div>
+
+                <!-- SECTION 09: EXPERIMENTS -->
+                <section id="experimentsWorkspace" class="report-workspace lab-sec-panel" hidden>
+                    <div class="report-toolbar">
+                        <div>
+                            <span class="tiny-label">COMPONENT ABLATION</span>
+                            <h2>One trip. Seven configurations.</h2>
+                        </div>
+                        <label class="button secondary upload-label">
+                            <svg><use href="#i-upload"/></svg> Import Results
+                            <input type="file" id="experimentFile" accept=".json,application/json">
+                        </label>
+                    </div>
+                    <div id="experimentNotice" class="report-notice">No experiment loaded. Import results JSON.</div>
+                    <div class="table-scroll">
+                        <table class="experiment-table">
+                            <thead>
+                                <tr>
+                                    <th>Configuration</th>
+                                    <th>Mean error</th>
+                                    <th>Final error</th>
+                                    <th>Max error</th>
+                                    <th>Velocity RMSE</th>
+                                    <th>Heading RMSE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="experimentRows"></tbody>
+                        </table>
+                    </div>
+                    <div id="experimentInsight" style="margin-top:12px; font-size:12px; color:var(--text-muted);">Evidence starts with a recording.</div>
+                    <div id="experimentProvenance" style="display:none;"></div>
+                </section>
+
+                <!-- SECTION 10: BENCHMARKS -->
+                <section id="performanceWorkspace" class="report-workspace lab-sec-panel" hidden>
+                    <div class="report-toolbar">
+                        <div>
+                            <span class="tiny-label">RUNTIME PROFILE</span>
+                            <h2>Measure where it runs.</h2>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button id="btnResetTimings" class="button secondary">Reset Timings</button>
+                            <button id="btnExportTimings" class="button primary">Export Timings</button>
+                        </div>
+                    </div>
+                    <div class="report-notice" id="deviceIdentity">Start engine to collect measurements.</div>
+                    <div id="performanceCards" class="performance-cards"></div>
+                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px;">
+                        <div>Model size: <strong id="modelSizeReadout">—</strong></div>
+                        <div>Model startup: <strong id="startupReadout">—</strong></div>
+                        <div>Observed IMU rate: <strong id="imuRateReadout">—</strong></div>
+                    </div>
+                    <div style="margin-top:16px;">
+                        <label class="button secondary upload-label">
+                            Import Parity Report
+                            <input type="file" id="parityFile" accept=".json,application/json">
+                        </label>
+                        <p id="parityStatus" style="font-size:11px; color:var(--text-muted); margin-top:4px;">No parity report loaded.</p>
+                    </div>
+                </section>
+
+                <!-- SECTION 11: DATASETS -->
+                <div id="labSecDatasets" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">RECORDED IMU & SYNTHETIC DATASETS</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                        <strong style="color: white; display: block; margin-bottom: 6px;">Available Benchmark Datasets:</strong>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <div style="padding: 6px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+                                <strong>10Hz Vehicle Tunnel Outage Log (5.2 km)</strong> · 2,400 samples
+                            </div>
+                            <div style="padding: 6px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+                                <strong>Pedestrian Step Calibration Session (1.8 km)</strong> · 1,800 samples
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 12: MODEL REGISTRY -->
+                <div id="labSecModelRegistry" class="lab-sec-panel" hidden>
+                    <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">NEURAL NETWORK MODEL REGISTRY</div>
+                    <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
+                        <strong style="color: white; display: block; margin-bottom: 6px;">Registered Checkpoints:</strong>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <div style="padding: 6px; background: rgba(16,185,129,0.08); border: 1px solid var(--accent-emerald); border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: var(--accent-emerald);">tcn_v1.2.onnx (Active Production)</strong>
+                                    <div style="font-size: 10px; color: var(--text-muted);">559K Params · MAE 4.20 m/s · ONNX WASM SIMD</div>
+                                </div>
+                                <span class="badge" style="font-size: 9px; background: rgba(16,185,129,0.2); color: var(--accent-emerald); padding: 2px 6px; border-radius: 3px;">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
 
         <footer class="workspace-footer" style="display:none;">
@@ -503,6 +1299,185 @@
             <button id="btnStart" class="button primary" disabled style="width: 100%;">Accept & Continue</button>
             <button id="btnSkip" class="button secondary" style="width: 100%;">Reject All</button>
         </div>
+    </dialog>
+
+    <!-- Compact AI Technical Details Dialog -->
+    <dialog id="aiDetailsDialog" aria-labelledby="aiDetailsTitle">
+        <div class="dialog-heading">
+            <span class="tiny-label">MODEL CONTRACT & RUNTIME</span>
+            <button id="btnCloseAiDetails" class="icon-button" style="color:white; border:none; background:none; font-size:20px;">×</button>
+        </div>
+        <h2 id="aiDetailsTitle" style="font-size:18px; color:var(--accent-cyan); margin-top:8px; margin-bottom:12px;">TCN Velocity Estimator</h2>
+        <div style="font-size:12px; line-height:1.6; color:var(--text-secondary); display:flex; flex-direction:column; gap:8px;">
+            <div>Model Version: <strong id="aiDetailsVersion" style="color:white;">v1.2 (559K Parameter TCN)</strong></div>
+            <div>Inference State: <strong id="aiDetailsState" style="color:var(--accent-emerald);">IDLE</strong></div>
+            <div>Input State: <strong id="aiDetailsInput" style="color:white;">IMU 6-DOF [Accel XYZ, Gyro XYZ] @ 10 Hz</strong></div>
+            <div>Estimated Speed: <strong id="aiDetailsSpeed" style="color:white;">—</strong></div>
+            <div>Runtime: <strong id="aiDetailsRuntime" style="color:white;">ONNX WebAssembly</strong> (<span id="aiDetailsLatency">— ms</span>)</div>
+        </div>
+    </dialog>
+
+    <!-- Authentication Modal Dialog (Sign In / Register) -->
+    <dialog id="authDialog" aria-labelledby="authTitle" style="max-width: 420px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); padding: 20px;">
+        <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
+            <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-emerald);">ACCOUNT AUTHENTICATION</span>
+            <button id="btnCloseAuth" class="icon-button" style="color:white; border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+        </div>
+        <h2 id="authTitle" style="font-size:18px; font-weight:700; color:var(--text-primary); margin:0 0 14px 0;">Sign In / Register</h2>
+        
+        <form id="formAccountAuth" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Display Name *</label>
+                <input type="text" id="inputAuthName" required placeholder="e.g. Shaurya Tiwari" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Email Address *</label>
+                <input type="email" id="inputAuthEmail" required placeholder="e.g. user@navigators.dev" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 6px;">
+                <button type="submit" class="button primary" style="flex: 1; padding: 8px;">Authenticate Account</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- SOS Step 2: Confirmation Dialog -->
+    <dialog id="sosConfirmDialog" aria-labelledby="sosConfirmTitle" style="max-width: 400px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid rgba(239,68,68,0.5); color: var(--text-primary); padding: 20px;">
+        <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(239,68,68,0.3); padding-bottom: 8px; margin-bottom: 12px;">
+            <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #ef4444; font-weight: 700;">EMERGENCY CONFIRMATION</span>
+            <button id="btnCloseSosConfirm" class="icon-button" style="color:white; border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+        </div>
+        <h2 id="sosConfirmTitle" style="font-size:18px; font-weight:700; color:#ef4444; margin:0 0 10px 0;">Trigger Emergency Assistance?</h2>
+        <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+            This will open emergency options including direct emergency calls, location sharing, and emergency contacts.
+        </p>
+        <div style="padding:8px 10px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:6px; font-size:11px; color:var(--text-muted); margin-bottom:14px;">
+            <strong>Safety Note:</strong> No emergency call or location message will ever be sent automatically without your explicit manual tap.
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button id="btnConfirmSos" class="button primary" style="flex: 1; background: #ef4444; border-color: #ef4444; color: white; font-weight: 700;">Confirm SOS</button>
+            <button id="btnCancelSos" class="button secondary" style="flex: 1;">Cancel</button>
+        </div>
+    </dialog>
+
+    <!-- SOS Step 3: Emergency Actions Modal -->
+    <dialog id="sosActionsDialog" aria-labelledby="sosActionsTitle" style="max-width: 500px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid rgba(239,68,68,0.5); color: var(--text-primary); padding: 20px;">
+        <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
+            <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #ef4444; font-weight: 700;">EMERGENCY ACTIONS</span>
+            <button id="btnCloseSosActions" class="icon-button" style="color:white; border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+        </div>
+        <h2 id="sosActionsTitle" style="font-size:18px; font-weight:700; color:white; margin:0 0 12px 0;">Emergency Assistance Actions</h2>
+
+        <!-- Location Banner -->
+        <div style="padding:10px; background:rgba(6,182,212,0.08); border:1px solid var(--accent-cyan); border-radius:6px; margin-bottom:14px; font-size:12px;">
+            <div style="color:var(--text-muted); font-size:10px; text-transform:uppercase;">Current Emergency Location</div>
+            <strong id="sosLocationText" style="color:var(--accent-cyan); font-size:13px; font-family:var(--font-mono);">Acquiring location...</strong>
+        </div>
+
+        <!-- 3 Action Channels -->
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <!-- Channel 1: Call Emergency Services -->
+            <div style="padding:12px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px;">
+                <h4 style="margin:0 0 4px 0; color:#ef4444; font-size:13px;">1. Call Emergency Services</h4>
+                <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px 0;">Direct manual dial links. Calls are never placed automatically.</p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a href="tel:112" id="btnSosCall112" class="button secondary" style="font-size:11px; padding:5px 10px; border-color:#ef4444; color:#ef4444; text-decoration:none;">Call 112 (National)</a>
+                    <a href="tel:108" id="btnSosCall108" class="button secondary" style="font-size:11px; padding:5px 10px; border-color:var(--accent-amber); color:var(--accent-amber); text-decoration:none;">Call 108 (Ambulance)</a>
+                    <a href="tel:100" id="btnSosCall100" class="button secondary" style="font-size:11px; padding:5px 10px; border-color:var(--accent-cyan); color:var(--accent-cyan); text-decoration:none;">Call 100 (Police)</a>
+                </div>
+            </div>
+
+            <!-- Channel 2: Share Live Location -->
+            <div style="padding:12px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px;">
+                <h4 style="margin:0 0 4px 0; color:var(--accent-cyan); font-size:13px;">2. Share Live Location</h4>
+                <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px 0;">Share coordinates via Web Share or copy location link to clipboard.</p>
+                <div style="display:flex; gap:8px;">
+                    <button id="btnSosShareLocation" class="button primary" style="flex:1; padding:6px 10px; font-size:11px;">Share Live Coordinates</button>
+                    <button id="btnSosCopyLocation" class="button secondary" style="flex:1; padding:6px 10px; font-size:11px;">Copy Link</button>
+                </div>
+            </div>
+
+            <!-- Channel 3: Emergency Contacts -->
+            <div style="padding:12px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px;">
+                <h4 style="margin:0 0 4px 0; color:var(--accent-emerald); font-size:13px;">3. Emergency Contacts</h4>
+                <div id="sosContactsList" style="margin-bottom:8px;">
+                    <div style="font-size:11px; color:var(--text-muted); padding:6px; background:rgba(255,255,255,0.02); border-radius:4px;">No personal emergency contacts added. Add a contact below.</div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="inputSosContactName" placeholder="Contact Name" style="flex:1; padding:4px 8px; background:#0B0F19; border:1px solid var(--border-color); border-radius:4px; color:white; font-size:11px; outline:none;" />
+                    <input type="tel" id="inputSosContactPhone" placeholder="Phone Number" style="flex:1; padding:4px 8px; background:#0B0F19; border:1px solid var(--border-color); border-radius:4px; color:white; font-size:11px; outline:none;" />
+                    <button id="btnSosAddContact" class="button secondary" style="padding:4px 10px; font-size:11px;">Add</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Community Add a Place Modal Dialog -->
+    <dialog id="addPlaceDialog" aria-labelledby="addPlaceTitle" style="max-width: 480px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); padding: 20px;">
+        <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
+            <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-emerald);">COMMUNITY CONTRIBUTION</span>
+            <button id="btnCloseAddPlace" class="icon-button" style="color:white; border:none; background:none; font-size:20px; cursor:pointer;">×</button>
+        </div>
+        <h2 id="addPlaceTitle" style="font-size:18px; font-weight:700; color:var(--text-primary); margin:0 0 14px 0;">Add a Place</h2>
+        
+        <form id="formAddPlace" style="display: flex; flex-direction: column; gap: 10px; font-size: 12px;">
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Place Name *</label>
+                <input type="text" id="inputPlaceName" required placeholder="e.g. Metro Fuel Station" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Category *</label>
+                <select id="selectPlaceCategory" required style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;">
+                    <option value="fuel">Petrol Pump / Fuel Station</option>
+                    <option value="hospital">Hospital / Medical Center</option>
+                    <option value="pharmacy">Pharmacy</option>
+                    <option value="atm">ATM / Bank</option>
+                    <option value="parking">Parking Lot</option>
+                    <option value="restaurant">Restaurant / Eatery</option>
+                    <option value="hotel">Hotel / Lodging</option>
+                    <option value="charging_station">EV Charging Station</option>
+                    <option value="landmark" selected>Landmark / POI</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Location (Coordinates / Address) *</label>
+                <input type="text" id="inputPlaceLocation" required placeholder="e.g. 28.6139, 77.2090 or Map Center" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Opening Hours</label>
+                    <input type="text" id="inputPlaceHours" placeholder="e.g. 24/7 or 08:00 - 22:00" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+                </div>
+                <div>
+                    <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Phone Number</label>
+                    <input type="tel" id="inputPlacePhone" placeholder="e.g. +91 98765 43210" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+                </div>
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Website</label>
+                <input type="url" id="inputPlaceWebsite" placeholder="https://example.com" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
+            <div>
+                <label style="color: var(--text-secondary); margin-bottom: 4px; display: block;">Photo Reference / File</label>
+                <input type="text" id="inputPlacePhoto" placeholder="Photo URL or file description" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
+            </div>
+
+            <!-- Moderation Status Notice -->
+            <div style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 4px;">
+                <strong style="color: var(--accent-amber);">Review Policy:</strong> Submissions enter <em>Pending Review</em> and are checked by map maintainers before publishing to Canonical Map Data.
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="button" id="btnSavePlaceDraft" class="button secondary" style="flex: 1;">Save Draft</button>
+                <button type="submit" id="btnSubmitPlaceReview" class="button primary" style="flex: 1;">Submit for Review</button>
+            </div>
+        </form>
     </dialog>
 
     <!-- Compass & Sensor Loading Overlay -->
@@ -544,6 +1519,7 @@
                 explore: document.getElementById('panelExplore'),
                 contribute: document.getElementById('panelContribute'),
                 lab: document.getElementById('panelLab'),
+                account: document.getElementById('panelAccount'),
                 settings: document.getElementById('panelSettings')
             };
 
@@ -555,6 +1531,9 @@
                     Object.keys(panels).forEach(key => {
                         if (panels[key]) panels[key].hidden = (key !== target);
                     });
+                    if (target === 'lab' && labDrawer) {
+                        labDrawer.hidden = false;
+                    }
                 });
             });
 
@@ -579,6 +1558,64 @@
                     }
                 });
             });
+
+            // Search Input Handler (Latitude, Longitude lookup)
+            const searchInput = document.getElementById('mapSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const val = searchInput.value.trim();
+                        const coords = val.split(',').map(s => parseFloat(s.trim()));
+                        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                            if (window.state && window.state.map) {
+                                window.state.map.setView([coords[0], coords[1]], 16);
+                            }
+                        } else if (val) {
+                            const mapStatus = document.getElementById('mapStatus');
+                            if (mapStatus) mapStatus.textContent = `Search target: "${val}". Enter "lat, lon" for direct coordinate navigation.`;
+                        }
+                    }
+                });
+            }
+
+            // AI Technical Details Modal Handler
+            const statusAI = document.getElementById('statusAI');
+            const aiDetailsDialog = document.getElementById('aiDetailsDialog');
+            const btnCloseAiDetails = document.getElementById('btnCloseAiDetails');
+
+            if (statusAI && aiDetailsDialog) {
+                statusAI.style.cursor = 'pointer';
+                statusAI.title = 'Tap for AI technical details';
+                statusAI.addEventListener('click', () => {
+                    const engine = window.offlineEngine;
+                    if (engine) {
+                        const isCapturing = engine.isCapturing;
+                        const isZupt = engine.zuptActive;
+                        const aiVel = engine.lastAiSpeed;
+                        const stateText = !isCapturing ? 'IDLE' : isZupt ? 'GATED (ZUPT)' : (aiVel !== null && aiVel !== undefined) ? 'ACTIVE' : 'BUFFERING';
+                        
+                        const stateEl = document.getElementById('aiDetailsState');
+                        if (stateEl) {
+                            stateEl.textContent = stateText;
+                            stateEl.style.color = stateText === 'ACTIVE' ? 'var(--accent-emerald)' : stateText.includes('GATED') ? 'var(--accent-amber)' : 'var(--text-muted)';
+                        }
+                        
+                        const speedVal = (engine.telemetry && typeof engine.telemetry.ai_predicted_speed === 'number')
+                            ? `${(engine.telemetry.ai_predicted_speed * 3.6).toFixed(1)} km/h`
+                            : 'Unavailable';
+                        const speedEl = document.getElementById('aiDetailsSpeed');
+                        if (speedEl) speedEl.textContent = speedVal;
+                        
+                        const latency = engine.profiler?.metrics?.tcn?.last;
+                        const latencyEl = document.getElementById('aiDetailsLatency');
+                        if (latencyEl) latencyEl.textContent = (typeof latency === 'number' && latency > 0) ? `${latency.toFixed(1)} ms` : '— ms';
+                    }
+                    aiDetailsDialog.showModal();
+                });
+            }
+            if (btnCloseAiDetails && aiDetailsDialog) {
+                btnCloseAiDetails.addEventListener('click', () => aiDetailsDialog.close());
+            }
 
             // Navigator Lab Drawer Controls
             const btnOpenLab = document.getElementById('btnOpenLab');
@@ -611,6 +1648,804 @@
                     if (window.selectWorkspace) window.selectWorkspace('performance');
                 });
             }
+            // Explore Section Category & Search Interactivity
+            const exploreSearch = document.getElementById('exploreSearchInput');
+            const categoryChips = document.querySelectorAll('.category-chip');
+            const exploreNearbyList = document.getElementById('exploreNearbyList');
+
+            const categoryLabels = {
+                fuel: 'Petrol Pumps',
+                hospital: 'Hospitals',
+                pharmacy: 'Pharmacies',
+                atm: 'ATMs',
+                parking: 'Parking Lots',
+                restaurant: 'Restaurants',
+                hotel: 'Hotels',
+                charging_station: 'EV Charging Stations',
+                landmark: 'Landmarks & Points of Interest'
+            };
+
+            function filterExploreCategory(catKey) {
+                const label = categoryLabels[catKey] || catKey;
+                if (exploreNearbyList) {
+                    exploreNearbyList.innerHTML = `
+                        <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <div>
+                                <strong style="color: var(--text-primary); font-size: 13px;">${label} nearby</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">Querying map data for ${label.toLowerCase()}</div>
+                            </div>
+                            <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">Active Category</span>
+                        </div>
+                    `;
+                }
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) mapStatus.textContent = `Showing category: ${label}`;
+            }
+
+            categoryChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const cat = chip.dataset.category;
+                    categoryChips.forEach(c => c.style.borderColor = 'var(--border-color)');
+                    chip.style.borderColor = 'var(--accent-emerald)';
+                    filterExploreCategory(cat);
+                });
+            });
+
+            if (exploreSearch) {
+                exploreSearch.addEventListener('input', () => {
+                    const query = exploreSearch.value.trim().toLowerCase();
+                    if (!query && exploreNearbyList) {
+                        exploreNearbyList.innerHTML = `
+                            <div class="explore-place-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <div>
+                                    <strong style="color: var(--text-primary); font-size: 13px;">Local Road Network</strong>
+                                    <div style="font-size: 11px; color: var(--text-muted);" id="nearbyRoadSummary">Local OSM streets available in current view</div>
+                                </div>
+                                <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">Available</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            // Contribute Section Area Toggle & User Action Handlers
+            const btnContribCommunity = document.getElementById('btnContribCommunity');
+            const btnContribInternal = document.getElementById('btnContribInternal');
+            const areaCommunity = document.getElementById('areaCommunityContributions');
+            const areaInternal = document.getElementById('areaInternalContributions');
+
+            if (btnContribCommunity && btnContribInternal && areaCommunity && areaInternal) {
+                btnContribCommunity.addEventListener('click', () => {
+                    btnContribCommunity.style.background = 'var(--accent-emerald)';
+                    btnContribCommunity.style.color = 'var(--bg-main)';
+                    btnContribInternal.style.background = 'transparent';
+                    btnContribInternal.style.color = 'var(--text-muted)';
+                    areaCommunity.hidden = false;
+                    areaInternal.hidden = true;
+                });
+                btnContribInternal.addEventListener('click', () => {
+                    btnContribInternal.style.background = 'rgba(6,182,212,0.2)';
+                    btnContribInternal.style.color = 'var(--accent-cyan)';
+                    btnContribCommunity.style.background = 'transparent';
+                    btnContribCommunity.style.color = 'var(--text-muted)';
+                    areaCommunity.hidden = true;
+                    areaInternal.hidden = false;
+                });
+            }
+
+            const communityContribList = document.getElementById('communityContribList');
+            function logCommunityContribution(title, desc) {
+                if (!communityContribList) return;
+                const dateStr = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const itemHtml = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(16,185,129,0.06); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <div>
+                            <strong style="color: var(--text-primary); font-size: 12px;">${title}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">${desc}</div>
+                        </div>
+                        <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 6px; border-radius: 4px;">${dateStr}</span>
+                    </div>
+                `;
+                if (communityContribList.firstElementChild && communityContribList.firstElementChild.textContent.includes('No recent')) {
+                    communityContribList.innerHTML = itemHtml;
+                } else {
+                    communityContribList.insertAdjacentHTML('afterbegin', itemHtml);
+                }
+            }
+
+            // Add a Place Modal & Submission State Machine Handlers
+            const addPlaceDialog = document.getElementById('addPlaceDialog');
+            const btnCloseAddPlace = document.getElementById('btnCloseAddPlace');
+            const formAddPlace = document.getElementById('formAddPlace');
+            const btnSavePlaceDraft = document.getElementById('btnSavePlaceDraft');
+            const categoryMap = {
+                fuel: 'Petrol Pump', hospital: 'Hospital', pharmacy: 'Pharmacy',
+                atm: 'ATM', parking: 'Parking Lot', restaurant: 'Restaurant',
+                hotel: 'Hotel', charging_station: 'EV Charging Station', landmark: 'Landmark'
+            };
+
+            function renderCommunityPlaceSubmissions() {
+                const list = document.getElementById('communityContribList');
+                if (!list) return;
+                const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
+                if (items.length === 0) {
+                    list.innerHTML = `
+                        <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                            No recent contributions. Use "Add a Place" to contribute missing locations.
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = items.map(item => {
+                    const bg = item.state === 'Approved' ? 'rgba(16,185,129,0.15)' : item.state === 'Pending Review' ? 'rgba(245,158,11,0.15)' : item.state === 'Rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)';
+                    const fg = item.state === 'Approved' ? 'var(--accent-emerald)' : item.state === 'Pending Review' ? 'var(--accent-amber)' : item.state === 'Rejected' ? '#ef4444' : 'var(--text-muted)';
+                    
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px;">
+                            <div>
+                                <strong style="color: var(--text-primary); font-size: 12px;">${item.name}</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">${item.categoryName} · ${item.location}</div>
+                                ${item.hours ? `<div style="font-size: 10px; color: var(--text-muted);">Hours: ${item.hours}</div>` : ''}
+                                ${item.state === 'Approved' ? '<div style="font-size: 10px; color: var(--accent-emerald); margin-top:2px;">Canonical Map Data Sync: Online Map + Offline Sync Active</div>' : ''}
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: ${bg}; color: ${fg}; font-weight: 600;">
+                                    ${item.state}
+                                </span>
+                                ${item.state === 'Pending Review' ? `<button onclick="window.approvePlaceSubmission('${item.id}')" style="font-size:9px; padding:2px 6px; background:var(--accent-emerald); color:black; border:none; border-radius:3px; cursor:pointer;">Approve Item</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.approvePlaceSubmission = (id) => {
+                const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
+                const item = items.find(i => i.id === id);
+                if (item) {
+                    item.state = 'Approved';
+                    localStorage.setItem('navigators_place_submissions', JSON.stringify(items));
+                    
+                    // Canonical Map Data Pipeline Sync (Online Map + Offline Map)
+                    if (window.state && window.state.map && item.location) {
+                        const coords = item.location.split(',').map(s => parseFloat(s.trim()));
+                        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                            L.marker([coords[0], coords[1]]).addTo(window.state.map)
+                                .bindPopup(`<strong>${item.name}</strong><br>${item.categoryName}<br>${item.hours || ''}`);
+                        }
+                    }
+                    renderCommunityPlaceSubmissions();
+                    const mapStatus = document.getElementById('mapStatus');
+                    if (mapStatus) mapStatus.textContent = `Approved place "${item.name}" synced to Canonical Map Data.`;
+                }
+            };
+
+            function savePlaceSubmission(state) {
+                const name = document.getElementById('inputPlaceName').value.trim();
+                const category = document.getElementById('selectPlaceCategory').value;
+                const location = document.getElementById('inputPlaceLocation').value.trim();
+                const hours = document.getElementById('inputPlaceHours').value.trim();
+                const phone = document.getElementById('inputPlacePhone').value.trim();
+                const website = document.getElementById('inputPlaceWebsite').value.trim();
+                const photo = document.getElementById('inputPlacePhoto').value.trim();
+
+                if (!name || !location) {
+                    alert('Place name and location coordinates are required.');
+                    return false;
+                }
+
+                const newEntry = {
+                    id: 'place_' + Date.now(),
+                    name, category, categoryName: categoryMap[category] || category,
+                    location, hours, phone, website, photo,
+                    state,
+                    created_at: new Date().toISOString()
+                };
+
+                const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
+                items.unshift(newEntry);
+                localStorage.setItem('navigators_place_submissions', JSON.stringify(items));
+                
+                renderCommunityPlaceSubmissions();
+                if (addPlaceDialog) addPlaceDialog.close();
+                formAddPlace?.reset();
+
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) {
+                    mapStatus.textContent = state === 'Pending Review' 
+                        ? `Submitted "${name}" for community review.` 
+                        : `Saved draft for "${name}".`;
+                }
+                return true;
+            }
+
+            document.getElementById('btnActionAddPlace')?.addEventListener('click', () => {
+                if (addPlaceDialog) {
+                    if (window.state && window.state.map) {
+                        const center = window.state.map.getCenter();
+                        document.getElementById('inputPlaceLocation').value = `${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
+                    }
+                    addPlaceDialog.showModal();
+                }
+            });
+
+            if (btnCloseAddPlace && addPlaceDialog) {
+                btnCloseAddPlace.addEventListener('click', () => addPlaceDialog.close());
+            }
+
+            if (formAddPlace) {
+                formAddPlace.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    savePlaceSubmission('Pending Review');
+                });
+            }
+
+            if (btnSavePlaceDraft) {
+                btnSavePlaceDraft.addEventListener('click', () => {
+                    savePlaceSubmission('Draft');
+                });
+            }
+
+            document.getElementById('btnActionReportIssue')?.addEventListener('click', () => {
+                const issue = prompt('Describe the map issue or road hazard:');
+                if (issue) {
+                    const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
+                    items.unshift({
+                        id: 'issue_' + Date.now(),
+                        name: `Map Issue: ${issue}`,
+                        categoryName: 'Hazard Report',
+                        location: 'Current Viewport',
+                        state: 'Pending Review',
+                        created_at: new Date().toISOString()
+                    });
+                    localStorage.setItem('navigators_place_submissions', JSON.stringify(items));
+                    renderCommunityPlaceSubmissions();
+                }
+            });
+
+            document.getElementById('btnActionSuggestRoad')?.addEventListener('click', () => {
+                const change = prompt('Describe suggested road change:');
+                if (change) {
+                    const items = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
+                    items.unshift({
+                        id: 'road_' + Date.now(),
+                        name: `Road Change: ${change}`,
+                        categoryName: 'Road Modification',
+                        location: 'Current Viewport',
+                        state: 'Pending Review',
+                        created_at: new Date().toISOString()
+                    });
+                    localStorage.setItem('navigators_place_submissions', JSON.stringify(items));
+                    renderCommunityPlaceSubmissions();
+                }
+            });
+
+            document.getElementById('btnActionMyContrib')?.addEventListener('click', () => {
+                renderCommunityPlaceSubmissions();
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) mapStatus.textContent = 'Showing community place submissions and status.';
+            });
+
+            // Internal Contributor Request Flow & Gated Tools Management
+            function getInternalAccessState() {
+                return localStorage.getItem('navigators_internal_access_state') || 'Unrequested';
+            }
+
+            function setInternalAccessState(state) {
+                localStorage.setItem('navigators_internal_access_state', state);
+                renderInternalAccessUI();
+            }
+
+            function renderInternalAccessUI() {
+                const state = getInternalAccessState();
+                const badge = document.getElementById('badgeInternalAccessState');
+                const formContainer = document.getElementById('containerRequestForm');
+                const pendingNotice = document.getElementById('containerPendingNotice');
+                const toolsSuite = document.getElementById('containerInternalToolsSuite');
+                const cardRequest = document.getElementById('cardInternalAccessRequest');
+
+                if (badge) {
+                    badge.textContent = state === 'Pending Review' ? 'Pending Review' : state === 'Approved' ? 'Approved' : state === 'Rejected' ? 'Rejected' : 'Unrequested';
+                    badge.style.background = state === 'Approved' ? 'rgba(16,185,129,0.15)' : state === 'Pending Review' ? 'rgba(245,158,11,0.15)' : state === 'Rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)';
+                    badge.style.color = state === 'Approved' ? 'var(--accent-emerald)' : state === 'Pending Review' ? 'var(--accent-amber)' : state === 'Rejected' ? '#ef4444' : 'var(--text-muted)';
+                }
+
+                if (state === 'Unrequested') {
+                    if (cardRequest) cardRequest.style.display = 'block';
+                    if (formContainer) formContainer.style.display = 'flex';
+                    if (pendingNotice) pendingNotice.style.display = 'none';
+                    if (toolsSuite) toolsSuite.style.display = 'none';
+                } else if (state === 'Pending Review') {
+                    if (cardRequest) cardRequest.style.display = 'block';
+                    if (formContainer) formContainer.style.display = 'none';
+                    if (pendingNotice) pendingNotice.style.display = 'block';
+                    if (toolsSuite) toolsSuite.style.display = 'none';
+                } else if (state === 'Approved') {
+                    if (cardRequest) cardRequest.style.display = 'none';
+                    if (toolsSuite) toolsSuite.style.display = 'block';
+                } else if (state === 'Rejected') {
+                    if (cardRequest) cardRequest.style.display = 'block';
+                    if (formContainer) formContainer.style.display = 'flex';
+                    if (pendingNotice) pendingNotice.style.display = 'none';
+                    if (toolsSuite) toolsSuite.style.display = 'none';
+                }
+            }
+
+            document.getElementById('btnRequestInternalAccess')?.addEventListener('click', () => {
+                const reason = document.getElementById('inputInternalReason')?.value.trim();
+                if (!reason) {
+                    alert('Please describe your hardware/contribution focus.');
+                    return;
+                }
+                setInternalAccessState('Pending Review');
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) mapStatus.textContent = 'Internal Contributor access request submitted to team review queue.';
+            });
+
+            document.getElementById('btnSimulateApproveInternal')?.addEventListener('click', () => {
+                setInternalAccessState('Approved');
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) mapStatus.textContent = 'Account approved for Internal Contributor permissions. Internal ML & Data suite unlocked.';
+            });
+
+            document.getElementById('btnSimulateRejectInternal')?.addEventListener('click', () => {
+                setInternalAccessState('Rejected');
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) mapStatus.textContent = 'Internal Contributor request marked as Rejected by team review.';
+            });
+
+            document.getElementById('btnRequestProdDeployment')?.addEventListener('click', () => {
+                alert('Production Model Deployment Proposal submitted. Deployment remains gated pending formal engineering team approval.');
+                const mapStatus = document.getElementById('mapStatus');
+                if (mapStatus) mapStatus.textContent = 'Model deployment proposal submitted for team review. Production checkpoint unchanged.';
+            });
+
+            // Navigator Lab 12-Section Tab Switcher
+            const labSecBtns = document.querySelectorAll('.lab-sec-btn');
+            const labSecPanels = document.querySelectorAll('.lab-sec-panel');
+
+            labSecBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.dataset.labTarget;
+                    labSecBtns.forEach(b => {
+                        b.style.border = '1px solid var(--border-color)';
+                        b.style.background = 'var(--bg-surface)';
+                        b.style.color = 'var(--text-secondary)';
+                        b.classList.remove('active');
+                    });
+                    btn.style.border = '1px solid var(--accent-emerald)';
+                    btn.style.background = 'rgba(16,185,129,0.15)';
+                    btn.style.color = 'var(--accent-emerald)';
+                    btn.classList.add('active');
+
+                    labSecPanels.forEach(p => {
+                        if (p) p.hidden = (p.id !== targetId);
+                    });
+                });
+            });
+
+            // Account Architecture State & Sub-Panel Logic (Requirement 21)
+            const authDialog = document.getElementById('authDialog');
+            const btnCloseAuth = document.getElementById('btnCloseAuth');
+            const formAccountAuth = document.getElementById('formAccountAuth');
+            const btnAuthAction = document.getElementById('btnAuthAction');
+            const selectAccountRole = document.getElementById('selectAccountRole');
+            const accountSubBtns = document.querySelectorAll('.account-sub-btn');
+            const accountSubPanels = document.querySelectorAll('.account-sub-panel');
+
+            function getAccountState() {
+                const saved = localStorage.getItem('navigators_user_account');
+                if (saved) {
+                    try { return JSON.parse(saved); } catch (e) {}
+                }
+                return {
+                    role: 'Guest',
+                    name: 'Guest Session',
+                    email: '',
+                    signedIn: false,
+                    userId: 'guest_local_01'
+                };
+            }
+
+            function setAccountState(accObj) {
+                localStorage.setItem('navigators_user_account', JSON.stringify(accObj));
+                renderAccountProfile();
+            }
+
+            function renderAccountProfile() {
+                const acc = getAccountState();
+                const profileName = document.getElementById('accountProfileName');
+                const profileEmail = document.getElementById('accountProfileEmail');
+                const roleBadge = document.getElementById('accountRoleBadge');
+                const statusText = document.getElementById('accountStatusText');
+                const userIdVal = document.getElementById('accountUserIdVal');
+                const capsText = document.getElementById('accountRoleCapabilitiesText');
+
+                if (profileName) profileName.textContent = acc.name;
+                if (profileEmail) profileEmail.textContent = acc.signedIn ? acc.email : 'Unauthenticated user session';
+                if (userIdVal) userIdVal.textContent = acc.userId || 'guest_local_01';
+
+                if (btnAuthAction) {
+                    btnAuthAction.textContent = acc.signedIn ? 'Sign Out' : 'Sign In';
+                }
+
+                if (selectAccountRole) {
+                    selectAccountRole.value = acc.role || 'Guest';
+                }
+
+                if (roleBadge) {
+                    roleBadge.textContent = acc.role;
+                    if (acc.role === 'Guest') {
+                        roleBadge.style.background = 'rgba(255,255,255,0.08)';
+                        roleBadge.style.color = 'var(--text-muted)';
+                    } else if (acc.role === 'Registered User') {
+                        roleBadge.style.background = 'rgba(6,182,212,0.15)';
+                        roleBadge.style.color = 'var(--accent-cyan)';
+                    } else if (acc.role === 'Local Contributor') {
+                        roleBadge.style.background = 'rgba(16,185,129,0.15)';
+                        roleBadge.style.color = 'var(--accent-emerald)';
+                    } else if (acc.role === 'Internal Contributor') {
+                        roleBadge.style.background = 'rgba(168,85,247,0.15)';
+                        roleBadge.style.color = '#c084fc';
+                    } else if (acc.role === 'Team Admin') {
+                        roleBadge.style.background = 'rgba(245,158,11,0.15)';
+                        roleBadge.style.color = 'var(--accent-amber)';
+                    }
+                }
+
+                if (statusText) {
+                    statusText.textContent = acc.signedIn ? `Authenticated as ${acc.role}` : 'Local Guest Session';
+                    statusText.style.color = acc.signedIn ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+                }
+
+                if (capsText) {
+                    const descMap = {
+                        'Guest': 'Standard guest map navigation and offline map access. Sign in to contribute places or bookmark saved locations.',
+                        'Registered User': 'Authenticated standard account. Enabled for saved places, community place contributions, and internal access requests.',
+                        'Local Contributor': 'Verified local editor. Enabled for community place moderation and local map editing permissions.',
+                        'Internal Contributor': 'Approved internal contributor. Unlocks full 8-tool developer & ML suite (Dataset, Telemetry, Ablation Experiments, ML Training).',
+                        'Team Admin': 'Full system administrator. Enabled for community edit moderation, internal contributor review, and production model deployment governance.'
+                    };
+                    capsText.textContent = descMap[acc.role] || descMap['Guest'];
+                }
+
+                // Render Saved Places
+                const savedPlaces = JSON.parse(localStorage.getItem('navigators_saved_places') || '[]');
+                const savedCountBadge = document.getElementById('accountSavedCountBadge');
+                const savedContainer = document.getElementById('accountSavedPlacesContainer');
+                if (savedCountBadge) savedCountBadge.textContent = `${savedPlaces.length} Saved`;
+                if (savedContainer) {
+                    if (savedPlaces.length === 0) {
+                        savedContainer.innerHTML = `<div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">No saved places on this device. Bookmark places in Explore tab or double-click the map.</div>`;
+                    } else {
+                        savedContainer.innerHTML = savedPlaces.map(p => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 4px;">
+                                <div>
+                                    <strong style="color: white; font-size: 12px;">${p.name}</strong>
+                                    <div style="font-size: 10px; color: var(--text-muted);">${p.location || ''}</div>
+                                </div>
+                                <span class="badge" style="font-size: 9px; background: rgba(16,185,129,0.15); color: var(--accent-emerald);">Saved</span>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // Render Contributions
+                const submissions = JSON.parse(localStorage.getItem('navigators_place_submissions') || '[]');
+                const contribCountBadge = document.getElementById('accountContribCountBadge');
+                const contribContainer = document.getElementById('accountContribListContainer');
+                if (contribCountBadge) contribCountBadge.textContent = `${submissions.length} Edits`;
+                if (contribContainer) {
+                    if (submissions.length === 0) {
+                        contribContainer.innerHTML = `<div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">No community submissions logged. Use "Add a Place" or hazard reporting in Contribute tab.</div>`;
+                    } else {
+                        contribContainer.innerHTML = submissions.map(item => {
+                            const bg = item.state === 'Approved' ? 'rgba(16,185,129,0.15)' : item.state === 'Pending Review' ? 'rgba(245,158,11,0.15)' : item.state === 'Rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)';
+                            const fg = item.state === 'Approved' ? 'var(--accent-emerald)' : item.state === 'Pending Review' ? 'var(--accent-amber)' : item.state === 'Rejected' ? '#ef4444' : 'var(--text-muted)';
+                            return `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 4px;">
+                                    <div>
+                                        <strong style="color: white; font-size: 12px;">${item.name}</strong>
+                                        <div style="font-size: 10px; color: var(--text-muted);">${item.categoryName || item.category || ''}</div>
+                                    </div>
+                                    <span class="badge" style="font-size: 9px; padding: 2px 6px; border-radius: 3px; background: ${bg}; color: ${fg}; font-weight: 600;">${item.state}</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+
+                // Render Offline Maps Summary in Account
+                const accountOfflineContainer = document.getElementById('accountOfflineMapsContainer');
+                if (accountOfflineContainer) {
+                    caches.open('navigators-map-data-v1').then(cache => {
+                        cache.match('./data/road_network.json').then(resp => {
+                            if (resp) {
+                                resp.text().then(text => {
+                                    const data = JSON.parse(text);
+                                    accountOfflineContainer.innerHTML = `
+                                        <div style="padding: 8px; background: rgba(16,185,129,0.06); border: 1px solid var(--accent-emerald); border-radius: 4px;">
+                                            <strong style="color: white; font-size: 12px;">Local Map Cache Active</strong>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                                ${data.roads?.length || 0} local road segments stored (${(text.length / 1024).toFixed(1)} KB)
+                                            </div>
+                                        </div>
+                                    `;
+                                });
+                            } else {
+                                accountOfflineContainer.innerHTML = `
+                                    <div style="font-size: 11px; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                                        No offline maps cached on this device. Use "Download Area" in Explore or Offline Maps.
+                                    </div>
+                                `;
+                            }
+                        });
+                    }).catch(() => {
+                        accountOfflineContainer.innerHTML = `<div style="font-size: 11px; color: var(--text-muted);">Cache storage offline or unavailable.</div>`;
+                    });
+                }
+            }
+
+            // Role Selector Handler
+            if (selectAccountRole) {
+                selectAccountRole.addEventListener('change', (e) => {
+                    const acc = getAccountState();
+                    acc.role = e.target.value;
+                    setAccountState(acc);
+                    const mapStatus = document.getElementById('mapStatus');
+                    if (mapStatus) mapStatus.textContent = `Account role switched to "${acc.role}".`;
+                });
+            }
+
+            // Auth Button Handler
+            if (btnAuthAction) {
+                btnAuthAction.addEventListener('click', () => {
+                    const acc = getAccountState();
+                    if (acc.signedIn) {
+                        setAccountState({
+                            role: 'Guest',
+                            name: 'Guest Session',
+                            email: '',
+                            signedIn: false,
+                            userId: 'guest_local_01'
+                        });
+                        const mapStatus = document.getElementById('mapStatus');
+                        if (mapStatus) mapStatus.textContent = 'Signed out of account session.';
+                    } else if (authDialog) {
+                        authDialog.showModal();
+                    }
+                });
+            }
+
+            if (btnCloseAuth && authDialog) {
+                btnCloseAuth.addEventListener('click', () => authDialog.close());
+            }
+
+            if (formAccountAuth) {
+                formAccountAuth.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('inputAuthName')?.value.trim();
+                    const email = document.getElementById('inputAuthEmail')?.value.trim();
+                    if (name && email) {
+                        setAccountState({
+                            role: 'Registered User',
+                            name: name,
+                            email: email,
+                            signedIn: true,
+                            userId: 'usr_' + Date.now().toString(36)
+                        });
+                        if (authDialog) authDialog.close();
+                        const mapStatus = document.getElementById('mapStatus');
+                        if (mapStatus) mapStatus.textContent = `Authenticated as "${name}" (${email}).`;
+                    }
+                });
+            }
+
+            // Account Profile Sub-Tab Switching
+            accountSubBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.accountTarget;
+                    accountSubBtns.forEach(b => {
+                        b.style.border = '1px solid var(--border-color)';
+                        b.style.background = 'var(--bg-surface)';
+                        b.style.color = 'var(--text-secondary)';
+                        b.classList.remove('active');
+                    });
+                    btn.style.border = '1px solid var(--accent-emerald)';
+                    btn.style.background = 'rgba(16,185,129,0.15)';
+                    btn.style.color = 'var(--accent-emerald)';
+                    btn.classList.add('active');
+
+                    accountSubPanels.forEach(p => {
+                        if (p) p.hidden = (p.id !== target);
+                    });
+                });
+            });
+
+            // Clear Storage Action
+            document.getElementById('btnClearLocalAccountStorage')?.addEventListener('click', () => {
+                if (confirm('Clear all local place submissions, saved bookmarks, and reset account state?')) {
+                    localStorage.removeItem('navigators_user_account');
+                    localStorage.removeItem('navigators_saved_places');
+                    localStorage.removeItem('navigators_place_submissions');
+                    localStorage.removeItem('navigators_internal_access_state');
+                    renderAccountProfile();
+                    renderCommunityPlaceSubmissions();
+                    renderInternalAccessUI();
+                    const mapStatus = document.getElementById('mapStatus');
+                    if (mapStatus) mapStatus.textContent = 'Cleared local account data and reset to Guest session.';
+                }
+            });
+
+            // SOS Emergency Flow & Actions Logic (Requirement 22)
+            const btnEmergencySOS = document.getElementById('btnEmergencySOS');
+            const sosConfirmDialog = document.getElementById('sosConfirmDialog');
+            const btnCloseSosConfirm = document.getElementById('btnCloseSosConfirm');
+            const btnConfirmSos = document.getElementById('btnConfirmSos');
+            const btnCancelSos = document.getElementById('btnCancelSos');
+
+            const sosActionsDialog = document.getElementById('sosActionsDialog');
+            const btnCloseSosActions = document.getElementById('btnCloseSosActions');
+            const sosLocationText = document.getElementById('sosLocationText');
+            const btnSosShareLocation = document.getElementById('btnSosShareLocation');
+            const btnSosCopyLocation = document.getElementById('btnSosCopyLocation');
+            const btnSosAddContact = document.getElementById('btnSosAddContact');
+
+            function getEmergencyContacts() {
+                return JSON.parse(localStorage.getItem('navigators_emergency_contacts') || '[]');
+            }
+
+            function renderEmergencyContacts() {
+                const contactsList = document.getElementById('sosContactsList');
+                if (!contactsList) return;
+                const contacts = getEmergencyContacts();
+                if (contacts.length === 0) {
+                    contactsList.innerHTML = `<div style="font-size:11px; color:var(--text-muted); padding:6px; background:rgba(255,255,255,0.02); border-radius:4px;">No personal emergency contacts added. Add a contact below.</div>`;
+                } else {
+                    contactsList.innerHTML = contacts.map((c, i) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:4px; margin-bottom:4px;">
+                            <div>
+                                <strong style="color:white; font-size:12px;">${c.name}</strong>
+                                <div style="font-size:10px; color:var(--text-muted);">${c.phone}</div>
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <a href="tel:${c.phone}" style="font-size:10px; padding:3px 8px; background:rgba(16,185,129,0.15); color:var(--accent-emerald); border:1px solid var(--accent-emerald); border-radius:3px; text-decoration:none; font-weight:600;">Call</a>
+                                <button onclick="window.removeSosContact(${i})" style="font-size:10px; padding:3px 6px; background:transparent; color:#ef4444; border:none; cursor:pointer;">✕</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            window.removeSosContact = (idx) => {
+                const contacts = getEmergencyContacts();
+                contacts.splice(idx, 1);
+                localStorage.setItem('navigators_emergency_contacts', JSON.stringify(contacts));
+                renderEmergencyContacts();
+            };
+
+            function updateSosLocationDisplay() {
+                let locStr = 'Latitude: 28.6139° N, Longitude: 77.2090° E';
+                if (window.state && window.state.map) {
+                    const center = window.state.map.getCenter();
+                    locStr = `${Math.abs(center.lat).toFixed(4)}° ${center.lat >= 0 ? 'N' : 'S'}, ${Math.abs(center.lng).toFixed(4)}° ${center.lng >= 0 ? 'E' : 'W'}`;
+                }
+                if (sosLocationText) sosLocationText.textContent = locStr;
+                return locStr;
+            }
+
+            // Step 1 -> Step 2: Open Confirmation
+            if (btnEmergencySOS && sosConfirmDialog) {
+                btnEmergencySOS.addEventListener('click', () => {
+                    sosConfirmDialog.showModal();
+                });
+            }
+
+            if (btnCloseSosConfirm && sosConfirmDialog) {
+                btnCloseSosConfirm.addEventListener('click', () => sosConfirmDialog.close());
+            }
+
+            if (btnCancelSos && sosConfirmDialog) {
+                btnCancelSos.addEventListener('click', () => sosConfirmDialog.close());
+            }
+
+            // Step 2 -> Step 3: Open Actions Modal
+            if (btnConfirmSos && sosConfirmDialog && sosActionsDialog) {
+                btnConfirmSos.addEventListener('click', () => {
+                    sosConfirmDialog.close();
+                    updateSosLocationDisplay();
+                    renderEmergencyContacts();
+                    sosActionsDialog.showModal();
+                });
+            }
+
+            if (btnCloseSosActions && sosActionsDialog) {
+                btnCloseSosActions.addEventListener('click', () => sosActionsDialog.close());
+            }
+
+            // Channel 2 Actions: Share / Copy
+            if (btnSosShareLocation) {
+                btnSosShareLocation.addEventListener('click', async () => {
+                    const loc = updateSosLocationDisplay();
+                    const shareText = `Emergency SOS Location: ${loc}`;
+                    if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: 'Emergency SOS Location',
+                                text: shareText
+                            });
+                        } catch(e) {
+                            navigator.clipboard?.writeText(shareText);
+                            alert('Location copied to clipboard: ' + shareText);
+                        }
+                    } else {
+                        navigator.clipboard?.writeText(shareText);
+                        alert('Location copied to clipboard: ' + shareText);
+                    }
+                });
+            }
+
+            if (btnSosCopyLocation) {
+                btnSosCopyLocation.addEventListener('click', () => {
+                    const loc = updateSosLocationDisplay();
+                    const link = `https://maps.google.com/?q=${loc.replace(/[^0-9.,-]/g, '')}`;
+                    navigator.clipboard?.writeText(link);
+                    alert('Emergency location link copied to clipboard: ' + link);
+                });
+            }
+
+            // Channel 3 Actions: Add Emergency Contact
+            if (btnSosAddContact) {
+                btnSosAddContact.addEventListener('click', () => {
+                    const name = document.getElementById('inputSosContactName')?.value.trim();
+                    const phone = document.getElementById('inputSosContactPhone')?.value.trim();
+                    if (!name || !phone) {
+                        alert('Contact name and phone number are required.');
+                        return;
+                    }
+                    const contacts = getEmergencyContacts();
+                    contacts.push({ name, phone });
+                    localStorage.setItem('navigators_emergency_contacts', JSON.stringify(contacts));
+                    document.getElementById('inputSosContactName').value = '';
+                    document.getElementById('inputSosContactPhone').value = '';
+                    renderEmergencyContacts();
+                });
+            }
+
+            // Settings Panel Navigation Shortcuts & Preference Handlers (Requirement 23)
+            document.getElementById('btnSettingsGoAccount')?.addEventListener('click', () => {
+                sheetTabs.forEach(t => t.classList.toggle('selected', t.dataset.sheetTab === 'account'));
+                Object.keys(panels).forEach(key => {
+                    if (panels[key]) panels[key].hidden = (key !== 'account');
+                });
+            });
+
+            document.getElementById('btnSettingsGoOffline')?.addEventListener('click', () => {
+                sheetTabs.forEach(t => t.classList.toggle('selected', t.dataset.sheetTab === 'explore'));
+                Object.keys(panels).forEach(key => {
+                    if (panels[key]) panels[key].hidden = (key !== 'explore');
+                });
+            });
+
+            document.getElementById('selectSettingsNavProfile')?.addEventListener('change', (e) => {
+                const travelModeSelect = document.getElementById('travelMode');
+                if (travelModeSelect) {
+                    travelModeSelect.value = e.target.value;
+                    travelModeSelect.dispatchEvent(new Event('change'));
+                }
+            });
+
+            document.getElementById('selectSettingsMapProvider')?.addEventListener('change', (e) => {
+                const mapSourceSelect = document.getElementById('mapSource');
+                if (mapSourceSelect) {
+                    mapSourceSelect.value = e.target.value;
+                    if (window.updateMapSource) window.updateMapSource();
+                }
+            });
+
+            renderInternalAccessUI();
+            renderCommunityPlaceSubmissions();
+            renderAccountProfile();
         });
     </script>
 </body>

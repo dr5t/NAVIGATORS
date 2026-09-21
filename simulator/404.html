@@ -3,9 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 Not Found | Navigators IDR</title>
-    <link rel="stylesheet" href="index.css">
+    <title>404 Page Not Found | Navigators</title>
+    <meta name="description" content="The requested page could not be found on the Navigators map.">
+    
+    <!-- Open Graph Metadata -->
+    <meta property="og:title" content="404 Page Not Found | Navigators">
+    <meta property="og:description" content="Off the map. Return to standard navigation.">
+    <meta property="og:type" content="website">
+
+    <!-- Favicon & Manifest -->
     <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="index.css">
     <style>
         body { 
             display: flex; 
@@ -15,40 +24,48 @@
             height: 100vh; 
             text-align: center; 
             padding: 2rem;
-            background-color: var(--bg-primary);
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
         }
         h1 { 
-            font-family: var(--font-display); 
-            font-size: 6rem; 
-            color: var(--accent-orange); 
+            font-family: var(--font-mono); 
+            font-size: 5rem; 
+            color: var(--accent-amber); 
             margin: 0; 
             letter-spacing: -0.05em;
         }
         p { 
             color: var(--text-secondary); 
-            font-size: 1.25rem; 
-            margin-bottom: 2rem; 
+            font-size: 1.1rem; 
+            margin: 1rem 0 2rem; 
         }
         .btn-home {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            background: var(--accent-emerald);
+            color: var(--bg-dark);
+            font-weight: 600;
             padding: 0.75rem 1.5rem;
-            border-radius: 4px;
+            border-radius: var(--radius-sm);
             text-decoration: none;
-            font-family: var(--font-sans);
-            font-weight: 500;
-            transition: all 0.2s ease;
+            transition: transform var(--transition-fast);
         }
         .btn-home:hover {
-            background: var(--bg-hover);
-            border-color: var(--text-tertiary);
+            transform: translateY(-1px);
+        }
+        footer {
+            position: absolute;
+            bottom: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
         }
     </style>
 </head>
 <body>
     <h1>404</h1>
-    <p>Signal lost. The page you are looking for is off the map.</p>
-    <a href="./" onclick="event.preventDefault(); window.location.replace('./');" class="btn-home">Return to Navigation Console</a>
+    <p>Signal lost. The requested path is off the map.</p>
+    <a href="./" class="btn-home">Return to Navigation Map</a>
+
+    <footer>
+        Developed by Navigators
+    </footer>
 </body>
 </html>
