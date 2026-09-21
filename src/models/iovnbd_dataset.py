@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 import random
 
 # Import our new parser
@@ -12,7 +12,7 @@ import os
 
 class IOVNBDDataset(Dataset):
     def __init__(self, session_pairs: List[Tuple[str, str]], window_size: int = 200, stride: int = 20,
-                 mean: np.ndarray = None, std: np.ndarray = None):
+                 mean: Optional[np.ndarray] = None, std: Optional[np.ndarray] = None):
         """
         PyTorch Dataset for IO-VNBD synchronized sessions.
         
@@ -26,8 +26,8 @@ class IOVNBDDataset(Dataset):
         self.window_size = window_size
         self.stride = stride
         
-        self.mean = mean
-        self.std = std
+        self.mean: Optional[np.ndarray] = mean
+        self.std: Optional[np.ndarray] = std
         
         self.windows_x = []
         self.targets_y = []
@@ -75,11 +75,11 @@ class IOVNBDDataset(Dataset):
     def __len__(self):
         return len(self.windows_x)
 
-    def __getitem__(self, idx):
-        return torch.from_numpy(self.windows_x[idx]), torch.from_numpy(self.targets_y[idx])
+    def __getitem__(self, index):
+        return torch.from_numpy(self.windows_x[index]), torch.from_numpy(self.targets_y[index])
 
 
-def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int = 200, batch_size: int = 64, stats_dir: str = "checkpoints") -> Tuple[DataLoader, DataLoader, DataLoader]:
+def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int = 200, batch_size: int = 64, stats_dir: str = "checkpoints") -> Optional[Tuple[DataLoader, DataLoader, DataLoader]]:
     """
     Discovers all IO-VNBD synchronized sessions, splits them securely (to prevent leakage),
     and creates DataLoaders.
@@ -88,7 +88,7 @@ def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int =
     
     if not pairs:
         print("ERROR: No IO-VNBD synchronized sessions found.")
-        return None, None, None
+        return None
         
     # Sort for deterministic behavior, then shuffle with a fixed seed
     pairs = sorted(pairs)
@@ -114,6 +114,7 @@ def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int =
     
     # Save normalization stats for Android inference
     os.makedirs(stats_dir, exist_ok=True)
+    assert train_ds.mean is not None and train_ds.std is not None
     stats_dict = {
         "mean": train_ds.mean.flatten().tolist(),
         "std": train_ds.std.flatten().tolist(),

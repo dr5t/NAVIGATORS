@@ -603,7 +603,8 @@ class OfflineEngine {
     async processInferenceStep() {
         if (this.walker) return this.processWalkingStep();
         const currentTime = performance.now() / 1000.0;
-        const dt = currentTime - this.lastTime;
+        let dt = currentTime - this.lastTime;
+        if (!Number.isFinite(dt) || dt <= 0 || dt > 1.0) dt = 0.1;
         this.lastTime = currentTime;
 
         if (currentTime - this.lastMotionTime > 1) {

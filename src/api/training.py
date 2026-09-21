@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from pathlib import Path
 import os
 import threading
+from typing import cast
 
 import math
 import sys
@@ -15,11 +16,11 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 try:
-    from src.models.iovnbd_dataset import create_iovnbd_dataloaders, create_iovnbd_dataloaders as create_dataloaders
+    from src.models.iovnbd_dataset import IOVNBDDataset, create_iovnbd_dataloaders, create_iovnbd_dataloaders as create_dataloaders
     from src.models.trainer import Trainer
     from src.models.tcn_model import TCNVelocityEstimator
 except ImportError:
-    from models.iovnbd_dataset import create_iovnbd_dataloaders, create_iovnbd_dataloaders as create_dataloaders
+    from models.iovnbd_dataset import IOVNBDDataset, create_iovnbd_dataloaders, create_iovnbd_dataloaders as create_dataloaders
     from models.trainer import Trainer
     from models.tcn_model import TCNVelocityEstimator
 
@@ -72,21 +73,23 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         
         # Load the official IO-VNBD dataset (144 synchronized sessions)
         iovnbd_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "IO-VNBD")
-        train_loader, val_loader, test_loader = create_iovnbd_dataloaders(
+        result = create_iovnbd_dataloaders(
             base_dir=iovnbd_dir,
             window_size=window_size,
             batch_size=batch_size,
             stats_dir=candidate_dir
         )
         
-        if not train_loader:
+        if result is None:
             training_state["status"] = "Error: IO-VNBD dataset not found."
             training_state["is_training"] = False
             return
-            
-        train_count = len(train_loader.dataset)
-        val_count = len(val_loader.dataset)
-        test_count = len(test_loader.dataset)
+        
+        train_loader, val_loader, test_loader = result
+
+        train_count = len(cast(IOVNBDDataset, train_loader.dataset))
+        val_count = len(cast(IOVNBDDataset, val_loader.dataset))
+        test_count = len(cast(IOVNBDDataset, test_loader.dataset))
         
         training_state["train_samples"] = train_count
         training_state["val_samples"] = val_count
@@ -192,7 +195,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         model_cpu = model.to("cpu")
         dummy_input = torch.randn(1, window_size, 6, device="cpu")
         torch.onnx.export(
-            model_cpu, dummy_input, candidate_onnx_path,
+            model_cpu, (dummy_input,), candidate_onnx_path,
             input_names=['input'], output_names=['output'],
             opset_version=18, dynamo=False,
             dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}

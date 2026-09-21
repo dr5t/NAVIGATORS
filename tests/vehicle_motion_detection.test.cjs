@@ -11,11 +11,13 @@ function setupTestEngine() {
     let successCallback;
     const cleared = [];
     const elements = new Map();
+    let nowSec = 1000.0;
+    const advanceTime = (dt = 0.1) => { nowSec += dt; };
     const context = vm.createContext({
         console,
         Float32Array,
         URL,
-        performance: { now: () => 10000 },
+        performance: { now: () => nowSec * 1000 },
         Date,
         navigator: {
             geolocation: {
@@ -76,6 +78,8 @@ function setupTestEngine() {
     return {
         engine,
         context,
+        advanceTime,
+        getNowSec: () => nowSec,
         sendGnssFix: (speed = 12.0, heading = 0) => {
             if (successCallback) {
                 successCallback({
@@ -94,24 +98,24 @@ function setupTestEngine() {
 }
 
 test('Vehicle Motion Transitions: Stationary -> Moving (GNSS) -> GNSS-denied Outage -> Stop (ZUPT) -> Moving (Recovery)', async () => {
-    const { engine, sendGnssFix } = setupTestEngine();
+    const { engine, advanceTime, getNowSec, sendGnssFix } = setupTestEngine();
 
     // Fill buffer to 200 samples
     for (let i = 0; i < 200; i++) {
         engine.sensorBuffer.push([0, 0, 9.81, 0, 0, 0]);
-        engine.sensorTimes.push(1000 + i * 0.1);
+        engine.sensorTimes.push(getNowSec() - 20 + i * 0.1);
     }
 
     // ==========================================
     // Phase A: Phone Stationary (on table / parked)
     // ==========================================
-    engine.lastMotionTime = 1000;
     engine.currentAccel = [0.01, -0.01, 9.81];
     engine.currentGyro = [0.001, 0.001, -0.001];
     
     // Simulate 20 steps (2 seconds) of stationary state
     for (let t = 0; t < 20; t++) {
-        engine.lastMotionTime = 1000 + t * 0.1;
+        advanceTime(0.1);
+        engine.lastMotionTime = getNowSec();
         await engine.processInferenceStep();
     }
 
@@ -127,7 +131,8 @@ test('Vehicle Motion Transitions: Stationary -> Moving (GNSS) -> GNSS-denied Out
     engine.currentGyro = [0.02, 0.03, 0.05];
 
     for (let t = 20; t < 30; t++) {
-        engine.lastMotionTime = 1000 + t * 0.1;
+        advanceTime(0.1);
+        engine.lastMotionTime = getNowSec();
         await engine.processInferenceStep();
     }
 
@@ -152,7 +157,8 @@ test('Vehicle Motion Transitions: Stationary -> Moving (GNSS) -> GNSS-denied Out
 
     // Continue driving inside tunnel with road dynamics
     for (let t = 30; t < 45; t++) {
-        engine.lastMotionTime = 1000 + t * 0.1;
+        advanceTime(0.1);
+        engine.lastMotionTime = getNowSec();
         engine.currentAccel = [0.3 * Math.sin(t), 0.2 * Math.cos(t), 9.81 + 0.3 * Math.sin(2 * t)];
         engine.currentGyro = [0.03, 0.02, 0.04];
         await engine.processInferenceStep();
@@ -172,7 +178,8 @@ test('Vehicle Motion Transitions: Stationary -> Moving (GNSS) -> GNSS-denied Out
     engine.currentGyro = [0.001, 0.001, 0.001];
 
     for (let t = 45; t < 70; t++) { // 2.5 seconds of quiet stop
-        engine.lastMotionTime = 1000 + t * 0.1;
+        advanceTime(0.1);
+        engine.lastMotionTime = getNowSec();
         await engine.processInferenceStep();
     }
 
@@ -185,7 +192,8 @@ test('Vehicle Motion Transitions: Stationary -> Moving (GNSS) -> GNSS-denied Out
     // ==========================================
     // Driver presses throttle, vehicle accelerates!
     for (let t = 70; t < 80; t++) {
-        engine.lastMotionTime = 1000 + t * 0.1;
+        advanceTime(0.1);
+        engine.lastMotionTime = getNowSec();
         // Dynamic acceleration from motor throttle + vibration
         engine.currentAccel = [0.8, 0.3, 10.4];
         engine.currentGyro = [0.04, 0.05, 0.06];
