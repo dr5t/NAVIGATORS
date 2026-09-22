@@ -157,7 +157,7 @@ def list_admin_users(
     List user accounts with assigned roles and permission metadata.
     Requires 'user:read' permission.
     """
-    _require_admin_permission(session, "user:read")
+    _require_admin_permission(session, "role:assign")
 
     clauses: List[str] = []
     params: List[Any] = []

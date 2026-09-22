@@ -852,6 +852,27 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Authorized Workspaces Card (Reflects Role Authorization) -->
+                        <div id="cardAuthorizedWorkspaces" class="nav-card" style="font-size: 12px; border: 1px solid rgba(6,182,212,0.3); margin-top: 10px;">
+                            <h4 style="margin: 0 0 8px 0; color: var(--accent-cyan); font-size: 13px;">Authorized Engineering & Governance Portals</h4>
+                            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">
+                                Navigators decouples end-user navigation from internal engineering and system administration. Access is strictly governed by server-side RBAC.
+                            </p>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <a id="linkMacEngineeringDashboard" href="mac_dashboard.html" target="_blank" class="button secondary" style="display: none; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; text-decoration: none; border-color: rgba(6,182,212,0.4); color: var(--accent-cyan);">
+                                    <svg style="width: 14px; height: 14px; fill: currentColor;"><use href="#i-chip"/></svg>
+                                    Launch Mac Engineering Dashboard
+                                </a>
+                                <a id="linkAdminPortal" href="admin.html" target="_blank" class="button primary" style="display: none; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-size: 12px; text-decoration: none; background: var(--accent-amber); color: black;">
+                                    <svg style="width: 14px; height: 14px; fill: currentColor;"><use href="#i-users"/></svg>
+                                    Launch System Admin Portal
+                                </a>
+                                <div id="noticeNoAuthorizedWorkspaces" style="font-size: 11px; color: var(--text-muted); padding: 6px; background: rgba(255,255,255,0.02); border-radius: 4px; text-align: center;">
+                                    Standard user account. Internal engineering dashboards and admin portal require specialized roles.
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- PROFILE SECTION 2: SAVED PLACES -->
@@ -2791,6 +2812,13 @@
             }
 
             document.getElementById('btnActionAddPlace')?.addEventListener('click', () => {
+                const acc = getAccountState();
+                if (!acc.signedIn && acc.role === 'Guest') {
+                    alert('Authorization Required: Guest users cannot submit place contributions. Please sign in or register an account.');
+                    const authDialog = document.getElementById('authDialog');
+                    if (authDialog) authDialog.showModal();
+                    return;
+                }
                 if (addPlaceDialog) {
                     if (window.state && window.state.map) {
                         const center = window.state.map.getCenter();
@@ -3096,6 +3124,26 @@
                     };
                     capsText.textContent = descMap[acc.role] || descMap['Guest'];
                 }
+
+                // Dynamic Portal Links & Internal Tools Reflection based on Authorization
+                const linkMacDash = document.getElementById('linkMacEngineeringDashboard');
+                const linkAdmin = document.getElementById('linkAdminPortal');
+                const noticeNoAuth = document.getElementById('noticeNoAuthorizedWorkspaces');
+
+                const canAccessMacDash = ['Internal Contributor', 'Moderator', 'Team Admin'].includes(acc.role);
+                const canAccessAdmin = ['Team Admin'].includes(acc.role);
+
+                if (linkMacDash) linkMacDash.style.display = canAccessMacDash ? 'flex' : 'none';
+                if (linkAdmin) linkAdmin.style.display = canAccessAdmin ? 'flex' : 'none';
+                if (noticeNoAuth) noticeNoAuth.style.display = (!canAccessMacDash && !canAccessAdmin) ? 'block' : 'none';
+
+                // Contribute Tab Internal Tools & Access Request reflection
+                const cardReq = document.getElementById('cardInternalAccessRequest');
+                const toolsSuite = document.getElementById('containerInternalToolsSuite');
+                const isInternalDev = ['Internal Contributor', 'Team Admin'].includes(acc.role);
+
+                if (cardReq) cardReq.style.display = isInternalDev ? 'none' : 'block';
+                if (toolsSuite) toolsSuite.style.display = isInternalDev ? 'block' : 'none';
 
                 // Render Saved Places
                 const savedPlaces = JSON.parse(localStorage.getItem('navigators_saved_places') || '[]');
