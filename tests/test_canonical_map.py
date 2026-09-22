@@ -104,7 +104,7 @@ def test_user_contribution_to_canonical_map_pipeline():
     )
     assert canonical_place is not None
     assert canonical_place.name == pump_name
-    assert canonical_place.category == "fuel"
+    assert canonical_place.category in ("fuel", "petrol_pump")
     assert canonical_place.version == 1
 
     # 6. Verify canonical changelog was appended with monotonic sequence

@@ -284,6 +284,70 @@ CREATE TABLE IF NOT EXISTS model_registry (
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+-- ========================================================
+-- Phase 33: Saved Places & Recent Search History Tables
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS saved_places (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    place_id TEXT REFERENCES places(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'landmark',
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    address TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS recent_searches (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    query_text TEXT NOT NULL,
+    search_type TEXT NOT NULL DEFAULT 'text',
+    selected_result_json TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_places_user ON saved_places(user_id);
+CREATE INDEX IF NOT EXISTS idx_recent_searches_user ON recent_searches(user_id, created_at);
+
+-- ========================================================
+-- Phase 34: Emergency Contacts & SOS Session Flow Tables
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS emergency_contacts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    relationship TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS sos_sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'triggered' CHECK (status IN ('triggered', 'confirmed', 'action_selected', 'cancelled', 'resolved')),
+    latitude REAL,
+    longitude REAL,
+    nav_state TEXT NOT NULL DEFAULT 'NORMAL',
+    selected_option TEXT CHECK (selected_option IN ('call_emergency_services', 'share_live_location', 'emergency_contact')),
+    live_location_token TEXT UNIQUE,
+    live_location_expires_at TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_emergency_contacts_user ON emergency_contacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_sos_sessions_user ON sos_sessions(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_sos_sessions_token ON sos_sessions(live_location_token);
+
 CREATE INDEX IF NOT EXISTS idx_model_registry_status  ON model_registry(status);
 CREATE INDEX IF NOT EXISTS idx_model_registry_created ON model_registry(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

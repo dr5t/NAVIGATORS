@@ -365,7 +365,7 @@ class ContributionRepository:
         review_notes: Optional[str] = None,
     ) -> Contribution:
         """Reviewer approves or rejects a pending submission."""
-        decision_clean = str(decision).lower()
+        decision_clean = decision.lower()
         target = ContributionState.APPROVED if decision_clean in ("approved", "approve") else ContributionState.REJECTED
         return self.transition_state(contribution_id, target, user=reviewed_by, notes=review_notes)
 
@@ -412,3 +412,92 @@ class ContributionRepository:
         with get_db(self.db_path) as conn:
             cur = conn.execute("DELETE FROM contributions WHERE id = ?", (contribution_id,))
             return cur.rowcount > 0
+
+    def get_contributor_stats(self, owner_id: str) -> Dict[str, Any]:
+        """
+        Calculate actual, verifiable contribution statistics, points, levels, and badges
+        derived exclusively from real database records (never fabricated).
+        """
+        with get_db(self.db_path) as conn:
+            cur = conn.execute(
+                """
+                SELECT status, action, COUNT(*) as count
+                FROM contributions
+                WHERE owner_id = ?
+                GROUP BY status, action
+                """,
+                (owner_id,),
+            )
+            rows = cur.fetchall()
+
+        total_contributions = 0
+        approved_count = 0
+        pending_count = 0
+        rejected_count = 0
+        changes_requested_count = 0
+
+        creates_approved = 0
+        updates_approved = 0
+
+        for row in rows:
+            st = row["status"]
+            act = row["action"]
+            cnt = int(row["count"])
+            total_contributions += cnt
+
+            if st in (ContributionState.APPROVED, ContributionState.PUBLISHED):
+                approved_count += cnt
+                if act == "create":
+                    creates_approved += cnt
+                else:
+                    updates_approved += cnt
+            elif st in (ContributionState.PENDING_REVIEW, ContributionState.SUBMITTED):
+                pending_count += cnt
+            elif st == ContributionState.REJECTED:
+                rejected_count += cnt
+            elif st == ContributionState.CHANGES_REQUESTED:
+                changes_requested_count += cnt
+
+        # Real Points Calculation:
+        # +50 points per approved POI addition
+        # +25 points per approved POI update/suggestion
+        # +10 points per pending submission under review
+        points = (creates_approved * 50) + (updates_approved * 25) + (pending_count * 10)
+
+        # Level Calculation based on points thresholds
+        if points >= 500:
+            level = 4
+            level_name = "Master Cartographer"
+        elif points >= 200:
+            level = 3
+            level_name = "Senior Contributor"
+        elif points >= 50:
+            level = 2
+            level_name = "Active Contributor"
+        else:
+            level = 1
+            level_name = "Novice Explorer"
+
+        # Real Badges (unlocked strictly when real thresholds are satisfied)
+        badges = []
+        if approved_count >= 1:
+            badges.append({"id": "first_contribution", "name": "First Step", "description": "1 approved map contribution"})
+        if approved_count >= 5:
+            badges.append({"id": "local_guide", "name": "Local Guide", "description": "5 approved map contributions"})
+        if approved_count >= 25:
+            badges.append({"id": "master_mapper", "name": "Master Mapper", "description": "25 approved map contributions"})
+        if creates_approved >= 3:
+            badges.append({"id": "place_creator", "name": "Place Creator", "description": "3 new places published to map"})
+
+        return {
+            "owner_id": owner_id,
+            "total_contributions": total_contributions,
+            "approved_count": approved_count,
+            "pending_count": pending_count,
+            "rejected_count": rejected_count,
+            "changes_requested_count": changes_requested_count,
+            "points": points,
+            "level": level,
+            "level_name": level_name,
+            "badges": badges,
+        }

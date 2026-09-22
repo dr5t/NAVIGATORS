@@ -114,6 +114,37 @@ def create_contribution(
     }
 
 
+@router.get("/stats")
+def get_contributor_stats_endpoint(
+    context: SessionContext = Depends(get_current_session),
+):
+    """
+    Fetch contributor points, level, and badges calculated strictly from real database records.
+    """
+    if not context.user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    return contrib_repo.get_contributor_stats(context.user.id)
+
+
+@router.get("/my")
+def get_my_contributions_endpoint(
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    context: SessionContext = Depends(get_current_session),
+):
+    """
+    List contributions belonging to the authenticated caller.
+    """
+    if not context.user:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    items = contrib_repo.list(owner_id=context.user.id, status=status, limit=limit, offset=offset)
+    return {
+        "count": len(items),
+        "items": [item.to_dict() for item in items],
+    }
+
+
 @router.get("/{contrib_id}")
 def get_contribution(
     contrib_id: str,

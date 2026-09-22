@@ -52,16 +52,22 @@ class AuditEntry:
 class AuditRepository:
     """Repository managing immutable audit log entries."""
 
-    def __init__(self, db_path: Optional[Path] = None):
-        self._db_path = db_path or DEFAULT_DB_PATH
+    def __init__(self, db_path: Optional[str | Path] = None):
+        if db_path is not None and isinstance(db_path, str):
+            self._db_path = Path(db_path)
+        else:
+            self._db_path = db_path or DEFAULT_DB_PATH
 
     @property
     def db_path(self) -> Path:
         return self._db_path
 
     @db_path.setter
-    def db_path(self, val: Path) -> None:
-        self._db_path = val
+    def db_path(self, val: Optional[str | Path]) -> None:
+        if val is not None and isinstance(val, str):
+            self._db_path = Path(val)
+        else:
+            self._db_path = val or DEFAULT_DB_PATH
 
     def log(
         self,

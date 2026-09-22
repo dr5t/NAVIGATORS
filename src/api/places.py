@@ -18,7 +18,7 @@ from fastapi import APIRouter, HTTPException, Query, Header, Depends
 from pydantic import BaseModel, Field
 
 from src.db.database import init_db
-from src.db.places import PlaceRepository, Place, PlaceHistory
+from src.db.places import PlaceRepository, Place, PlaceHistory, POI_TAXONOMY, CATEGORY_ALIASES
 from src.db.contributions import ContributionRepository, Contribution
 from src.db.state_machine import ContributionState
 from src.db.auth_service import AuthService, SessionContext
@@ -157,8 +157,17 @@ def add_place(
 
 
 # =============================================================================
-# 2. Public Canonical Places Reading
+# 2. Public Canonical Places Reading & POI Taxonomy
 # =============================================================================
+
+@router.get("/poi/categories")
+def get_poi_categories():
+    """Expose official canonical POI taxonomy categories and aliases."""
+    return {
+        "categories": POI_TAXONOMY,
+        "aliases": CATEGORY_ALIASES,
+    }
+
 
 @router.get("")
 def list_canonical_places(
@@ -168,6 +177,9 @@ def list_canonical_places(
     max_lat: Optional[float] = Query(None, ge=-90.0, le=90.0),
     min_lon: Optional[float] = Query(None, ge=-180.0, le=180.0),
     max_lon: Optional[float] = Query(None, ge=-180.0, le=180.0),
+    lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Center latitude for proximity search"),
+    lon: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Center longitude for proximity search"),
+    radius_km: Optional[float] = Query(None, gt=0, description="Proximity search radius in kilometers"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     context: Optional[SessionContext] = Depends(get_optional_session),
@@ -176,6 +188,7 @@ def list_canonical_places(
     Query canonical map places.
     Publicly accessible to all users (including guests).
     Returns ONLY active published places (excludes soft-deleted and unapproved items).
+    Supports category taxonomy, text search, bounding box, and proximity radius search.
     """
     decision = authz_service.can(user=context, action="place:read")
     if not decision.allowed:
@@ -189,6 +202,9 @@ def list_canonical_places(
         max_lat=_extract_query_val(max_lat),
         min_lon=_extract_query_val(min_lon),
         max_lon=_extract_query_val(max_lon),
+        lat=_extract_query_val(lat),
+        lon=_extract_query_val(lon),
+        radius_km=_extract_query_val(radius_km),
         limit=_extract_query_val(limit, 50),
         offset=_extract_query_val(offset, 0),
     )

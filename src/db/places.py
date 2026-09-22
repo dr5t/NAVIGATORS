@@ -11,6 +11,12 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+import math
+from typing import Optional, List, Dict, Any
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from pathlib import Path
+
 from src.db.database import get_db
 from src.db.audit import AuditRepository
 
@@ -63,6 +69,60 @@ class PlaceHistory:
         return res
 
 
+POI_TAXONOMY: Dict[str, str] = {
+    "petrol_pump": "Petrol Pump",
+    "hospital": "Hospital",
+    "pharmacy": "Pharmacy",
+    "atm": "ATM",
+    "parking": "Parking",
+    "restaurant": "Restaurant",
+    "hotel": "Hotel",
+    "charging_station": "Charging Station",
+    "landmark": "Landmark",
+}
+
+CATEGORY_ALIASES: Dict[str, str] = {
+    "fuel": "petrol_pump",
+    "gas_station": "petrol_pump",
+    "ev_charging": "charging_station",
+    "cafe": "restaurant",
+    "food": "restaurant",
+    "lodging": "hotel",
+    "park": "landmark",
+    "amenity": "landmark",
+}
+
+
+def normalize_category(cat: Optional[str]) -> str:
+    """Normalize input category string to canonical POI taxonomy key."""
+    if not cat:
+        return "landmark"
+    c = cat.strip().lower().replace(" ", "_")
+    if c in POI_TAXONOMY:
+        return c
+    if c in CATEGORY_ALIASES:
+        return CATEGORY_ALIASES[c]
+    for key, display_name in POI_TAXONOMY.items():
+        if c == display_name.lower().replace(" ", "_"):
+            return key
+    return c
+
+
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate great-circle distance between two coordinates in kilometers."""
+    R = 6371.0  # Earth radius in kilometers
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2.0) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlon / 2.0) ** 2
+    )
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    return R * c
+
+
 class PlaceRepository:
     """Data access and audit layer for canonical map places."""
 
@@ -99,6 +159,7 @@ class PlaceRepository:
         pid = place_id or f"plc_{secrets.token_hex(6)}"
         now = datetime.now(timezone.utc).isoformat()
         meta_str = json.dumps(metadata or {})
+        norm_cat = normalize_category(category)
 
         with get_db(self.db_path) as conn:
             conn.execute(
@@ -111,7 +172,7 @@ class PlaceRepository:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', 1, 0, ?, ?, ?)
                 """,
                 (
-                    pid, name.strip(), category.strip().lower(), float(latitude), float(longitude),
+                    pid, name.strip(), norm_cat, float(latitude), float(longitude),
                     address.strip() if address else None,
                     opening_hours.strip() if opening_hours else None,
                     phone.strip() if phone else None,
@@ -190,7 +251,7 @@ class PlaceRepository:
             values.append(name.strip())
         if category is not None:
             fields.append("category = ?")
-            values.append(category.strip().lower())
+            values.append(normalize_category(category))
         if latitude is not None:
             fields.append("latitude = ?")
             values.append(float(latitude))
@@ -377,23 +438,55 @@ class PlaceRepository:
         max_lat: Optional[float] = None,
         min_lon: Optional[float] = None,
         max_lon: Optional[float] = None,
+        lat: Optional[float] = None,
+        lon: Optional[float] = None,
+        radius_km: Optional[float] = None,
         limit: int = 50,
         offset: int = 0,
     ) -> List[Place]:
         """
         List active published places. Excludes soft-deleted / archived records.
+        Supports category taxonomy filtering, search text matching, bounding box,
+        and proximity search (lat, lon, radius_km).
         """
         clauses = ["is_deleted = 0", "status = 'published'"]
         params: List[Any] = []
 
         if category:
+            norm_cat = normalize_category(category)
             clauses.append("category = ?")
-            params.append(category.strip().lower())
+            params.append(norm_cat)
 
         if search:
             clauses.append("(name LIKE ? OR address LIKE ?)")
             term = f"%{search.strip()}%"
             params.extend([term, term])
+
+        # Bounding box filter calculation if lat, lon, radius_km specified
+        if lat is not None and lon is not None and radius_km is not None and radius_km > 0:
+            lat_delta = radius_km / 111.0
+            lon_delta = radius_km / (111.0 * max(0.01, math.cos(math.radians(lat))))
+            b_min_lat = lat - lat_delta
+            b_max_lat = lat + lat_delta
+            b_min_lon = lon - lon_delta
+            b_max_lon = lon + lon_delta
+
+            if min_lat is None:
+                min_lat = b_min_lat
+            else:
+                min_lat = max(min_lat, b_min_lat)
+            if max_lat is None:
+                max_lat = b_max_lat
+            else:
+                max_lat = min(max_lat, b_max_lat)
+            if min_lon is None:
+                min_lon = b_min_lon
+            else:
+                min_lon = max(min_lon, b_min_lon)
+            if max_lon is None:
+                max_lon = b_max_lon
+            else:
+                max_lon = min(max_lon, b_max_lon)
 
         if min_lat is not None and max_lat is not None:
             clauses.append("latitude BETWEEN ? AND ?")
@@ -404,8 +497,28 @@ class PlaceRepository:
             params.extend([min_lon, max_lon])
 
         where_sql = f"WHERE {' AND '.join(clauses)}"
-        query = f"SELECT * FROM places {where_sql} ORDER BY name ASC LIMIT ? OFFSET ?"
-        params.extend([limit, offset])
+
+        if lat is not None and lon is not None:
+            query = f"SELECT * FROM places {where_sql}"
+            with get_db(self.db_path) as conn:
+                cur = conn.execute(query, tuple(params))
+                all_candidates = [Place(**dict(row)) for row in cur.fetchall()]
+
+            results = []
+            for p in all_candidates:
+                dist = haversine_km(lat, lon, p.latitude, p.longitude)
+                if radius_km is not None and dist > radius_km:
+                    continue
+                results.append((dist, p))
+
+            results.sort(key=lambda x: x[0])
+            return [p for _, p in results[offset:offset + limit]]
+        else:
+            query = f"SELECT * FROM places {where_sql} ORDER BY name ASC LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+            with get_db(self.db_path) as conn:
+                cur = conn.execute(query, tuple(params))
+                return [Place(**dict(row)) for row in cur.fetchall()]
 
         with get_db(self.db_path) as conn:
             cur = conn.execute(query, tuple(params))

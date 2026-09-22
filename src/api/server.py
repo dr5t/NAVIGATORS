@@ -38,6 +38,9 @@ from api.datasets import router as datasets_router
 from api.model_registry import router as model_registry_router
 from api.audit import router as audit_router
 from api.admin import router as admin_router
+from api.routing import router as routing_router
+from api.search import router as search_router
+from api.sos import router as sos_router
 app.include_router(recordings_router)
 app.include_router(training_router)
 app.include_router(auth_router)
@@ -51,6 +54,9 @@ app.include_router(datasets_router)
 app.include_router(model_registry_router)
 app.include_router(audit_router)
 app.include_router(admin_router)
+app.include_router(routing_router)
+app.include_router(search_router)
+app.include_router(sos_router)
 
 app.add_middleware(
     CORSMiddleware,

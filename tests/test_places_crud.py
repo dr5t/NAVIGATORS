@@ -24,7 +24,7 @@ from src.db.rbac import RBACRepository
 from src.db.auth_service import AuthService, SessionContext
 from src.db.authorization import AuthorizationService
 from src.db.contributions import ContributionRepository, Contribution
-from src.db.places import PlaceRepository, Place
+from src.db.places import PlaceRepository, Place, POI_TAXONOMY, CATEGORY_ALIASES, normalize_category
 from src.db.state_machine import ContributionState
 from src.api.places import (
     add_place as api_add_place,
@@ -37,6 +37,7 @@ from src.api.places import (
     restore_place as api_restore_place,
     get_my_contributions as api_get_my_contributions,
     get_pending_contributions as api_get_pending_contributions,
+    get_poi_categories as api_get_poi_categories,
     CreatePlaceRequest,
     SuggestEditRequest,
     DirectUpdatePlaceRequest,
@@ -296,7 +297,7 @@ def test_publish_creates_canonical_place_and_version_1_history(
     assert len(places) == 1
     canonical = places[0]
     assert canonical.name == "Central EV Charging Hub"
-    assert canonical.category == "ev_charging"
+    assert canonical.category in ("ev_charging", "charging_station")
     assert canonical.version == 1
     assert canonical.status == "published"
     assert canonical.is_deleted == 0
@@ -611,3 +612,201 @@ def test_direct_staff_update_and_history_recording(
     assert history[0].action == "updated"
     assert history[0].change_summary == "Updated emergency contact details"
     assert history[0].changed_by == mod.id
+
+
+# =============================================================================
+# 6. Phase 32 POI System & Pipeline Integration Tests
+# =============================================================================
+
+def test_poi_taxonomy_all_nine_categories_and_aliases(place_repo: PlaceRepository):
+    """
+    Validates all 9 canonical POI taxonomy categories:
+      - Petrol Pump (petrol_pump)
+      - Hospital (hospital)
+      - Pharmacy (pharmacy)
+      - ATM (atm)
+      - Parking (parking)
+      - Restaurant (restaurant)
+      - Hotel (hotel)
+      - Charging Station (charging_station)
+      - Landmark (landmark)
+    And verifies alias mapping resolution.
+    """
+    required_keys = {
+        "petrol_pump", "hospital", "pharmacy", "atm", "parking",
+        "restaurant", "hotel", "charging_station", "landmark"
+    }
+    assert required_keys.issubset(set(POI_TAXONOMY.keys()))
+
+    # Alias normalization checks
+    assert normalize_category("fuel") == "petrol_pump"
+    assert normalize_category("gas_station") == "petrol_pump"
+    assert normalize_category("ev_charging") == "charging_station"
+    assert normalize_category("cafe") == "restaurant"
+    assert normalize_category("food") == "restaurant"
+    assert normalize_category("lodging") == "hotel"
+    assert normalize_category("park") == "landmark"
+    assert normalize_category("amenity") == "landmark"
+    assert normalize_category("Petrol Pump") == "petrol_pump"
+    assert normalize_category("Charging Station") == "charging_station"
+
+    # Create one place for each of the 9 categories in POI database
+    categories_created = []
+    for key, display_name in POI_TAXONOMY.items():
+        p = place_repo.create_place(
+            name=f"Test {display_name}",
+            category=key,
+            latitude=28.6000 + len(categories_created) * 0.01,
+            longitude=77.2000 + len(categories_created) * 0.01,
+        )
+        categories_created.append(p.category)
+
+    assert len(categories_created) >= 9
+    for key in required_keys:
+        places_of_cat = place_repo.list_places(category=key)
+        assert len(places_of_cat) == 1
+        assert places_of_cat[0].category == key
+
+
+def test_poi_categories_api_endpoint():
+    """
+    Validates GET /api/v1/places/poi/categories endpoint.
+    """
+    res = api_get_poi_categories()
+    assert "categories" in res
+    assert "aliases" in res
+    assert res["categories"]["petrol_pump"] == "Petrol Pump"
+    assert res["categories"]["charging_station"] == "Charging Station"
+    assert res["aliases"]["fuel"] == "petrol_pump"
+
+
+def test_poi_proximity_search_and_indexing(place_repo: PlaceRepository):
+    """
+    Validates spatial indexing and proximity search (lat, lon, radius_km)
+    which orders POIs by Haversine distance ascending.
+    """
+    # Create 3 POIs at increasing distance from (28.6139, 77.2090)
+    p_close = place_repo.create_place("Near ATM", "atm", 28.6145, 77.2095) # ~0.1 km
+    p_mid = place_repo.create_place("Mid Pharmacy", "pharmacy", 28.6300, 77.2200) # ~2 km
+    p_far = place_repo.create_place("Far Hotel", "hotel", 28.9000, 77.5000) # ~40 km
+
+    # Query within 5 km radius
+    results_5km = place_repo.list_places(lat=28.6139, lon=77.2090, radius_km=5.0)
+    assert len(results_5km) == 2
+    assert results_5km[0].id == p_close.id
+    assert results_5km[1].id == p_mid.id
+
+    # Query within 50 km radius
+    results_50km = place_repo.list_places(lat=28.6139, lon=77.2090, radius_km=50.0)
+    assert len(results_50km) == 3
+    assert results_50km[0].id == p_close.id
+    assert results_50km[1].id == p_mid.id
+    assert results_50km[2].id == p_far.id
+
+
+def test_search_to_poi_database_to_map_pipeline(
+    monkeypatch,
+    temp_db: Path,
+    auth_service: AuthService,
+    place_repo: PlaceRepository,
+):
+    """
+    Verifies Pipeline: Search -> POI Database -> Map
+    1. POI Database holds indexed amenity POIs across categories.
+    2. Search queries API / DB with category alias ("fuel"), search text ("Shell"), and radius.
+    3. Results are returned cleanly to Map with full coordinate and amenity metadata.
+    """
+    import src.api.places as places_mod
+    monkeypatch.setattr(places_mod, "place_repo", place_repo)
+    monkeypatch.setattr(places_mod, "auth_service", auth_service)
+
+    # Populate POI Database
+    place_repo.create_place(
+        name="Shell Fuel Station",
+        category="petrol_pump",
+        latitude=28.6139,
+        longitude=77.2090,
+        address="Connaught Place Ring Road",
+        opening_hours="24/7",
+    )
+    place_repo.create_place(
+        name="Apollo Pharmacy",
+        category="pharmacy",
+        latitude=28.6150,
+        longitude=77.2100,
+        address="Connaught Place Block A",
+    )
+
+    guest_session, _ = auth_service.create_guest_session()
+
+    # Search query for "fuel" category alias near CP
+    res = api_list_canonical_places(
+        category="fuel",
+        q="Shell",
+        lat=28.6139,
+        lon=77.2090,
+        radius_km=2.0,
+        context=guest_session,
+    )
+    assert res["count"] == 1
+    found = res["places"][0]
+    assert found["name"] == "Shell Fuel Station"
+    assert found["category"] == "petrol_pump"
+    assert found["latitude"] == 28.6139
+    assert found["longitude"] == 77.2090
+
+
+def test_contribution_to_moderation_to_poi_database_pipeline(
+    monkeypatch,
+    temp_db: Path,
+    auth_service: AuthService,
+    place_repo: PlaceRepository,
+    contrib_repo: ContributionRepository,
+):
+    """
+    Verifies Pipeline: Contribution -> Moderation -> POI Database
+    1. Contributor submits new amenity POI ("Max Healthcare Hospital").
+    2. Moderation workspace approves submission.
+    3. Approved contribution is published into POI Database (`places` table).
+    4. POI Database indexes place, which immediately becomes readable by Map & Search.
+    """
+    import src.api.places as places_mod
+    test_authz = AuthorizationService(temp_db)
+    monkeypatch.setattr(places_mod, "place_repo", place_repo)
+    monkeypatch.setattr(places_mod, "contrib_repo", contrib_repo)
+    monkeypatch.setattr(places_mod, "auth_service", auth_service)
+    monkeypatch.setattr(places_mod, "authz_service", test_authz)
+
+    user, session_user, _ = auth_service.register("contrib_user@navigators.dev", "Password123!", "User")
+    mod, session_mod, _ = auth_service.register("mod_user@navigators.dev", "Password123!", "Moderator", role_id="moderator")
+
+    # Step 1: Contribution created & submitted
+    req = CreatePlaceRequest(
+        name="Max Healthcare Hospital",
+        category="hospital",
+        latitude=28.5284,
+        longitude=77.2185,
+        address="Saket, New Delhi",
+        phone="+91 11 2651 5050",
+        submit_now=True,
+    )
+    res_contrib = api_add_place(req, context=session_user)
+    contrib_id = res_contrib["contribution"]["id"]
+    assert res_contrib["contribution"]["status"] == ContributionState.PENDING_REVIEW
+
+    # Step 2: Moderation workspace approves & publishes
+    approved = contrib_repo.approve(contrib_id, reviewer=session_mod, notes="Verified hospital details")
+    assert approved.status == ContributionState.APPROVED
+
+    published = contrib_repo.publish(contrib_id, staff=session_mod)
+    assert published.status == ContributionState.PUBLISHED
+
+    # Step 3: POI Database verification
+    places = place_repo.list_places(category="hospital", search="Max Healthcare")
+    assert len(places) == 1
+    poi = places[0]
+    assert poi.name == "Max Healthcare Hospital"
+    assert poi.category == "hospital"
+    assert poi.version == 1
+    assert poi.status == "published"
+

@@ -105,6 +105,19 @@ def get_current_session(authorization: Optional[str] = Header(None)) -> SessionC
     return context
 
 
+def get_optional_session(authorization: Optional[str] = Header(None)) -> Optional[SessionContext]:
+    """
+    FastAPI dependency: Resolves optional session context if Bearer token is provided.
+    """
+    if not authorization:
+        return None
+    try:
+        raw_token = extract_bearer_token(authorization)
+        return auth_service.resolve_session(raw_token)
+    except HTTPException:
+        return None
+
+
 def require_permission(permission_id: str):
     """
     FastAPI dependency factory: Enforces that the authenticated session holds

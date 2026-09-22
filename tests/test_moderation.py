@@ -494,3 +494,63 @@ def test_audit_logs_querying_and_governance(
     with pytest.raises(HTTPException) as exc_aud:
         api_list_audit_trail(context=session_user)
     assert exc_aud.value.status_code == 403
+
+
+def test_contributor_experience_history_and_real_badges(
+    monkeypatch,
+    temp_db: Path,
+    auth_service: AuthService,
+    contrib_repo: ContributionRepository,
+):
+    """
+    Phase 25: Contributor Experience Test.
+    Verifies real contribution history listing and live database point/badge calculations.
+    """
+    import src.api.contributions as contrib_api_mod
+    test_authz = AuthorizationService(temp_db)
+
+    monkeypatch.setattr(contrib_api_mod, "contrib_repo", contrib_repo)
+    monkeypatch.setattr(contrib_api_mod, "auth_service", auth_service)
+    monkeypatch.setattr(contrib_api_mod, "authz_service", test_authz)
+
+    user, session_user, _ = auth_service.register("contributor_badge@navigators.dev", "Password123!", "Badge Contributor")
+    mod, session_mod, _ = auth_service.register("mod_badge@navigators.dev", "Password123!", "Mod", role_id="moderator")
+
+    # 1. User submits 1 contribution (starts in DRAFT)
+    c1 = contrib_repo.create(
+        contribution_id="c_badge_1",
+        owner_id=user.id,
+        resource_type="place",
+        title="Dehradun Petrol Pump",
+        data={"name": "Dehradun Petrol Pump", "category": "petrol_pump"},
+        status=ContributionState.DRAFT,
+        action="create",
+    )
+    contrib_repo.submit(c1.id, user=session_user)
+
+    # 2. Check my contributions endpoint
+    my_res = contrib_api_mod.get_my_contributions_endpoint(context=session_user)
+    assert my_res["count"] == 1
+    assert my_res["items"][0]["title"] == "Dehradun Petrol Pump"
+    assert my_res["items"][0]["status"] == ContributionState.PENDING_REVIEW
+
+    # Initial stats (1 pending = 10 points, level 1, no approved badges)
+    stats1 = contrib_api_mod.get_contributor_stats_endpoint(context=session_user)
+    assert stats1["points"] == 10
+    assert stats1["level"] == 1
+    assert stats1["approved_count"] == 0
+    assert len(stats1["badges"]) == 0
+
+    # 3. Moderator approves and staff publishes contribution
+    contrib_repo.approve(c1.id, reviewer=session_mod, notes="Verified station on site")
+    contrib_repo.publish(c1.id, staff=session_mod)
+
+    # 4. Check updated stats: +50 points for approved place creation = 50 points, Level 2, "First Step" badge unlocked!
+    stats2 = contrib_api_mod.get_contributor_stats_endpoint(context=session_user)
+    assert stats2["points"] == 50
+    assert stats2["level"] == 2
+    assert stats2["level_name"] == "Active Contributor"
+    assert stats2["approved_count"] == 1
+    assert len(stats2["badges"]) == 1
+    assert stats2["badges"][0]["id"] == "first_contribution"
+
