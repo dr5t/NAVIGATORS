@@ -211,26 +211,43 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         onnx_parity_max_diff = float(np.max(np.abs(pt_out - ort_out)))
         print(f"ONNX / PyTorch Numerical Parity Max Diff: {onnx_parity_max_diff:.8f}")
         
-        # Model Promotion Rule
-        # Frozen Production Benchmark: 4.2039 m/s
+        # Register in Model Registry (Phase 15 governance)
+        from src.db.model_registry import ModelRegistryRepository
+        model_repo = ModelRegistryRepository()
+        candidate_entry = model_repo.register_candidate(
+            name=f"TCN Candidate ({epochs} epochs, bs={batch_size})",
+            architecture="TCNVelocityEstimator",
+            checkpoint_path=best_candidate_path,
+            onnx_path=candidate_onnx_path,
+            norm_stats_path=os.path.join(candidate_dir, "norm_stats.json"),
+        )
+        model_id = candidate_entry.id
+        training_state["model_registry_id"] = model_id
+
+        # Phase 15 Model Governance Rule:
+        # Evaluated candidate is recorded in Model Registry in 'evaluating' state.
+        # No automatic overwriting of production files!
         production_mae = 4.2039
         production_rmse = 6.0735
-        is_strictly_better = candidate_test_mae < (production_mae - 1e-4)
-        parity_passed = onnx_parity_max_diff < 1e-4
         
-        if is_strictly_better and parity_passed:
-            shutil.copy2(best_candidate_path, os.path.join("checkpoints", "best_model.pt"))
-            shutil.copy2(candidate_onnx_path, os.path.join("simulator", "model.onnx"))
-            shutil.copy2(os.path.join(candidate_dir, "norm_stats.json"), os.path.join("checkpoints", "norm_stats.json"))
-            candidate_promoted = True
-            promotion_status = f"PROMOTED: New model ({candidate_test_mae:.4f} m/s) outperformed production ({production_mae:.4f} m/s)"
-        else:
-            candidate_promoted = False
-            if not is_strictly_better:
-                promotion_status = f"RETAINED PRODUCTION: Candidate ({candidate_test_mae:.4f} m/s) did not outperform frozen production model ({production_mae:.4f} m/s)"
-            else:
-                promotion_status = f"RETAINED PRODUCTION: Candidate failed parity check ({onnx_parity_max_diff})"
-                
+        metrics_payload = {
+            "candidate_test_mae": candidate_test_mae,
+            "candidate_test_rmse": candidate_test_rmse,
+            "best_val_loss": float(res.get("best_val_loss", 0)),
+            "onnx_parity_max_diff": onnx_parity_max_diff,
+            "error_reduction_pct": error_reduction_pct,
+            "total_epochs": epochs,
+            "batch_size": batch_size,
+            "window_size": window_size,
+            "total_time_s": float(res.get("total_time_s", 0)),
+            "checkpoint_path": best_candidate_path,
+            "onnx_path": candidate_onnx_path,
+            "norm_stats_path": os.path.join(candidate_dir, "norm_stats.json"),
+        }
+        model_repo.record_evaluation(model_id, metrics_payload)
+        
+        candidate_promoted = False
+        promotion_status = f"REGISTERED CANDIDATE ({model_id}): Test MAE {candidate_test_mae:.4f} m/s (Production Benchmark: {production_mae:.4f} m/s). Awaiting team review."
         print(f"[Promotion Status] {promotion_status}")
         
         training_state["status"] = "Training Complete"

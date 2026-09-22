@@ -363,9 +363,11 @@ def resolve_report(
     except Exception:
         pass
 
+    if not resolved:
+        raise HTTPException(status_code=500, detail="Report resolution failed: record not found after update.")
     return {
         "message": f"Report marked as {req.decision}.",
-        "report": resolved.to_dict() if resolved else None,
+        "report": resolved.to_dict(),
     }
 
 

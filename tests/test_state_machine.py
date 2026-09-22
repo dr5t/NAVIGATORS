@@ -186,6 +186,7 @@ def test_state_machine_rejection_path(auth_service: AuthService, contrib_repo: C
     )
     assert rejected.status == ContributionState.REJECTED
     assert rejected.reviewed_by == moderator.id
+    assert rejected.review_notes is not None
     assert "Duplicate listing" in rejected.review_notes
 
 

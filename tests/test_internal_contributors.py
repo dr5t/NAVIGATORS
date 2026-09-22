@@ -247,3 +247,212 @@ def test_engineering_controls_hidden_for_normal_users():
     # But normal user CAN request internal contributor access
     decision_request = authz.can(user=user_context, action="internal_contributor:request", resource="contributor")
     assert decision_request.allowed
+
+
+# =============================================================================
+# API-Level Integration Tests (Phase 11 & 12)
+# =============================================================================
+
+def test_api_submit_and_approve_full_flow(monkeypatch):
+    """
+    Full HTTP flow:
+      api_submit_internal_request → api_approve_internal_request
+    Verifies:
+      - Submission returns wrapped {"request": {...}, "message": ...}
+      - Status starts as 'pending'
+      - After approval, user gains 'internal_contributor' role
+      - Role was NOT present before approval
+    """
+    import src.api.internal_contributors as ic_mod
+
+    tag = secrets.token_hex(4)
+    auth_service = AuthService()
+    user, user_session, _ = auth_service.register(
+        email=f"api_submit_{tag}@example.com",
+        password="Password123!",
+        name=f"API Submit User {tag}",
+        role_id="user",
+    )
+    admin, admin_session, _ = auth_service.register(
+        email=f"api_admin_{tag}@example.com",
+        password="Password123!",
+        name=f"API Admin {tag}",
+        role_id="team_admin",
+    )
+
+    test_icr_repo = InternalContributorRepository()
+    test_authz = AuthorizationService()
+    monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
+    monkeypatch.setattr(ic_mod, "authz_service", test_authz)
+
+    # 1. Submit via API
+    submit_resp = api_submit_internal_request(
+        body=SubmitInternalRequestModel(
+            reason="I collect IMU trajectories for urban navigation research",
+            experience="3 years Android sensor development, published datasets",
+            requested_scope="trajectories_and_models",
+        ),
+        context=user_session,
+    )
+    assert "request" in submit_resp
+    assert "message" in submit_resp
+    assert submit_resp["request"]["status"] == "pending"
+    assert submit_resp["request"]["user_id"] == user.id
+    request_id = submit_resp["request"]["id"]
+
+    # 2. Verify role NOT yet granted
+    rbac_repo = RBACRepository()
+    roles_before = {r.id for r in rbac_repo.get_user_roles(user.id)}
+    assert "internal_contributor" not in roles_before
+
+    # 3. Approve via API
+    approved = api_approve_internal_request(request_id=request_id, context=admin_session)
+    assert approved["status"] == "approved"
+    assert approved["reviewed_by"] == admin.id
+
+    # 4. Verify role IS now granted
+    roles_after = {r.id for r in rbac_repo.get_user_roles(user.id)}
+    assert "internal_contributor" in roles_after
+
+
+def test_api_submit_and_reject_full_flow(monkeypatch):
+    """
+    Full HTTP flow:
+      api_submit_internal_request → api_reject_internal_request
+    Verifies:
+      - After rejection, user does NOT gain 'internal_contributor' role
+      - Rejection reason is stored
+      - Status is 'rejected'
+    """
+    import src.api.internal_contributors as ic_mod
+    from fastapi import HTTPException as FHTTPException
+
+    tag = secrets.token_hex(4)
+    auth_service = AuthService()
+    user, user_session, _ = auth_service.register(
+        email=f"api_reject_user_{tag}@example.com",
+        password="Password123!",
+        name=f"Reject User {tag}",
+        role_id="user",
+    )
+    admin, admin_session, _ = auth_service.register(
+        email=f"api_reject_admin_{tag}@example.com",
+        password="Password123!",
+        name=f"Reject Admin {tag}",
+        role_id="team_admin",
+    )
+
+    test_icr_repo = InternalContributorRepository()
+    test_authz = AuthorizationService()
+    monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
+    monkeypatch.setattr(ic_mod, "authz_service", test_authz)
+
+    # Submit
+    submit_resp = api_submit_internal_request(
+        body=SubmitInternalRequestModel(
+            reason="I want to upload training datasets",
+            experience="Hobbyist, no verifiable hardware experience",
+        ),
+        context=user_session,
+    )
+    request_id = submit_resp["request"]["id"]
+
+    # Reject
+    rejected = api_reject_internal_request(
+        request_id=request_id,
+        body=RejectInternalRequestModel(
+            rejection_reason="Insufficient verifiable sensor hardware experience for field data collection"
+        ),
+        context=admin_session,
+    )
+    assert rejected["status"] == "rejected"
+    assert "Insufficient" in rejected["rejection_reason"]
+
+    # Role must NOT be granted
+    rbac_repo = RBACRepository()
+    roles = {r.id for r in rbac_repo.get_user_roles(user.id)}
+    assert "internal_contributor" not in roles
+
+
+def test_api_duplicate_submission_returns_409(monkeypatch):
+    """
+    Submitting a second internal contributor request while one is pending
+    must return HTTP 409 Conflict — not silently create a second record.
+    """
+    import src.api.internal_contributors as ic_mod
+    from fastapi import HTTPException as FHTTPException
+
+    tag = secrets.token_hex(4)
+    auth_service = AuthService()
+    user, user_session, _ = auth_service.register(
+        email=f"api_dup_{tag}@example.com",
+        password="Password123!",
+        name=f"Dup User {tag}",
+        role_id="user",
+    )
+
+    test_icr_repo = InternalContributorRepository()
+    test_authz = AuthorizationService()
+    monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
+    monkeypatch.setattr(ic_mod, "authz_service", test_authz)
+
+    body = SubmitInternalRequestModel(
+        reason="First application for sensor data collection",
+        experience="Graduate researcher in inertial navigation",
+    )
+
+    # First submission must succeed
+    first = api_submit_internal_request(body=body, context=user_session)
+    assert first["request"]["status"] == "pending"
+
+    # Second submission must be blocked with 409
+    with pytest.raises(FHTTPException) as exc_info:
+        api_submit_internal_request(body=body, context=user_session)
+    assert exc_info.value.status_code == 409
+
+
+def test_api_get_my_request_status(monkeypatch):
+    """
+    api_get_my_latest_request returns {"request": {...}} when a request exists,
+    and {"request": None} when no request has been submitted.
+    """
+    import src.api.internal_contributors as ic_mod
+
+    tag = secrets.token_hex(4)
+    auth_service = AuthService()
+    user_no_req, session_no_req, _ = auth_service.register(
+        email=f"api_norq_{tag}@example.com",
+        password="Password123!",
+        name=f"No Request User {tag}",
+        role_id="user",
+    )
+    user_with_req, session_with_req, _ = auth_service.register(
+        email=f"api_withrq_{tag}@example.com",
+        password="Password123!",
+        name=f"With Request User {tag}",
+        role_id="user",
+    )
+
+    test_icr_repo = InternalContributorRepository()
+    test_authz = AuthorizationService()
+    monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
+    monkeypatch.setattr(ic_mod, "authz_service", test_authz)
+
+    # User with no request
+    resp_none = api_get_my_latest_request(context=session_no_req)
+    assert "request" in resp_none
+    assert resp_none["request"] is None
+
+    # Submit a request, then check
+    api_submit_internal_request(
+        body=SubmitInternalRequestModel(
+            reason="I want to contribute trajectory datasets for my MSc thesis",
+            experience="Android developer with 2 years IMU sensor integration",
+        ),
+        context=session_with_req,
+    )
+    resp_found = api_get_my_latest_request(context=session_with_req)
+    assert "request" in resp_found
+    assert resp_found["request"] is not None
+    assert resp_found["request"]["status"] == "pending"
+    assert resp_found["request"]["user_id"] == user_with_req.id

@@ -191,9 +191,11 @@ def withdraw_contribution(
     except Exception as e:
         raise handle_transition_error(e)
 
+    if not withdrawn:
+        raise HTTPException(status_code=500, detail="Contribution withdraw failed: record not found after transition.")
     return {
         "message": "Contribution withdrawn successfully.",
-        "contribution": withdrawn.to_dict() if withdrawn else None,
+        "contribution": withdrawn.to_dict(),
     }
 
 
@@ -220,9 +222,11 @@ def submit_contribution(
     except Exception as e:
         raise handle_transition_error(e)
 
+    if not submitted:
+        raise HTTPException(status_code=500, detail="Contribution submit failed: record not found after transition.")
     return {
         "message": "Contribution submitted for moderation review.",
-        "contribution": submitted.to_dict() if submitted else None,
+        "contribution": submitted.to_dict(),
     }
 
 
@@ -251,9 +255,11 @@ def approve_contribution(
     except Exception as e:
         raise handle_transition_error(e)
 
+    if not approved:
+        raise HTTPException(status_code=500, detail="Contribution approve failed: record not found after transition.")
     return {
         "message": "Contribution approved successfully.",
-        "contribution": approved.to_dict() if approved else None,
+        "contribution": approved.to_dict(),
     }
 
 
@@ -282,9 +288,11 @@ def reject_contribution(
     except Exception as e:
         raise handle_transition_error(e)
 
+    if not rejected:
+        raise HTTPException(status_code=500, detail="Contribution reject failed: record not found after transition.")
     return {
         "message": "Contribution rejected with review notes.",
-        "contribution": rejected.to_dict() if rejected else None,
+        "contribution": rejected.to_dict(),
     }
 
 
@@ -311,9 +319,11 @@ def publish_contribution(
     except Exception as e:
         raise handle_transition_error(e)
 
+    if not published:
+        raise HTTPException(status_code=500, detail="Contribution publish failed: record not found after transition.")
     return {
         "message": "Contribution published to canonical map dataset.",
-        "contribution": published.to_dict() if published else None,
+        "contribution": published.to_dict(),
     }
 
 

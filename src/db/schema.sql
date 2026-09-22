@@ -213,9 +213,81 @@ CREATE TABLE IF NOT EXISTS internal_contributor_requests (
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+-- ========================================================
+-- Phase 13: Dataset Sessions (Internal Contributor Uploads)
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS dataset_sessions (
+    id TEXT PRIMARY KEY,
+    contributor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    activity_type TEXT NOT NULL CHECK (activity_type IN (
+        'walking', 'driving', 'gnss_imu', 'gnss_outage', 'validation'
+    )),
+    device TEXT NOT NULL,
+    duration_seconds REAL NOT NULL DEFAULT 0.0,
+    sensor_data_path TEXT,
+    gnss_available INTEGER NOT NULL DEFAULT 1 CHECK (gnss_available IN (0, 1)),
+    consent INTEGER NOT NULL DEFAULT 1 CHECK (consent IN (0, 1)),
+    status TEXT NOT NULL DEFAULT 'uploaded'
+        CHECK (status IN ('uploaded', 'validating', 'validated', 'rejected')),
+    rejection_reason TEXT,
+    validated_by TEXT REFERENCES users(id),
+    validated_at TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 -- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_icr_user_id ON internal_contributor_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_icr_status ON internal_contributor_requests(status);
+CREATE INDEX IF NOT EXISTS idx_dataset_sessions_contributor ON dataset_sessions(contributor_id);
+CREATE INDEX IF NOT EXISTS idx_dataset_sessions_status ON dataset_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_dataset_sessions_activity ON dataset_sessions(activity_type);
+CREATE INDEX IF NOT EXISTS idx_dataset_sessions_created ON dataset_sessions(created_at);
+
+-- ========================================================
+-- Phase 15: Model Registry (Approval Workflow)
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS model_registry (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    architecture TEXT NOT NULL DEFAULT 'TCNVelocityEstimator',
+    status TEXT NOT NULL DEFAULT 'candidate_training'
+        CHECK (status IN (
+            'candidate_training', 'evaluating', 'review',
+            'approved', 'rejected', 'production_candidate', 'production'
+        )),
+    -- Evaluation metrics
+    test_mae REAL,
+    test_rmse REAL,
+    val_loss REAL,
+    onnx_parity_max_diff REAL,
+    error_reduction_pct REAL,
+    epochs INTEGER,
+    batch_size INTEGER,
+    window_size INTEGER,
+    total_training_time_s REAL,
+    -- File artifact paths
+    checkpoint_path TEXT,
+    onnx_path TEXT,
+    norm_stats_path TEXT,
+    -- Governance
+    registered_by TEXT REFERENCES users(id),
+    reviewed_by TEXT REFERENCES users(id),
+    deployed_by TEXT REFERENCES users(id),
+    rejection_reason TEXT,
+    review_notes TEXT,
+    -- Timestamps
+    evaluated_at TEXT,
+    reviewed_at TEXT,
+    deployed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+CREATE INDEX IF NOT EXISTS idx_model_registry_status  ON model_registry(status);
+CREATE INDEX IF NOT EXISTS idx_model_registry_created ON model_registry(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource);
@@ -281,6 +353,22 @@ BEGIN
     UPDATE internal_contributor_requests SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
+-- Trigger: auto-update updated_at on dataset_sessions modification
+CREATE TRIGGER IF NOT EXISTS trg_dataset_sessions_updated_at
+AFTER UPDATE ON dataset_sessions
+FOR EACH ROW
+BEGIN
+    UPDATE dataset_sessions SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
+END;
+
+-- Trigger: auto-update updated_at on model_registry modification
+CREATE TRIGGER IF NOT EXISTS trg_model_registry_updated_at
+AFTER UPDATE ON model_registry
+FOR EACH ROW
+BEGIN
+    UPDATE model_registry SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
+END;
+
 
 -- ========================================================
 -- Seed Initial Roles
@@ -320,7 +408,7 @@ INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
 
     ('model:create', 'model', 'create', 'Register newly trained ONNX model checkpoints'),
     ('model:read', 'model', 'read', 'Inspect model architectures, weights, and evaluation metrics'),
-    ('model:update', 'model', 'update', 'Update model metadata and evaluation notes'),
+    ('model:review', 'model', 'review', 'Open a candidate model for human evaluation review'),
     ('model:approve', 'model', 'approve', 'Approve candidate model for production qualification'),
     ('model:deploy', 'model', 'deploy', 'Deploy qualified model to live client navigation runtime'),
 
@@ -341,7 +429,9 @@ INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
     ('internal_contributor:request', 'contributor', 'request', 'Submit application for internal contributor role'),
     ('internal_contributor:review', 'contributor', 'review', 'View and triage internal contributor applications'),
     ('internal_contributor:approve', 'contributor', 'approve', 'Approve internal contributor access request and promote role'),
-    ('internal_contributor:reject', 'contributor', 'reject', 'Reject internal contributor access request with reason');
+    ('internal_contributor:reject', 'contributor', 'reject', 'Reject internal contributor access request with reason'),
+
+    ('dataset:validate', 'dataset', 'validate', 'Validate or reject uploaded dataset sessions for training eligibility');
 
 -- ========================================================
 -- Seed Role Permissions Mapping
@@ -399,6 +489,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('internal_contributor', 'sync:pull'),
     ('internal_contributor', 'sync:push'),
     ('internal_contributor', 'user:read');
+    -- NOTE: internal_contributor does NOT have dataset:validate or model:deploy
 
 -- 5. Moderator permissions
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
@@ -448,6 +539,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'model:create'),
     ('team_admin', 'model:read'),
     ('team_admin', 'model:update'),
+    ('team_admin', 'model:review'),
     ('team_admin', 'model:approve'),
     ('team_admin', 'model:deploy'),
     ('team_admin', 'sync:pull'),
@@ -456,6 +548,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'internal_contributor:review'),
     ('team_admin', 'internal_contributor:approve'),
     ('team_admin', 'internal_contributor:reject'),
+    ('team_admin', 'dataset:validate'),
     ('team_admin', 'user:read'),
     ('team_admin', 'user:update'),
     ('team_admin', 'role:assign');

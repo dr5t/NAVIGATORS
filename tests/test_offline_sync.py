@@ -163,11 +163,12 @@ def test_offline_device_push_and_idempotency():
     assert queue_res["count"] == 2
 
 
-def test_version_conflict_detection_on_stale_edit():
+def test_version_conflict_detection_on_stale_edit(tmp_path):
     """Verify sync engine flags conflict when device base version is outdated."""
-    init_db()
-    auth_service = AuthService()
-    place_repo = PlaceRepository()
+    db_file = tmp_path / "conflict_test.db"
+    init_db(db_file)
+    auth_service = AuthService(db_file)
+    place_repo = PlaceRepository(db_file)
 
     tag = secrets.token_hex(4)
     user, user_session, _ = auth_service.register(
@@ -187,12 +188,11 @@ def test_version_conflict_detection_on_stale_edit():
     assert place.version == 1
 
     # 2. Staff updates place to version 2
-    place_repo.update_place(
+    updated_place = place_repo.update_place(
         place_id=place.id,
         phone="+91-11-98765432",
         change_summary="Staff updated phone",
     )
-    updated_place = place_repo.get_place(place.id)
     assert updated_place.version == 2
 
     # 3. Offline device attempts suggest_edit with stale base_version=1

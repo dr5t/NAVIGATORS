@@ -72,7 +72,10 @@ def api_submit_internal_request(
             experience=body.experience,
             requested_scope=body.requested_scope or "trajectories_and_models",
         )
-        return req.to_dict()
+        return {
+            "message": "Internal contributor application submitted successfully.",
+            "request": req.to_dict(),
+        }
     except ValueError as e:
         err_msg = str(e)
         if "already exists" in err_msg or "already holds" in err_msg:
@@ -92,7 +95,7 @@ def api_get_my_latest_request(
         raise HTTPException(status_code=401, detail="Authentication required")
 
     req = icr_repo.get_user_latest_request(context.user.id)
-    return req.to_dict() if req else None
+    return {"request": req.to_dict() if req else None}
 
 
 @router.get("/requests")

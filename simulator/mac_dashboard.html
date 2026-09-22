@@ -17,7 +17,9 @@
             <nav class="nav-menu">
                 <button class="nav-btn active" data-target="telemetry">Live Telemetry</button>
                 <button class="nav-btn" data-target="dataset">Dataset Manager</button>
+                <button class="nav-btn" data-target="datasets">Submitted Datasets</button>
                 <button class="nav-btn" data-target="training">Training Pipeline</button>
+                <button class="nav-btn" data-target="model-registry">Model Registry</button>
                 <button class="nav-btn" data-target="logs">System Logs</button>
             </nav>
             <div class="connection-status">
@@ -104,6 +106,90 @@
                 </div>
             </section>
 
+            <!-- Submitted Datasets Section (Phase 13) -->
+            <section id="datasets" class="view-section">
+                <header class="section-header">
+                    <h2>Submitted Datasets</h2>
+                    <div class="badges">
+                        <button class="btn-primary" id="btnRefreshDatasets" style="font-size:0.82rem;padding:6px 14px;">Refresh</button>
+                    </div>
+                </header>
+
+                <!-- Stats Overview -->
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="stats-grid" id="datasetStatsGrid">
+                        <div><label>Uploaded</label><span id="dsStatUploaded" style="color:#f59e0b;">0</span></div>
+                        <div><label>Validating</label><span id="dsStatValidating" style="color:#3b82f6;">0</span></div>
+                        <div><label>Validated ✓</label><span id="dsStatValidated" style="color:#10b981;">0</span></div>
+                        <div><label>Rejected</label><span id="dsStatRejected" style="color:#ef4444;">0</span></div>
+                        <div><label>Total</label><span id="dsStatTotal">0</span></div>
+                        <div><label>Ready for Training</label><span id="dsStatReady" style="font-weight:700;">0</span></div>
+                    </div>
+                </div>
+
+                <!-- Filter Controls -->
+                <div class="card" style="margin-bottom:16px;padding:14px 20px;">
+                    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                        <label style="font-size:0.82rem;color:#94a3b8;">Filter by status:</label>
+                        <select id="dsFilterStatus" style="background:#1a1a2e;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:4px 10px;font-size:0.82rem;">
+                            <option value="">All</option>
+                            <option value="uploaded">Uploaded</option>
+                            <option value="validating">Validating</option>
+                            <option value="validated">Validated</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <label style="font-size:0.82rem;color:#94a3b8;">Activity:</label>
+                        <select id="dsFilterActivity" style="background:#1a1a2e;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:4px 10px;font-size:0.82rem;">
+                            <option value="">All</option>
+                            <option value="walking">Walking</option>
+                            <option value="driving">Driving</option>
+                            <option value="gnss_imu">GNSS + IMU</option>
+                            <option value="gnss_outage">GNSS Outage</option>
+                            <option value="validation">Validation</option>
+                        </select>
+                        <button class="btn-primary" id="btnApplyDsFilter" style="font-size:0.82rem;padding:5px 14px;">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Session Table -->
+                <div class="card">
+                    <div class="table-container">
+                        <table id="dsSessionTable" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Contributor</th>
+                                    <th>Activity</th>
+                                    <th>Device</th>
+                                    <th>Duration</th>
+                                    <th>GNSS</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dsSessionTbody">
+                                <tr><td colspan="8" style="text-align:center;color:#64748b;">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="dsPagination" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;"></div>
+                </div>
+
+                <!-- Reject Modal -->
+                <div id="dsRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+                    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px;min-width:400px;max-width:500px;">
+                        <h3 style="margin:0 0 16px;color:#f1f5f9;">Reject Dataset Session</h3>
+                        <input type="hidden" id="dsRejectTargetId">
+                        <label style="font-size:0.82rem;color:#94a3b8;display:block;margin-bottom:6px;">Rejection reason (required)</label>
+                        <textarea id="dsRejectReason" rows="4" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:8px;font-size:0.85rem;resize:vertical;"></textarea>
+                        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+                            <button id="dsRejectCancel" style="background:#334155;color:#e2e8f0;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;">Cancel</button>
+                            <button id="dsRejectConfirm" style="background:#ef4444;color:white;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;font-weight:600;">Reject Session</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Training Section -->
             <section id="training" class="view-section">
                 <header class="section-header">
@@ -146,6 +232,79 @@
                             <div><strong>Mean Baseline MAE:</strong> <span id="metricBaselineMae">—</span> m/s</div>
                             <div><strong>Error Reduction:</strong> <span id="metricErrorReduction">—</span>%</div>
                             <div><strong>Promotion Status:</strong> <span id="metricPromotionStatus" style="font-weight: 600;">—</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Registry Section (Phase 15) -->
+            <section id="model-registry" class="view-section">
+                <header class="section-header">
+                    <h2>Model Registry & Governance</h2>
+                    <div class="badges">
+                        <button class="btn-primary" id="btnRefreshModelRegistry" style="font-size:0.82rem;padding:6px 14px;">Refresh Registry</button>
+                    </div>
+                </header>
+
+                <!-- Active Production Model Card -->
+                <div class="card" style="margin-bottom: 20px; border-left: 4px solid #10b981;">
+                    <h3>Current Production Model</h3>
+                    <div class="stats-grid" id="prodModelGrid" style="margin-top: 10px;">
+                        <div><label>Model Name</label><span id="prodModelName" style="font-weight:700;color:#10b981;">Loading…</span></div>
+                        <div><label>Test MAE</label><span id="prodModelMae">—</span></div>
+                        <div><label>Test RMSE</label><span id="prodModelRmse">—</span></div>
+                        <div><label>Deployed At</label><span id="prodModelDeployedAt">—</span></div>
+                    </div>
+                </div>
+
+                <!-- Model Registry Table -->
+                <div class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                        <h3 style="margin:0;">Model Candidates & History</h3>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <label style="font-size:0.82rem;color:#94a3b8;">Filter status:</label>
+                            <select id="mrFilterStatus" style="background:#1a1a2e;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:4px 10px;font-size:0.82rem;">
+                                <option value="">All</option>
+                                <option value="candidate_training">Candidate Training</option>
+                                <option value="evaluating">Evaluating</option>
+                                <option value="review">In Review</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="production_candidate">Production Candidate</option>
+                                <option value="production">Production</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="mrTable" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>Model ID / Name</th>
+                                    <th>Architecture</th>
+                                    <th>Test MAE</th>
+                                    <th>Test RMSE</th>
+                                    <th>Parity Diff</th>
+                                    <th>Status</th>
+                                    <th>Governance / Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mrTbody">
+                                <tr><td colspan="7" style="text-align:center;color:#64748b;">Loading Model Registry…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Model Reject Modal -->
+                <div id="mrRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+                    <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px;min-width:400px;max-width:500px;">
+                        <h3 style="margin:0 0 16px;color:#f1f5f9;">Reject Model Candidate</h3>
+                        <input type="hidden" id="mrRejectTargetId">
+                        <label style="font-size:0.82rem;color:#94a3b8;display:block;margin-bottom:6px;">Rejection Reason (required)</label>
+                        <textarea id="mrRejectReason" rows="4" style="width:100%;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:8px;font-size:0.85rem;resize:vertical;" placeholder="State why this candidate model was rejected..."></textarea>
+                        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+                            <button id="mrRejectCancel" style="background:#334155;color:#e2e8f0;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;">Cancel</button>
+                            <button id="mrRejectConfirm" style="background:#ef4444;color:white;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;font-weight:600;">Reject Candidate</button>
                         </div>
                     </div>
                 </div>

@@ -34,6 +34,8 @@ from api.moderation import router as moderation_router
 from api.reports import router as reports_router
 from api.sync import router as sync_router
 from api.internal_contributors import router as internal_contributors_router
+from api.datasets import router as datasets_router
+from api.model_registry import router as model_registry_router
 app.include_router(recordings_router)
 app.include_router(training_router)
 app.include_router(auth_router)
@@ -43,6 +45,8 @@ app.include_router(moderation_router)
 app.include_router(reports_router)
 app.include_router(sync_router)
 app.include_router(internal_contributors_router)
+app.include_router(datasets_router)
+app.include_router(model_registry_router)
 
 app.add_middleware(
     CORSMiddleware,
