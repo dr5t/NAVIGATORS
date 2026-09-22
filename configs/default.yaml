@@ -1,9 +1,6 @@
-# =============================================================================
 # Navigators IDR - Default Configuration
-# SIH26168: AI/ML Intelligent Dead Reckoning
-# =============================================================================
 
-# --- Data Pipeline ---
+# Data Pipeline
 data:
   dataset_path: "./data/io_vnbd/"
   window_size: 200          # Number of IMU samples per window (200 @ 10Hz = 20s)

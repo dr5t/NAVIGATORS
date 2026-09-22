@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name="navigators-idr",
     version="1.0.0",
-    description="AI/ML-powered Intelligent Dead Reckoning for GNSS-denied navigation (SIH26168)",
-    author="Team Navigators",
+    description="AI/ML-powered Intelligent Dead Reckoning for GNSS-denied navigation",
+    author="Navigators",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     python_requires=">=3.9",
