@@ -422,9 +422,11 @@ def review_contribution(
     except Exception as e:
         raise handle_transition_error(e)
 
+    if not reviewed:
+        raise HTTPException(status_code=500, detail="Contribution review failed: record not found after transition.")
     return {
         "message": f"Contribution review completed with decision '{req.decision}'.",
-        "contribution": reviewed.to_dict() if reviewed else None,
+        "contribution": reviewed.to_dict(),
     }
 
 
