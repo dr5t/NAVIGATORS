@@ -699,3 +699,241 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 });
 
 refreshModelRegistry();
+
+// --- RBAC & Authentication (Phase 16) ---
+const auth = typeof NavigatorsAuth !== 'undefined' ? new NavigatorsAuth() : null;
+
+const ROLE_DISPLAY_NAMES = {
+    team_admin:           'Team Admin',
+    super_admin:          'Super Admin',
+    internal_contributor: 'Internal Contributor',
+    moderator:            'Community Moderator',
+    local_contributor:    'Local Contributor',
+    user:                 'Registered User',
+    guest:                'Guest'
+};
+
+const DEMO_PERSONAS = {
+    team_admin: {
+        id: 'usr_admin_demo',
+        name: 'Engineering Lead',
+        role: 'team_admin',
+        roles: [{ id: 'team_admin', name: 'Team Administrator' }],
+        permissions: ['place:read', 'place:create', 'place:update', 'place:delete', 'contribution:create', 'contribution:read', 'contribution:update', 'contribution:withdraw', 'contribution:approve', 'contribution:reject', 'dataset:create', 'dataset:read', 'dataset:update', 'dataset:delete', 'training:create', 'training:read', 'model:create', 'model:read', 'model:update', 'model:approve', 'model:deploy', 'user:read', 'user:update', 'role:assign'],
+        is_guest: false,
+        status: 'active'
+    },
+    internal_contributor: {
+        id: 'usr_ic_demo',
+        name: 'Field Sensor Contributor',
+        role: 'internal_contributor',
+        roles: [{ id: 'internal_contributor', name: 'Internal Contributor' }],
+        permissions: ['place:read', 'place:create', 'place:update', 'contribution:create', 'contribution:read', 'contribution:update', 'contribution:withdraw', 'dataset:create', 'dataset:read', 'dataset:update', 'training:create', 'training:read', 'model:create', 'model:read', 'user:read'],
+        is_guest: false,
+        status: 'active'
+    },
+    moderator: {
+        id: 'usr_mod_demo',
+        name: 'Community Moderator',
+        role: 'moderator',
+        roles: [{ id: 'moderator', name: 'Community Moderator' }],
+        permissions: ['place:read', 'place:create', 'place:update', 'place:delete', 'contribution:create', 'contribution:read', 'contribution:update', 'contribution:withdraw', 'contribution:approve', 'contribution:reject', 'user:read'],
+        is_guest: false,
+        status: 'active'
+    },
+    local_contributor: {
+        id: 'usr_lc_demo',
+        name: 'Local Map Editor',
+        role: 'local_contributor',
+        roles: [{ id: 'local_contributor', name: 'Local Contributor' }],
+        permissions: ['place:read', 'place:create', 'place:update', 'contribution:create', 'contribution:read', 'contribution:update', 'user:read'],
+        is_guest: false,
+        status: 'active'
+    },
+    user: {
+        id: 'usr_user_demo',
+        name: 'Standard Member',
+        role: 'user',
+        roles: [{ id: 'user', name: 'Registered User' }],
+        permissions: ['place:read', 'contribution:create', 'contribution:read', 'user:read'],
+        is_guest: false,
+        status: 'active'
+    }
+};
+
+function applyRoleRBAC(user) {
+    if (!user) user = DEMO_PERSONAS.team_admin;
+    const role = user.role || 'user';
+    const roleName = ROLE_DISPLAY_NAMES[role] || role;
+
+    if (byId('userNameLabel')) byId('userNameLabel').textContent = user.name || 'User';
+    if (byId('userRoleBadge')) {
+        byId('userRoleBadge').textContent = roleName;
+        byId('userRoleBadge').className = `role-badge ${role}`;
+    }
+    if (byId('selectRoleSwitch')) byId('selectRoleSwitch').value = role;
+
+    const isDenied = (role === 'user' || role === 'local_contributor' || role === 'guest');
+
+    if (isDenied) {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.style.display = 'none');
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        if (byId('access-denied')) {
+            byId('access-denied').classList.add('active');
+            if (byId('deniedUserRoleLabel')) byId('deniedUserRoleLabel').textContent = roleName;
+        }
+        logMessage('WARNING', `Access denied: Role '${roleName}' does not have engineering dashboard privileges.`);
+        return;
+    }
+
+    if (byId('access-denied')) byId('access-denied').classList.remove('active');
+
+    let firstVisibleTarget = null;
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        const allowedRoles = (btn.dataset.roles || '').split(',');
+        if (allowedRoles.includes(role) || role === 'team_admin' || role === 'super_admin') {
+            btn.style.display = '';
+            if (!firstVisibleTarget) firstVisibleTarget = btn.dataset.target;
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+
+    const activeBtn = document.querySelector('.nav-btn.active');
+    if (!activeBtn || activeBtn.style.display === 'none') {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+
+        if (firstVisibleTarget) {
+            const targetBtn = document.querySelector(`.nav-btn[data-target="${firstVisibleTarget}"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+                if (byId(firstVisibleTarget)) byId(firstVisibleTarget).classList.add('active');
+            }
+        }
+    }
+}
+
+function switchRole(roleId) {
+    const persona = DEMO_PERSONAS[roleId] || DEMO_PERSONAS.team_admin;
+    if (auth) {
+        auth.saveUser(persona);
+    }
+    applyRoleRBAC(persona);
+    logMessage('INFO', `Switched active test persona to '${ROLE_DISPLAY_NAMES[roleId] || roleId}'.`);
+
+    if (roleId === 'moderator' || roleId === 'team_admin') {
+        refreshModerationQueue();
+    }
+    if (roleId === 'internal_contributor' || roleId === 'team_admin') {
+        refreshDatasets();
+    }
+}
+
+// Moderation Tools Logic
+async function refreshModerationQueue() {
+    const tbody = byId('modTbody');
+    if (!tbody) return;
+
+    try {
+        const r = await fetch('/api/v1/moderation/queue');
+        if (!r.ok) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#64748b;">No pending moderation items or insufficient permissions.</td></tr>`;
+            return;
+        }
+        const data = await r.json();
+        const items = data.queue || data.items || data.contributions || [];
+
+        if (byId('modPendingCount')) byId('modPendingCount').textContent = items.length;
+
+        if (!items.length) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#10b981;">All clear! No pending community edits in queue.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = items.map(item => `
+            <tr>
+                <td style="font-family:monospace;font-size:0.78rem;">${item.id}</td>
+                <td>
+                    <div style="font-weight:600;color:#f1f5f9;">${item.title || 'Untitled Edit'}</div>
+                    <div style="font-size:0.78rem;color:#94a3b8;">${item.resource_type || 'place'}</div>
+                </td>
+                <td style="font-size:0.82rem;">${item.owner_name || item.owner_id}</td>
+                <td style="font-size:0.82rem;text-transform:uppercase;">${item.action || 'create'}</td>
+                <td><span style="background:#854d0e;color:#fef08a;padding:2px 6px;border-radius:4px;font-size:0.75rem;font-weight:600;">${item.status}</span></td>
+                <td>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="modApprove('${item.id}')" style="background:#059669;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:0.78rem;cursor:pointer;font-weight:600;">Approve</button>
+                        <button onclick="modReject('${item.id}')" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:0.78rem;cursor:pointer;font-weight:600;">Reject</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#64748b;">Error loading moderation queue.</td></tr>`;
+    }
+}
+
+async function modApprove(contribId) {
+    if (!confirm('Approve and publish this contribution to canonical map?')) return;
+    try {
+        const r = await fetch(`/api/v1/moderation/contributions/${contribId}/approve`, { method: 'POST' });
+        if (r.ok) {
+            logMessage('SUCCESS', `Contribution ${contribId} approved and published ✓`);
+            refreshModerationQueue();
+        } else {
+            const e = await r.json();
+            logMessage('ERROR', `Approval failed: ${e.detail}`);
+        }
+    } catch (e) {
+        logMessage('ERROR', `Error: ${e.message}`);
+    }
+}
+
+async function modReject(contribId) {
+    const reason = prompt('Enter rejection reason for contributor:');
+    if (!reason || !reason.trim()) return;
+    try {
+        const r = await fetch(`/api/v1/moderation/contributions/${contribId}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ review_notes: reason })
+        });
+        if (r.ok) {
+            logMessage('INFO', `Contribution ${contribId} rejected.`);
+            refreshModerationQueue();
+        } else {
+            const e = await r.json();
+            logMessage('ERROR', `Rejection failed: ${e.detail}`);
+        }
+    } catch (e) {
+        logMessage('ERROR', `Error: ${e.message}`);
+    }
+}
+
+// Wire role switchers and events
+if (byId('selectRoleSwitch')) {
+    byId('selectRoleSwitch').addEventListener('change', (e) => switchRole(e.target.value));
+}
+if (byId('deniedRoleSelect') && byId('btnDeniedSwitchRole')) {
+    byId('btnDeniedSwitchRole').addEventListener('click', () => {
+        const sel = byId('deniedRoleSelect').value;
+        switchRole(sel);
+    });
+}
+if (byId('btnRefreshModeration')) {
+    byId('btnRefreshModeration').addEventListener('click', refreshModerationQueue);
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (btn.dataset.target === 'moderation') {
+            refreshModerationQueue();
+        }
+    });
+});
+
+// Initialize RBAC with stored or default user
+const initialUser = auth ? auth.loadUser() : DEMO_PERSONAS.team_admin;
+applyRoleRBAC(initialUser);

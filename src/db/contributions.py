@@ -46,7 +46,15 @@ class ContributionRepository:
     """Data access layer for community map contributions."""
 
     def __init__(self, db_path: Optional[str | Path] = None):
-        self.db_path = db_path
+        self._db_path = db_path
+
+    @property
+    def db_path(self) -> Optional[str | Path]:
+        return self._db_path
+
+    @db_path.setter
+    def db_path(self, val: Optional[str | Path]):
+        self._db_path = val
 
     def create(
         self,
@@ -77,6 +85,22 @@ class ContributionRepository:
         item = self.get(contribution_id)
         if not item:
             raise RuntimeError(f"Failed to create contribution {contribution_id}.")
+
+        try:
+            from src.db.audit import AuditRepository
+            audit_repo = AuditRepository(self.db_path)
+            audit_repo.log(
+                action="CREATE",
+                resource_type="contribution",
+                resource_id=contribution_id,
+                actor_id=owner_id,
+                old_state=None,
+                new_state=status,
+                metadata={"title": title, "action": action, "target_resource_id": target_resource_id},
+            )
+        except Exception:
+            pass
+
         return item
 
     def create_contribution(

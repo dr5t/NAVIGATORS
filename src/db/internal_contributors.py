@@ -55,9 +55,19 @@ class InternalContributorRepository:
     """Repository managing internal contributor applications and approvals."""
 
     def __init__(self, db_path: Optional[Path] = None):
-        self.db_path = db_path or DEFAULT_DB_PATH
-        self.rbac_repo = RBACRepository(self.db_path)
-        self.audit_repo = AuditRepository(self.db_path)
+        self._db_path = db_path or DEFAULT_DB_PATH
+        self.rbac_repo = RBACRepository(self._db_path)
+        self.audit_repo = AuditRepository(self._db_path)
+
+    @property
+    def db_path(self) -> Path:
+        return self._db_path
+
+    @db_path.setter
+    def db_path(self, val: Path) -> None:
+        self._db_path = val
+        self.rbac_repo.db_path = val
+        self.audit_repo.db_path = val
 
     def submit_request(
         self,

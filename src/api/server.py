@@ -36,6 +36,8 @@ from api.sync import router as sync_router
 from api.internal_contributors import router as internal_contributors_router
 from api.datasets import router as datasets_router
 from api.model_registry import router as model_registry_router
+from api.audit import router as audit_router
+from api.admin import router as admin_router
 app.include_router(recordings_router)
 app.include_router(training_router)
 app.include_router(auth_router)
@@ -47,6 +49,8 @@ app.include_router(sync_router)
 app.include_router(internal_contributors_router)
 app.include_router(datasets_router)
 app.include_router(model_registry_router)
+app.include_router(audit_router)
+app.include_router(admin_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -429,6 +433,11 @@ from fastapi.responses import FileResponse
 def get_dashboard():
     dashboard_path = os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "mac_dashboard.html")
     return FileResponse(dashboard_path)
+
+@app.get("/admin")
+def get_admin_page():
+    admin_path = os.path.join(os.path.dirname(__file__), "..", "..", "simulator", "admin.html")
+    return FileResponse(admin_path)
 
 @app.get("/privacy")
 def get_privacy_page():

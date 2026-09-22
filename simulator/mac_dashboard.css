@@ -294,3 +294,62 @@ th {
 .log-entry.success { color: var(--accent-green); }
 .log-entry.error { color: var(--accent-red); }
 .log-time { color: var(--text-tertiary); margin-right: 8px; }
+
+/* User Profile & RBAC Card */
+.user-profile-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 24px;
+}
+.user-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.user-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.role-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.role-badge.team_admin, .role-badge.super_admin {
+    background: #065f46;
+    color: #a7f3d0;
+}
+.role-badge.internal_contributor {
+    background: #1e3a8a;
+    color: #93c5fd;
+}
+.role-badge.moderator {
+    background: #854d0e;
+    color: #fef08a;
+}
+.role-badge.local_contributor, .role-badge.user, .role-badge.guest {
+    background: #991b1b;
+    color: #fca5a5;
+}
+.role-switch-select {
+    width: 100%;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    outline: none;
+    cursor: pointer;
+}

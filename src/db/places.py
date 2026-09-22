@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.db.database import get_db
+from src.db.audit import AuditRepository
 
 
 @dataclass
@@ -66,7 +67,17 @@ class PlaceRepository:
     """Data access and audit layer for canonical map places."""
 
     def __init__(self, db_path: Optional[str | Path] = None):
-        self.db_path = db_path
+        self._db_path = db_path
+        self.audit = AuditRepository(db_path)
+
+    @property
+    def db_path(self) -> Optional[str | Path]:
+        return self._db_path
+
+    @db_path.setter
+    def db_path(self, val: Optional[str | Path]):
+        self._db_path = val
+        self.audit.db_path = val
 
     def create_place(
         self,
@@ -120,6 +131,20 @@ class PlaceRepository:
             changed_by=created_by,
             summary="Initial canonical place publication",
         )
+
+        # Log platform audit record
+        try:
+            self.audit.log(
+                action="CREATE",
+                resource_type="place",
+                resource_id=place.id,
+                actor_id=created_by,
+                new_state="published",
+                metadata={"name": place.name, "category": place.category},
+            )
+        except Exception:
+            pass
+
         return place
 
     def get_place(self, place_id: str, include_deleted: bool = False) -> Optional[Place]:
@@ -212,6 +237,21 @@ class PlaceRepository:
             changed_by=changed_by,
             summary=change_summary or "Place details updated",
         )
+
+        # Log platform audit record
+        try:
+            self.audit.log(
+                action="UPDATE",
+                resource_type="place",
+                resource_id=place_id,
+                actor_id=changed_by,
+                old_state=f"v{current.version}",
+                new_state=f"v{updated.version}",
+                metadata={"change_summary": change_summary or "Place details updated"},
+            )
+        except Exception:
+            pass
+
         return updated
 
     def soft_delete_place(
@@ -251,6 +291,21 @@ class PlaceRepository:
             changed_by=changed_by,
             summary=reason or "Place archived / soft deleted",
         )
+
+        # Log platform audit record
+        try:
+            self.audit.log(
+                action="SOFT_DELETE",
+                resource_type="place",
+                resource_id=place_id,
+                actor_id=changed_by,
+                old_state="published",
+                new_state="archived",
+                metadata={"reason": reason or "Place archived / soft deleted"},
+            )
+        except Exception:
+            pass
+
         return archived
 
     def archive_place(
@@ -297,6 +352,21 @@ class PlaceRepository:
             changed_by=changed_by,
             summary="Place restored to canonical published status",
         )
+
+        # Log platform audit record
+        try:
+            self.audit.log(
+                action="RESTORE",
+                resource_type="place",
+                resource_id=place_id,
+                actor_id=changed_by,
+                old_state="archived",
+                new_state="published",
+                metadata={"summary": "Place restored to canonical published status"},
+            )
+        except Exception:
+            pass
+
         return restored
 
     def list_places(

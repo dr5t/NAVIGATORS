@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigators Admin Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin.css">
+    <script src="/auth.js"></script>
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Top Navbar -->
+        <header class="admin-header">
+            <div class="header-left">
+                <div class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">NAVIGATORS</span>
+                    <span class="brand-tag">PLATFORM ADMINISTRATION</span>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="health-pill" id="system-health-pill">
+                    <span class="pulse-dot"></span>
+                    <span id="health-pill-text">System: Healthy</span>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Role Switcher for RBAC Validation -->
+                <div class="role-switcher-container">
+                    <span class="switcher-label">Simulate Role:</span>
+                    <select id="role-switcher-select" class="role-switcher-select" onchange="window.adminApp.switchRole(this.value)">
+                        <option value="guest">Guest (Unauthenticated)</option>
+                        <option value="user">Registered User</option>
+                        <option value="local_contributor">Local Contributor</option>
+                        <option value="internal_contributor">Internal Contributor</option>
+                        <option value="moderator">Community Moderator</option>
+                        <option value="team_admin" selected>Engineering Team Admin</option>
+                        <option value="super_admin">Super Administrator</option>
+                    </select>
+                </div>
+
+                <!-- User Profile & Navigation Link -->
+                <div class="user-profile-badge">
+                    <div class="user-avatar" id="admin-user-avatar">A</div>
+                    <div class="user-info">
+                        <span class="user-name" id="admin-user-name">Team Admin</span>
+                        <span class="role-badge" id="admin-role-badge">team_admin</span>
+                    </div>
+                </div>
+
+                <a href="/" class="btn-navigate-ui" title="Back to Navigation App">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h6v6"></path>
+                        <path d="M10 14L21 3"></path>
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    </svg>
+                    <span>Navigate UI</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="admin-container">
+            <!-- Sidebar Navigation -->
+            <nav class="admin-sidebar">
+                <div class="sidebar-category">GOVERNANCE & OPS</div>
+                
+                <button class="nav-item active" data-section="overview" onclick="window.adminApp.navigateTo('overview')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                    <span>Overview</span>
+                </button>
+
+                <button class="nav-item" data-section="users" onclick="window.adminApp.navigateTo('users')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>Users</span>
+                </button>
+
+                <button class="nav-item" data-section="roles" onclick="window.adminApp.navigateTo('roles')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    <span>Roles</span>
+                </button>
+
+                <button class="nav-item" data-section="contributions" onclick="window.adminApp.navigateTo('contributions')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span>Contributions</span>
+                    <span class="badge-counter" id="sidebar-contrib-count">0</span>
+                </button>
+
+                <button class="nav-item" data-section="map-data" onclick="window.adminApp.navigateTo('map-data')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                    <span>Map Data</span>
+                </button>
+
+                <div class="sidebar-category">ENGINEERING & ML</div>
+
+                <button class="nav-item" data-section="datasets" onclick="window.adminApp.navigateTo('datasets')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>Datasets</span>
+                </button>
+
+                <button class="nav-item" data-section="training" onclick="window.adminApp.navigateTo('training')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    <span>Training</span>
+                </button>
+
+                <button class="nav-item" data-section="models" onclick="window.adminApp.navigateTo('models')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                    <span>Models</span>
+                </button>
+
+                <div class="sidebar-category">SECURITY & MONITORING</div>
+
+                <button class="nav-item" data-section="reports" onclick="window.adminApp.navigateTo('reports')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                    <span>Reports</span>
+                    <span class="badge-counter warning" id="sidebar-reports-count">0</span>
+                </button>
+
+                <button class="nav-item" data-section="audit-logs" onclick="window.adminApp.navigateTo('audit-logs')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Audit Logs</span>
+                </button>
+
+                <button class="nav-item" data-section="system-health" onclick="window.adminApp.navigateTo('system-health')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><activity x1="2" y1="12" x2="6" y2="12"></activity><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    <span>System Health</span>
+                </button>
+            </nav>
+
+            <!-- Main Content Viewport -->
+            <main class="admin-viewport">
+
+                <!-- Access Denied Banner -->
+                <div id="access-denied-view" class="section-panel hidden">
+                    <div class="denied-card">
+                        <div class="denied-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                        </div>
+                        <h2>Access Restricted</h2>
+                        <p id="denied-reason-text">Your active role does not possess permissions required to access administrative controls.</p>
+                        <button class="btn-primary" onclick="window.adminApp.switchRole('team_admin')">Switch to Team Admin</button>
+                    </div>
+                </div>
+
+                <!-- 1. OVERVIEW SECTION -->
+                <section id="sec-overview" class="section-panel">
+                    <div class="panel-header">
+                        <h1>Executive Overview</h1>
+                        <p>Platform status, core metrics, and active model governance</p>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-title">ACTIVE USERS</div>
+                            <div class="kpi-value" id="kpi-active-users">--</div>
+                            <div class="kpi-sub" id="kpi-total-users">Total: --</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">CANONICAL PLACES</div>
+                            <div class="kpi-value" id="kpi-published-places">--</div>
+                            <div class="kpi-sub" id="kpi-archived-places">Archived: --</div>
+                        </div>
+                        <div class="kpi-card highlight">
+                            <div class="kpi-title">PENDING CONTRIBUTIONS</div>
+                            <div class="kpi-value" id="kpi-pending-contribs">--</div>
+                            <div class="kpi-sub">Awaiting moderation</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">VALIDATED DATASETS</div>
+                            <div class="kpi-value" id="kpi-validated-datasets">--</div>
+                            <div class="kpi-sub" id="kpi-uploaded-datasets">Uploaded: --</div>
+                        </div>
+                    </div>
+
+                    <div class="overview-details-grid">
+                        <div class="overview-card">
+                            <h3>Verified Production Model</h3>
+                            <div class="model-info-box" id="overview-model-box">
+                                <div class="model-name" id="ov-model-name">Loading...</div>
+                                <div class="model-metrics">
+                                    <span class="metric-tag" id="ov-model-mae">MAE: --</span>
+                                    <span class="metric-tag" id="ov-model-status">Status: --</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overview-card">
+                            <h3>Audit Event Activity</h3>
+                            <div class="audit-stat-box">
+                                <div class="stat-number" id="ov-audit-total">--</div>
+                                <div class="stat-label">Total Immutable Audit Records</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. USERS SECTION -->
+                <section id="sec-users" class="section-panel hidden">
+                    <div class="panel-header flex-between">
+                        <div>
+                            <h1>User Administration</h1>
+                            <p>Manage member accounts, statuses, and assigned security roles</p>
+                        </div>
+                        <div class="search-box">
+                            <input type="text" id="users-search-input" placeholder="Search name or email..." oninput="window.adminApp.searchUsers(this.value)">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th>Roles</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <tr><td colspan="6" class="text-center">Loading users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 3. ROLES SECTION -->
+                <section id="sec-roles" class="section-panel hidden">
+                    <div class="panel-header">
+                        <h1>Role & Permission Catalog</h1>
+                        <p>Dynamic RBAC role hierarchy and granted permission tokens</p>
+                    </div>
+
+                    <div class="roles-grid" id="roles-cards-container">
+                        <!-- Dynamically loaded -->
+                    </div>
+                </section>
+
+                <!-- 4. CONTRIBUTIONS SECTION -->
+                <section id="sec-contributions" class="section-panel hidden">
+                    <div class="panel-header flex-between">
+                        <div>
+                            <h1>Community Contributions</h1>
+                            <p>Triage queue for community place additions and edits</p>
+                        </div>
+                        <div class="filter-tabs" id="contrib-status-tabs">
+                            <button class="tab-btn active" onclick="window.adminApp.filterContribs('')">All</button>
+                            <button class="tab-btn" onclick="window.adminApp.filterContribs('pending_review')">Pending</button>
+                            <button class="tab-btn" onclick="window.adminApp.filterContribs('approved')">Approved</button>
+                            <button class="tab-btn" onclick="window.adminApp.filterContribs('rejected')">Rejected</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Owner</th>
+                                    <th>Resource</th>
+                                    <th>Status</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contrib-table-body">
+                                <tr><td colspan="7" class="text-center">Loading contributions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 5. MAP DATA SECTION -->
+                <section id="sec-map-data" class="section-panel hidden">
+                    <div class="panel-header flex-between">
+                        <div>
+                            <h1>Canonical Map Data</h1>
+                            <p>Manage POI listings, version snapshots, soft deletes, and restores</p>
+                        </div>
+                        <div class="search-box">
+                            <input type="text" id="places-search-input" placeholder="Search place name or address..." oninput="window.adminApp.searchPlaces(this.value)">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Lat, Lon</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="places-table-body">
+                                <tr><td colspan="7" class="text-center">Loading places...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 6. DATASETS SECTION -->
+                <section id="sec-datasets" class="section-panel hidden">
+                    <div class="panel-header flex-between">
+                        <div>
+                            <h1>Sensor Trajectory Datasets</h1>
+                            <p>Internal contributor GNSS/IMU data recordings & validation workflow</p>
+                        </div>
+                        <button class="btn-primary" onclick="window.adminApp.loadDatasets()">Refresh</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Session ID</th>
+                                    <th>Contributor</th>
+                                    <th>Activity</th>
+                                    <th>Device</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="datasets-table-body">
+                                <tr><td colspan="7" class="text-center">Loading dataset sessions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 7. TRAINING SECTION -->
+                <section id="sec-training" class="section-panel hidden">
+                    <div class="panel-header flex-between">
+                        <div>
+                            <h1>ML Training & Experiments</h1>
+                            <p>Monitor TCN velocity estimator training runs and loss curves</p>
+                        </div>
+                        <button class="btn-primary" onclick="window.adminApp.dispatchMockTraining()">Start Mock Training Run</button>
+                    </div>
+
+                    <div class="training-dashboard-grid">
+                        <div class="overview-card">
+                            <h3>Active Training Pipeline</h3>
+                            <div class="training-status-box" id="training-active-status">
+                                <div class="status-title">Status: Idle</div>
+                                <div class="status-desc">Ready to accept dataset batches for model training.</div>
+                            </div>
+                        </div>
+
+                        <div class="overview-card">
+                            <h3>Training Loss Metrics</h3>
+                            <div class="metrics-display" id="training-metrics-box">
+                                <div class="metric-row"><span>Loss (Val):</span> <strong>0.0042</strong></div>
+                                <div class="metric-row"><span>MAE (m/s):</span> <strong>4.2039</strong></div>
+                                <div class="metric-row"><span>Epochs:</span> <strong>50 / 50</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. MODELS SECTION -->
+                <section id="sec-models" class="section-panel hidden">
+                    <div class="panel-header">
+                        <h1>Model Registry & Governance</h1>
+                        <p>Candidate model approval state machine & production deployment</p>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Model ID</th>
+                                    <th>Name</th>
+                                    <th>Architecture</th>
+                                    <th>MAE</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="models-table-body">
+                                <tr><td colspan="6" class="text-center">Loading model candidates...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 9. REPORTS SECTION -->
+                <section id="sec-reports" class="section-panel hidden">
+                    <div class="panel-header">
+                        <h1>Community Flag Reports</h1>
+                        <p>Triage map errors, spam contributions, or user violations</p>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Report ID</th>
+                                    <th>Reporter</th>
+                                    <th>Target Type</th>
+                                    <th>Target ID</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body">
+                                <tr><td colspan="7" class="text-center">Loading reports...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 10. AUDIT LOGS SECTION -->
+                <section id="sec-audit-logs" class="section-panel hidden">
+                    <div class="panel-header">
+                        <h1>Platform Audit Logs</h1>
+                        <p>Immutable platform-wide audit trail for security and governance</p>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Log ID</th>
+                                    <th>Action</th>
+                                    <th>Resource</th>
+                                    <th>Actor</th>
+                                    <th>States</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table-body">
+                                <tr><td colspan="6" class="text-center">Loading audit logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 11. SYSTEM HEALTH SECTION -->
+                <section id="sec-system-health" class="section-panel hidden">
+                    <div class="panel-header">
+                        <h1>System Health Diagnostics</h1>
+                        <p>Real-time telemetry, database connections, and model inference state</p>
+                    </div>
+
+                    <div class="health-grid">
+                        <div class="health-card">
+                            <h3>Backend API</h3>
+                            <div class="health-status-value positive" id="sh-backend-status">HEALTHY</div>
+                            <div class="health-sub" id="sh-backend-sub">FastAPI REST Server</div>
+                        </div>
+                        <div class="health-card">
+                            <h3>SQLite Database</h3>
+                            <div class="health-status-value positive" id="sh-db-status">CONNECTED</div>
+                            <div class="health-sub" id="sh-db-sub">Tables: --</div>
+                        </div>
+                        <div class="health-card">
+                            <h3>ML Inference Engine</h3>
+                            <div class="health-status-value positive" id="sh-ml-status">ACTIVE</div>
+                            <div class="health-sub" id="sh-ml-sub">Production: TCN v1.0</div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="/admin.js"></script>
+</body>
+</html>

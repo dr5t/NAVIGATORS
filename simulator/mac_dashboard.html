@@ -12,15 +12,34 @@
         <aside class="sidebar">
             <div class="brand">
                 <span class="brand-mark">N<span>↗</span></span>
-                <span>MAC DASHBOARD<small>ML TRAINING & TELEMETRY</small></span>
+                <span>MAC DASHBOARD<small>ENGINEERING & GOVERNANCE</small></span>
             </div>
+            
+            <div class="user-profile-card">
+                <div class="user-info-row">
+                    <span class="user-name" id="userNameLabel">Engineering Lead</span>
+                    <span class="role-badge team_admin" id="userRoleBadge">Team Admin</span>
+                </div>
+                <div class="role-switch-container">
+                    <label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:4px;">Test Role Switcher:</label>
+                    <select id="selectRoleSwitch" class="role-switch-select">
+                        <option value="team_admin">Team Admin (Full)</option>
+                        <option value="internal_contributor">Internal Contributor (Datasets/Training)</option>
+                        <option value="moderator">Moderator (Moderation Queue)</option>
+                        <option value="local_contributor">Local Contributor (No Access)</option>
+                        <option value="user">Registered User (No Access)</option>
+                    </select>
+                </div>
+            </div>
+
             <nav class="nav-menu">
-                <button class="nav-btn active" data-target="telemetry">Live Telemetry</button>
-                <button class="nav-btn" data-target="dataset">Dataset Manager</button>
-                <button class="nav-btn" data-target="datasets">Submitted Datasets</button>
-                <button class="nav-btn" data-target="training">Training Pipeline</button>
-                <button class="nav-btn" data-target="model-registry">Model Registry</button>
-                <button class="nav-btn" data-target="logs">System Logs</button>
+                <button class="nav-btn active" data-target="telemetry" data-roles="team_admin,super_admin">Live Telemetry</button>
+                <button class="nav-btn" data-target="dataset" data-roles="team_admin,super_admin">Dataset Manager</button>
+                <button class="nav-btn" data-target="datasets" data-roles="internal_contributor,team_admin,super_admin">My Datasets</button>
+                <button class="nav-btn" data-target="training" data-roles="internal_contributor,team_admin,super_admin">Training Jobs & Experiments</button>
+                <button class="nav-btn" data-target="model-registry" data-roles="team_admin,super_admin">Models & Benchmarks</button>
+                <button class="nav-btn" data-target="moderation" data-roles="moderator,team_admin,super_admin">Moderation Tools</button>
+                <button class="nav-btn" data-target="logs" data-roles="team_admin,super_admin">System Logs</button>
             </nav>
             <div class="connection-status">
                 <div class="status-indicator"></div>
@@ -310,6 +329,69 @@
                 </div>
             </section>
 
+            <!-- Moderation Tools Section (Phase 16 - Moderator / Team Admin) -->
+            <section id="moderation" class="view-section">
+                <header class="section-header">
+                    <h2>Community Moderation & Triage</h2>
+                    <div class="badges">
+                        <button class="btn-primary" id="btnRefreshModeration" style="font-size:0.82rem;padding:6px 14px;">Refresh Queue</button>
+                    </div>
+                </header>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="stats-grid">
+                        <div><label>Pending Edits</label><span id="modPendingCount" style="color:#f59e0b;font-weight:700;">0</span></div>
+                        <div><label>Open Reports</label><span id="modReportsCount" style="color:#ef4444;font-weight:700;">0</span></div>
+                        <div><label>Approved Today</label><span id="modApprovedCount" style="color:#10b981;">0</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom:14px;">Pending Community Contributions Queue</h3>
+                    <div class="table-container">
+                        <table style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>Contribution ID</th>
+                                    <th>Title / Resource</th>
+                                    <th>Owner</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modTbody">
+                                <tr><td colspan="6" style="text-align:center;color:#64748b;">Loading pending moderation queue…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Access Denied Section (Phase 16 - User / Local Contributor / Guest) -->
+            <section id="access-denied" class="view-section">
+                <div class="card" style="text-align:center;padding:48px 24px;max-width:620px;margin:60px auto;border-top:4px solid #ef4444;background:#1e1e2e;">
+                    <div style="font-size:3.5rem;margin-bottom:16px;">🔒</div>
+                    <h2 style="margin:0 0 12px;color:#f87171;font-size:1.6rem;">Engineering Dashboard Access Denied</h2>
+                    <p style="color:#94a3b8;font-size:0.92rem;line-height:1.6;margin-bottom:24px;">
+                        The Navigators Engineering Dashboard is restricted to technical staff roles (<strong>Internal Contributor</strong>, <strong>Moderator</strong>, or <strong>Team Administrator</strong>).
+                    </p>
+                    <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:18px;margin-bottom:28px;text-align:left;">
+                        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Your Current Role</div>
+                        <div id="deniedUserRoleLabel" style="font-size:1.15rem;font-weight:700;color:#f1f5f9;">Registered User</div>
+                    </div>
+                    <div style="display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;background:#111827;padding:16px;border-radius:8px;border:1px solid #1f2937;">
+                        <label style="font-size:0.85rem;color:#cbd5e1;">Test Role Switcher:</label>
+                        <select id="deniedRoleSelect" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:8px 12px;font-size:0.85rem;">
+                            <option value="internal_contributor">Internal Contributor (Datasets/Training)</option>
+                            <option value="moderator">Moderator (Moderation Queue)</option>
+                            <option value="team_admin" selected>Team Admin (Full Engineering Controls)</option>
+                        </select>
+                        <button class="btn-primary" id="btnDeniedSwitchRole" style="padding:8px 18px;font-weight:600;">Switch Persona</button>
+                    </div>
+                </div>
+            </section>
+
             <!-- Logs Section -->
             <section id="logs" class="view-section">
                 <header class="section-header">
@@ -321,6 +403,7 @@
             </section>
         </main>
     </div>
+    <script src="./engine/auth.js"></script>
     <script src="mac_dashboard.js"></script>
 </body>
 </html>

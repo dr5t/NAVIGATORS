@@ -53,7 +53,15 @@ class AuditRepository:
     """Repository managing immutable audit log entries."""
 
     def __init__(self, db_path: Optional[Path] = None):
-        self.db_path = db_path or DEFAULT_DB_PATH
+        self._db_path = db_path or DEFAULT_DB_PATH
+
+    @property
+    def db_path(self) -> Path:
+        return self._db_path
+
+    @db_path.setter
+    def db_path(self, val: Path) -> None:
+        self._db_path = val
 
     def log(
         self,
@@ -72,6 +80,13 @@ class AuditRepository:
         meta_str = json.dumps(metadata or {})
 
         with get_db(self.db_path) as conn:
+            # Check if actor_id exists in users table to respect FK constraint safely
+            valid_actor_id = None
+            if actor_id:
+                cur = conn.execute("SELECT id FROM users WHERE id = ?", (actor_id,))
+                if cur.fetchone():
+                    valid_actor_id = actor_id
+
             conn.execute(
                 """
                 INSERT INTO audit_logs (
@@ -81,7 +96,7 @@ class AuditRepository:
                 """,
                 (
                     log_id,
-                    actor_id,
+                    valid_actor_id,
                     action,
                     resource_type,
                     resource_id,
@@ -95,7 +110,7 @@ class AuditRepository:
 
         return AuditEntry(
             id=log_id,
-            actor_id=actor_id,
+            actor_id=valid_actor_id,
             action=action,
             resource_type=resource_type,
             resource_id=resource_id,
@@ -180,3 +195,32 @@ class AuditRepository:
             cur = conn.execute(query, tuple(params))
             row = cur.fetchone()
             return row["cnt"] if row else 0
+
+    def get_audit_summary(self) -> Dict[str, Any]:
+        """Return aggregate audit statistics breakdown by resource type, action, and actor."""
+        with get_db(self.db_path) as conn:
+            total_cur = conn.execute("SELECT COUNT(*) as n FROM audit_logs")
+            total = total_cur.fetchone()["n"]
+
+            res_cur = conn.execute(
+                "SELECT resource_type, COUNT(*) as n FROM audit_logs GROUP BY resource_type"
+            )
+            res_rows = res_cur.fetchall()
+
+            act_cur = conn.execute(
+                "SELECT action, COUNT(*) as n FROM audit_logs GROUP BY action"
+            )
+            act_rows = act_cur.fetchall()
+
+            actor_cur = conn.execute(
+                "SELECT actor_id, COUNT(*) as n FROM audit_logs WHERE actor_id IS NOT NULL GROUP BY actor_id ORDER BY n DESC LIMIT 10"
+            )
+            actor_rows = actor_cur.fetchall()
+
+        return {
+            "total_logs": total,
+            "by_resource_type": {row["resource_type"]: row["n"] for row in res_rows},
+            "by_action": {row["action"]: row["n"] for row in act_rows},
+            "by_actor": {row["actor_id"]: row["n"] for row in actor_rows},
+        }
+
