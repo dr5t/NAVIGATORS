@@ -1,8 +1,8 @@
-/**
- * Navigators IDR - Dynamic Role-Based Access Control (RBAC) & Session Authentication
- * Evaluates fine-grained resource:action permissions dynamically without hardcoding role names.
- * Mirrors the canonical database schema and resolves authenticated sessions from server.
- */
+
+
+
+
+
 
 class NavigatorsAuth {
     constructor() {
@@ -10,7 +10,7 @@ class NavigatorsAuth {
         this.TOKEN_STORAGE_KEY = 'navigators_session_token';
         this.MATRIX_STORAGE_KEY = 'navigators_rbac_matrix';
 
-        // Canonical default matrix (matches src/db/schema.sql)
+        
         this.matrix = {
             roles: [
                 { id: 'guest', name: 'Guest', description: 'Unauthenticated visitor' },
@@ -113,7 +113,7 @@ class NavigatorsAuth {
         this.loadStoredMatrix();
         this.currentUser = this.loadUser();
 
-        // Attempt asynchronous session verification if token is present
+        
         if (typeof window !== 'undefined' && this.getToken()) {
             this.fetchSession().catch(e => {
                 console.log('[NavigatorsAuth] Offline or local session initialized:', e?.message || e);
@@ -204,9 +204,9 @@ class NavigatorsAuth {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Server-Side Authentication Operations
-    // -------------------------------------------------------------------------
+    
+    
+    
 
     async login(email, password) {
         const response = await fetch('/api/v1/auth/login', {
@@ -297,7 +297,7 @@ class NavigatorsAuth {
             console.log('[NavigatorsAuth] Using offline guest session fallback');
         }
 
-        // Offline fallback
+        
         this.setToken(null);
         const offlineGuest = {
             id: 'usr_guest',
@@ -323,7 +323,7 @@ class NavigatorsAuth {
             });
 
             if (!response.ok) {
-                // Token invalid or expired
+                
                 this.setToken(null);
                 return null;
             }
@@ -385,24 +385,24 @@ class NavigatorsAuth {
         return user;
     }
 
-    /**
-     * Core dynamic security evaluation: checks whether active user has permission.
-     * Evaluates server-provided permissions dynamically without hardcoding role names.
-     */
+    
+
+
+
     hasPermission(permissionId) {
         if (this.currentUser.status !== 'active') return false;
 
-        // 1. If server session returned verified permissions, use them directly
+        
         if (Array.isArray(this.currentUser.permissions) && this.currentUser.permissions.length > 0) {
             if (this.currentUser.permissions.includes(permissionId)) return true;
         }
 
-        // 2. Otherwise fall back to local RBAC matrix for current role
+        
         const role = this.currentUser.role || 'guest';
         const granted = this.matrix.role_permissions[role] || [];
         if (granted.includes(permissionId)) return true;
 
-        // 3. Compatibility aliases
+        
         const aliases = {
             navigate: 'place:read',
             offline_maps: 'place:read',
@@ -433,18 +433,18 @@ class NavigatorsAuth {
         return this.matrix.role_permissions[role] || [];
     }
 
-    /**
-     * Centralized Authorization Service API (Phase 4):
-     * Answers: Can user X perform action Y on resource Z?
-     * Evaluates:
-     *   1. Authentication (active vs guest vs inactive)
-     *   2. Role & Permissions (granted capability)
-     *   3. Ownership (author/owner constraints for personal actions)
-     *   4. Resource State (lifecycle state: pending, approved, rejected, archived)
-     * Never scatter authorization logic across frontend components.
-     */
+    
+
+
+
+
+
+
+
+
+
     can(action, resource = null) {
-        // 1. Authentication
+        
         if (!this.currentUser || this.currentUser.status !== 'active') {
             return { allowed: false, reason: 'Account is inactive or not logged in.', code: 'ACCOUNT_INACTIVE' };
         }
@@ -453,7 +453,7 @@ class NavigatorsAuth {
             return { allowed: false, reason: 'Action requires an authenticated user account.', code: 'UNAUTHENTICATED' };
         }
 
-        // 2. Role & Permission
+        
         if (!this.hasPermission(action)) {
             return { allowed: false, reason: `Missing required permission '${action}'.`, code: 'PERMISSION_DENIED' };
         }
@@ -462,7 +462,7 @@ class NavigatorsAuth {
             return { allowed: true, reason: `Permission '${action}' is granted.`, code: 'AUTHORIZED' };
         }
 
-        // 3. Ownership
+        
         const ownerId = resource.user_id || resource.owner_id || resource.created_by || resource.author_id;
         const currentUserId = this.currentUser.id;
         const isOwner = Boolean(ownerId && currentUserId && (ownerId === currentUserId));
@@ -488,7 +488,7 @@ class NavigatorsAuth {
             }
         }
 
-        // 4. Resource State
+        
         const state = resource.status || resource.state;
         if (state) {
             const stateNorm = String(state).toLowerCase();

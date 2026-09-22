@@ -1,17 +1,17 @@
-/**
- * Navigators IDR - Simulator Application
- * Interactive map visualization with real-time telemetry playback.
- *
- * Loads simulation JSON data and animates:
- *   - Ground truth trajectory (cyan)
- *   - Estimated trajectory (green/orange based on mode)
- *   - GNSS denied zones (red hatching)
- *   - Real-time telemetry gauges
- */
 
-// ========================================================
-// State
-// ========================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
 const state = {
     map: null,
     data: null,
@@ -24,40 +24,40 @@ const state = {
     animationFrame: null,
     lastFrameTime: 0,
 
-    // Map layers
+    
     truthLine: null,
     estimatedLine: null,
     vehicleMarker: null,
     truthMarker: null,
     gnssZones: [],
 
-    // Accumulated coordinates for drawing
+    
     truthCoords: [],
     estimatedCoords: [],
 
-    // Routing layers & positioning
+    
     routeLine: null,
     destMarker: null,
     lastPosition: null,
 };
 window.state = state;
 
-// ========================================================
-// Initialization
-// ========================================================
+
+
+
 document.addEventListener('DOMContentLoaded', async () => {
     const loader = document.getElementById('app-loader');
 
-    // Mode Switch: ?mode=mobile vs ?mode=dashboard (default)
+    
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode') || 'dashboard';
     document.body.classList.add(`${mode}-mode`);
     
     if (mode === 'dashboard') {
-        // Dashboard needs to connect to WebSocket as a viewer
+        
         connectDashboardToWebSocket();
     } else {
-        // Mobile mode needs to connect to WebSocket as a sensor source
+        
         if (window.dataRecorder) {
             window.dataRecorder.connectToServer(window.location.host).catch(e => console.error("WS error:", e));
         }
@@ -73,10 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnStartLive) btnStartLive.disabled = true;
     }
     
-    // Wait for simulation data to load
+    
     await loadSimulationData();
     
-    // Hide loader after a short delay
+    
     setTimeout(() => {
         if (loader) loader.classList.add('hidden');
     }, 400);
@@ -98,11 +98,11 @@ function connectDashboardToWebSocket() {
 function updateDashboardTelemetry(payload) {
     if (payload.raw) {
         document.getElementById('sourceLabel').textContent = 'LIVE FROM MOBILE';
-        // You could update speed and heading here directly from the raw IMU/GNSS
+        
     }
 }
 
-// Training Logic
+
 let trainingPollInterval = null;
 
 async function startTraining() {
@@ -217,7 +217,7 @@ function initMap() {
     L.control.zoom({ position: 'bottomright' }).addTo(state.map);
     L.control.scale({ position: 'bottomleft', imperial: false }).addTo(state.map);
 
-    // Ground truth trajectory line
+    
     state.truthLine = L.polyline([], {
         color: '#6c8884',
         weight: 3,
@@ -226,7 +226,7 @@ function initMap() {
         lineCap: 'round',
     }).addTo(state.map);
 
-    // Estimated trajectory line
+    
     state.estimatedLine = L.polyline([], {
         color: '#4c7b59',
         weight: 3,
@@ -235,7 +235,7 @@ function initMap() {
         lineJoin: 'round',
     }).addTo(state.map);
 
-    // Vehicle marker (estimated position)
+    
     const vehicleIcon = L.divIcon({
         className: 'vehicle-marker',
         html: `
@@ -252,7 +252,7 @@ function initMap() {
         opacity: 0,
     }).addTo(state.map);
 
-    // Truth marker (small dot)
+    
     const truthIcon = L.divIcon({
         className: '',
         html: '<div style="width:8px;height:8px;background:#6c8884;border-radius:50%;border:2px solid #f5f4ef;"></div>',
@@ -266,7 +266,7 @@ function initMap() {
         opacity: 0,
     }).addTo(state.map);
 
-    // Map click destination selection
+    
     state.map.on('click', (e) => {
         if (typeof window.setDestination === 'function') {
             window.setDestination(e.latlng.lat, e.latlng.lng, `Destination (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`);
@@ -293,7 +293,7 @@ function initControls() {
         }
     });
 
-    // Installation succeeds only after the complete local application is cached.
+    
     const offlineStatus = document.getElementById('offlineStatus');
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', event => {
@@ -350,7 +350,7 @@ function initControls() {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
 
-    // Live Sensor Controls (Offline Edge Engine)
+    
     document.getElementById('btnStartLive').addEventListener('click', async () => {
         const btn = document.getElementById('btnStartLive');
         const statusEl = document.getElementById('edgeStatus');
@@ -405,11 +405,11 @@ function initControls() {
                 state.truthMarker.setOpacity(0);
                 state.vehicleMarker.setOpacity(0);
 
-                // Clear map trajectories for live run
+                
                 state.truthLine.setLatLngs([]);
                 state.estimatedLine.setLatLngs([]);
                 state.estimatedCoords = [];
-                // Disable playback
+                
                 pause();
                 document.getElementById('playbackControls').style.opacity = '0.3';
                 document.getElementById('playbackControls').style.pointerEvents = 'none';
@@ -434,7 +434,7 @@ function initControls() {
             }
         }
     });
-    // Phase 2 Floating Map Action Buttons
+    
     const btnFollow = document.getElementById('btnFollow');
     if (btnFollow) {
         btnFollow.addEventListener('click', () => {
@@ -491,9 +491,9 @@ function initControls() {
     }
 }
 
-// ========================================================
-// Phase 2 Routing & RBAC Engine Integration
-// ========================================================
+
+
+
 if (typeof NavigatorsRouter !== 'undefined') {
     window.router = new NavigatorsRouter();
 }
@@ -622,9 +622,9 @@ window.cancelRoute = function() {
 };
 
 
-// ========================================================
-// Data Loading
-// ========================================================
+
+
+
 async function loadSimulationData() {
     try {
         const response = await fetch('data/simulation.json');
@@ -646,11 +646,11 @@ function onDataLoaded() {
 
     console.log(`[Simulator] Loaded ${data.data.timestamps.length} frames`);
 
-    // Set timeline range
+    
     const timeline = document.getElementById('timeline');
     timeline.max = data.data.timestamps.length - 1;
 
-    // Center map on trajectory
+    
     const [firstLat, firstLon] = data.data.estimated_lat_lon[0];
     const covered = state.localMap?.contains(firstLat, firstLon);
     if (covered) {
@@ -659,21 +659,21 @@ function onDataLoaded() {
     }
     else if (state.localMap) document.getElementById('mapStatus').textContent = 'Local OSM map ready · saved replay is outside this area';
 
-    // Mark GNSS denied zones on the map
+    
     state.gnssZones.forEach(zone => state.map.removeLayer(zone));
     state.gnssZones = [];
     markGnssDeniedZones();
 
-    // Update metrics display
+    
     for (const [id, value] of Object.entries({ ateRmse: meta.metrics?.ate_rmse, cep50: meta.metrics?.cep50,
         cep95: meta.metrics?.cep95, totalDistance: meta.total_distance })) {
         document.getElementById(id).textContent = Number.isFinite(value) && value >= 0 ? `${value.toFixed(1)}m` : '-';
     }
 
-    // Saved examples are paused until the user starts playback.
+    
     seekFrame(0);
 
-    // Keep the downloaded area visible when the saved replay covers another city.
+    
     if (!covered) state.localMap?.centerView(state.map);
 }
 
@@ -685,7 +685,7 @@ function markGnssDeniedZones() {
         if (i < data.gnss_available.length && !data.gnss_available[i] && zoneStart === null) {
             zoneStart = i;
         } else if ((i === data.gnss_available.length || data.gnss_available[i]) && zoneStart !== null) {
-            // Create zone polygon
+            
             const coords = [];
             for (let j = zoneStart; j < i; j++) {
                 coords.push(data.estimated_lat_lon[j]);
@@ -704,9 +704,9 @@ function markGnssDeniedZones() {
     }
 }
 
-// ========================================================
-// Playback Control
-// ========================================================
+
+
+
 function play() {
     if (!state.data || window.offlineEngine.isCapturing || state.view !== 'replay' || state.playing) return;
     if (state.currentIndex >= state.data.data.timestamps.length - 1) seekFrame(0);
@@ -742,7 +742,7 @@ function animate() {
     if (!state.playing || !state.data) return;
 
     const now = performance.now();
-    const elapsed = (now - state.lastFrameTime) / 1000; // seconds
+    const elapsed = (now - state.lastFrameTime) / 1000; 
     state.lastFrameTime = now;
 
     state.playbackTime += elapsed * state.playbackSpeed;
@@ -755,9 +755,9 @@ function animate() {
     state.animationFrame = requestAnimationFrame(animate);
 }
 
-// ========================================================
-// Frame Update
-// ========================================================
+
+
+
 function seekFrame(index) {
     if (!state.data) return;
     state.currentIndex = index;
@@ -785,11 +785,11 @@ function updateFrame(index) {
     const isZupt = data.zupt_active[index];
     const timestamp = data.timestamps[index];
 
-    // --- Update Map ---
+    
     state.truthCoords.push(reference);
     state.estimatedCoords.push([estLat, estLon]);
 
-    // Rebuild line segments efficiently without O(N) full-array iteration on every single frame
+    
     if (state.needsFullLineRebuild || !state.truthSegments) {
         state.truthSegments = [];
         let currentSegment = [];
@@ -812,7 +812,7 @@ function updateFrame(index) {
         state.estimatedLine.addLatLng([estLat, estLon]);
     }
 
-    // Change estimated line style only when navMode changes to prevent style recalculation thrashing
+    
     if (state.currentNavStyle !== navMode) {
         if (navMode === 'dr') {
             state.estimatedLine.setStyle({ color: '#ba5b37', dashArray: '5, 8' });
@@ -824,12 +824,12 @@ function updateFrame(index) {
         state.currentNavStyle = navMode;
     }
 
-    // Update markers
+    
     state.vehicleMarker.setLatLng([estLat, estLon]).setOpacity(1);
     state.truthMarker.setOpacity(reference ? 1 : 0);
     if (reference) state.truthMarker.setLatLng(reference);
 
-    // Update vehicle marker appearance only on state change
+    
     const markerEl = state.vehicleMarker.getElement();
     if (markerEl) {
         const wrapper = markerEl.querySelector('.vehicle-marker') || markerEl;
@@ -839,20 +839,20 @@ function updateFrame(index) {
         }
     }
 
-    // Pan map to follow vehicle
+    
     if (state.followPosition) state.map.panTo([estLat, estLon], { animate: false });
 
-    // --- Update Telemetry ---
+    
     updateNavMode(navMode);
     updateGnssStatus(gnssOk);
-    updateSpeed(speed * 3.6, heading); // Convert m/s to km/h
+    updateSpeed(speed * 3.6, heading); 
     document.getElementById('positionCoordinates').textContent = `${estLat.toFixed(6)}, ${estLon.toFixed(6)}`;
     updatePositionError(posError);
     updateDrift(driftPct);
     updateConfidence(confidence);
     window.updateConsoleTelemetry?.({ source: 'saved', nav_mode: navMode, gnss_available: gnssOk, zupt_active: isZupt });
 
-    // Timeline
+    
     document.getElementById('timeline').value = index;
     const start = state.data.metadata.source === 'replay.py' ? 0 : data.timestamps[0];
     const elapsed = timestamp - start;
@@ -861,9 +861,9 @@ function updateFrame(index) {
     document.getElementById('timeline').setAttribute('aria-valuetext', `${elapsed.toFixed(1)} of ${duration.toFixed(1)} seconds`);
 }
 
-// ========================================================
-// Telemetry Updates
-// ========================================================
+
+
+
 let lastToastMode = null;
 let toastTimeout = null;
 
@@ -971,7 +971,7 @@ function updatePositionError(error) {
     }
     errorEl.textContent = error.toFixed(1);
 
-    // Color based on severity
+    
     if (error < 3) {
         errorEl.style.color = 'var(--accent-green)';
     } else if (error < 7) {
@@ -980,7 +980,7 @@ function updatePositionError(error) {
         errorEl.style.color = 'var(--accent-red)';
     }
 
-    // Error bar (max 10m)
+    
     const pct = Math.min(100, (error / 10) * 100);
     document.getElementById('posErrorBar').style.width = `${pct}%`;
 }
@@ -998,12 +998,12 @@ function updateDrift(driftPct) {
 
     valueEl.textContent = driftPct.toFixed(1);
 
-    // Ring fill (circumference = 2πr = 2 * π * 52 ≈ 326.73)
+    
     const circumference = 326.73;
-    const fillPct = Math.min(1, driftPct / 15); // Scale to 15% max
+    const fillPct = Math.min(1, driftPct / 15); 
     ringEl.style.strokeDashoffset = circumference * (1 - fillPct);
 
-    // Color based on threshold
+    
     if (driftPct < 5) {
         ringEl.style.stroke = 'var(--accent-green)';
         valueEl.style.color = 'var(--accent-green)';

@@ -28,13 +28,13 @@ from src.db.places import PlaceRepository, Place, normalize_category, haversine_
 @dataclass
 class SearchResultItem:
     id: str
-    result_type: str  # 'place', 'address', 'coordinates', 'saved_place', 'recent_search'
+    result_type: str
     title: str
     subtitle: Optional[str] = None
     category: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    source: str = "local_db"  # 'local_db', 'online_provider', 'coordinate_parser', 'saved_places', 'recent_searches'
+    source: str = "local_db"
     place_id: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -55,7 +55,7 @@ class CoordinateParser:
 
         q = query.strip()
 
-        # 1. Standard decimal format: "28.6139, 77.2090" or "28.6139 77.2090"
+
         m1 = re.match(r"^([+-]?\d+(?:\.\d+)?)\s*[\s,]\s*([+-]?\d+(?:\.\d+)?)$", q)
         if m1:
             try:
@@ -65,7 +65,7 @@ class CoordinateParser:
             except ValueError:
                 pass
 
-        # 2. Hemisphere suffix: "28.6139 N, 77.2090 E" or "28.6139S, 77.2090W"
+
         m2 = re.match(
             r"^(\d+(?:\.\d+)?)\s*([NSns])\s*[\s,]\s*(\d+(?:\.\d+)?)\s*([EWew])$",
             q,
@@ -79,7 +79,7 @@ class CoordinateParser:
             except ValueError:
                 pass
 
-        # 3. DMS Format: 28°36'50"N 77°12'32"E
+
         m3 = re.match(
             r"""^(\d+)°\s*(\d+)'\s*(\d+(?:\.\d+)?)"\s*([NSns])\s*[\s,]\s*(\d+)°\s*(\d+)'\s*(\d+(?:\.\d+)?)"\s*([EWew])$""",
             q,
@@ -284,7 +284,7 @@ class SearchEngine:
                 "Global online web geocoding is unavailable offline."
             )
 
-        # 1. Coordinate Parsing
+
         coords = CoordinateParser.parse(q_clean) if q_clean else None
         if coords:
             c_lat, c_lon = coords
@@ -301,7 +301,7 @@ class SearchEngine:
                 )
             )
 
-        # 2. Saved Places Matching
+
         if user_id:
             saved_items = self.saved_repo.list_saved_places(user_id, search=q_clean, limit=5)
             for sp in saved_items:
@@ -320,7 +320,7 @@ class SearchEngine:
                     )
                 )
 
-        # 3. Recent Searches Matching
+
         if user_id:
             recents = self.recent_repo.list_recent_searches(user_id, limit=5)
             for rs in recents:
@@ -337,7 +337,7 @@ class SearchEngine:
                         )
                     )
 
-        # 4. Places & Addresses Search (Local DB / Online Fallback)
+
         if q_clean and not coords:
             local_places = self.place_repo.list_places(
                 search=q_clean,

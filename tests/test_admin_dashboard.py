@@ -72,13 +72,13 @@ def test_admin_users_list_and_rbac_gating(temp_db):
     """Test user administration API listing and permission gating."""
     auth_service = AuthService(temp_db)
 
-    # 1. Guest request -> 401
+
     guest_session, _ = auth_service.create_session(user_id=None, is_guest=True)
     with pytest.raises(HTTPException) as exc_info:
         list_admin_users(session=guest_session)
     assert exc_info.value.status_code == 401
 
-    # 2. Normal user without user:read -> 403
+
     _, norm_session, _ = auth_service.register(
         email="user_no_admin@example.com",
         password="Password123!",
@@ -89,7 +89,7 @@ def test_admin_users_list_and_rbac_gating(temp_db):
         list_admin_users(session=norm_session)
     assert exc_info.value.status_code == 403
 
-    # 3. Team admin with user:read -> 200 OK
+
     admin_user, admin_session, _ = auth_service.register(
         email="users_admin@example.com",
         password="Password123!",

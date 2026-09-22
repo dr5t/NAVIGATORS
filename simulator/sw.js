@@ -1,4 +1,4 @@
-// Bump the version whenever a bundled asset, model, or downloaded map changes.
+
 const CACHE_NAME = 'navigators-idr-offline-v20';
 const ASSETS = [
     './', './index.html', './index.css', './app.js', './workspace.js', './local_map.js', './recording_sync.js',
@@ -15,7 +15,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-    // A failed download must never mark a partial package ready.
+    
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(
         ASSETS.map(url => new Request(url, { cache: 'reload' }))
     )).then(() => self.skipWaiting()));

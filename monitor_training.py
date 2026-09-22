@@ -18,7 +18,7 @@ def main():
                 is_training = data.get("is_training", False)
                 status = data.get("status", "")
                 
-                # Check for new epochs
+
                 history = data.get("epoch_history", [])
                 while last_epoch < len(history):
                     ep = history[last_epoch]

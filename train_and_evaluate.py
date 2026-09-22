@@ -30,7 +30,7 @@ def run_pipeline():
     print("2. VERIFY FEATURE PIPELINE")
     print("==================================================")
     
-    # Check normalization stats
+
     stats_path = os.path.join("checkpoints", "norm_stats.json")
     if os.path.exists(stats_path):
         with open(stats_path, "r") as f:
@@ -43,7 +43,7 @@ def run_pipeline():
         print("Normalization stats not found!")
         return
 
-    # Verify input shape and NaN
+
     for X, Y in train_loader:
         print(f"Input shape: {X.shape} (Batch, Window, Channels)")
         print(f"Target shape: {Y.shape} (Batch, [V_N, V_E])")
@@ -146,7 +146,7 @@ def run_pipeline():
         print("RESULT: AI MODEL DID NOT BEAT THE BASELINE.")
         
     print("\n--- 20 REPRESENTATIVE EXAMPLES ---")
-    # Pick 20 representative examples covering different speed regimes
+
     sorted_indices = np.argsort(gt_speeds)
     step = len(sorted_indices) // 20
     for i in range(20):
@@ -168,16 +168,16 @@ def run_pipeline():
     )
     
     print("Running ONNX Parity Test...")
-    # Get a sample batch
+
     for X, Y in test_loader:
         sample_x = X.numpy()
         break
         
-    # PyTorch inference
+
     with torch.no_grad():
         pt_out = model(torch.from_numpy(sample_x).to(device)).cpu().numpy()
         
-    # ONNX inference
+
     ort_session = ort.InferenceSession(onnx_path)
     ort_inputs = {ort_session.get_inputs()[0].name: sample_x}
     ort_outs = ort_session.run(None, ort_inputs)
@@ -196,7 +196,7 @@ def run_pipeline():
     else:
         print("ONNX Parity FAILED.")
         
-    # Overwrite the original norm_stats.json to the simulator directory for Android inference
+
     import shutil
     shutil.copy(stats_path, os.path.join("simulator", "norm_stats.json"))
 

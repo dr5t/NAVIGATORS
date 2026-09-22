@@ -48,7 +48,7 @@
         </aside>
 
         <main class="main-content">
-            <!-- Telemetry Section -->
+            
             <section id="telemetry" class="view-section active">
                 <header class="section-header">
                     <h2>Live Sensor Telemetry</h2>
@@ -85,14 +85,14 @@
                 </div>
             </section>
 
-            <!-- Dataset Section -->
+            
             <section id="dataset" class="view-section">
                 <header class="section-header">
                     <h2>Dataset Manager</h2>
                     <button class="btn-primary" id="btnRefreshDataset">Refresh Dataset</button>
                 </header>
                 
-                <!-- Import Dataset Feature -->
+                
                 <div class="card" style="margin-bottom: 20px;">
                     <h3>Import External Dataset</h3>
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -118,14 +118,14 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Populated dynamically -->
+                                
                             </tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <!-- Submitted Datasets Section (Phase 13) -->
+            
             <section id="datasets" class="view-section">
                 <header class="section-header">
                     <h2>Submitted Datasets</h2>
@@ -134,7 +134,7 @@
                     </div>
                 </header>
 
-                <!-- Stats Overview -->
+                
                 <div class="card" style="margin-bottom:20px;">
                     <div class="stats-grid" id="datasetStatsGrid">
                         <div><label>Uploaded</label><span id="dsStatUploaded" style="color:#f59e0b;">0</span></div>
@@ -146,7 +146,7 @@
                     </div>
                 </div>
 
-                <!-- Filter Controls -->
+                
                 <div class="card" style="margin-bottom:16px;padding:14px 20px;">
                     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
                         <label style="font-size:0.82rem;color:#94a3b8;">Filter by status:</label>
@@ -170,7 +170,7 @@
                     </div>
                 </div>
 
-                <!-- Session Table -->
+                
                 <div class="card">
                     <div class="table-container">
                         <table id="dsSessionTable" style="width:100%;">
@@ -194,7 +194,7 @@
                     <div id="dsPagination" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;"></div>
                 </div>
 
-                <!-- Reject Modal -->
+                
                 <div id="dsRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
                     <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px;min-width:400px;max-width:500px;">
                         <h3 style="margin:0 0 16px;color:#f1f5f9;">Reject Dataset Session</h3>
@@ -209,7 +209,7 @@
                 </div>
             </section>
 
-            <!-- Training Section -->
+            
             <section id="training" class="view-section">
                 <header class="section-header">
                     <h2>Training Pipeline</h2>
@@ -256,7 +256,7 @@
                 </div>
             </section>
 
-            <!-- Model Registry Section (Phase 15) -->
+            
             <section id="model-registry" class="view-section">
                 <header class="section-header">
                     <h2>Model Registry & Governance</h2>
@@ -265,7 +265,7 @@
                     </div>
                 </header>
 
-                <!-- Active Production Model Card -->
+                
                 <div class="card" style="margin-bottom: 20px; border-left: 4px solid #10b981;">
                     <h3>Current Production Model</h3>
                     <div class="stats-grid" id="prodModelGrid" style="margin-top: 10px;">
@@ -276,7 +276,7 @@
                     </div>
                 </div>
 
-                <!-- Model Registry Table -->
+                
                 <div class="card">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                         <h3 style="margin:0;">Model Candidates & History</h3>
@@ -314,7 +314,7 @@
                     </div>
                 </div>
 
-                <!-- Model Reject Modal -->
+                
                 <div id="mrRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
                     <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px;min-width:400px;max-width:500px;">
                         <h3 style="margin:0 0 16px;color:#f1f5f9;">Reject Model Candidate</h3>
@@ -329,7 +329,7 @@
                 </div>
             </section>
 
-            <!-- Moderation Tools Section (Phase 16 - Moderator / Team Admin) -->
+            
             <section id="moderation" class="view-section">
                 <header class="section-header">
                     <h2>Community Moderation & Triage</h2>
@@ -368,7 +368,7 @@
                 </div>
             </section>
 
-            <!-- Access Denied Section (Phase 16 - User / Local Contributor / Guest) -->
+            
             <section id="access-denied" class="view-section">
                 <div class="card" style="text-align:center;padding:48px 24px;max-width:620px;margin:60px auto;border-top:4px solid #ef4444;background:#1e1e2e;">
                     <div style="font-size:3.5rem;margin-bottom:16px;">🔒</div>
@@ -392,13 +392,13 @@
                 </div>
             </section>
 
-            <!-- Logs Section -->
+            
             <section id="logs" class="view-section">
                 <header class="section-header">
                     <h2>System Logs</h2>
                 </header>
                 <div class="card log-console" id="logConsole">
-                    <!-- Logs populated here -->
+                    
                 </div>
             </section>
         </main>

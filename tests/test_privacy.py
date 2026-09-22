@@ -49,9 +49,9 @@ def _create_user_and_context(rbac_svc: RBACRepository, auth_svc: AuthService, em
     return user, ctx, raw_token
 
 
-# =============================================================================
-# 1. Privacy Settings & Defaults
-# =============================================================================
+
+
+
 
 def test_get_privacy_settings_defaults(temp_db, rbac_repo, auth_service, privacy_repo):
     user, ctx, raw_token = _create_user_and_context(rbac_repo, auth_service, "defaults@example.com", "Defaults User")
@@ -69,9 +69,9 @@ def test_get_privacy_settings_defaults(temp_db, rbac_repo, auth_service, privacy
         assert s["sharing_level"] == "private"
 
 
-# =============================================================================
-# 2. Update Domain Privacy Settings
-# =============================================================================
+
+
+
 
 def test_update_domain_setting_valid(temp_db, rbac_repo, auth_service, privacy_repo):
     user, ctx, raw_token = _create_user_and_context(rbac_repo, auth_service, "update.setting@example.com", "Setting User")
@@ -88,7 +88,7 @@ def test_update_domain_setting_valid(temp_db, rbac_repo, auth_service, privacy_r
     assert updated["synced"] is False
     assert updated["sharing_level"] == "anonymous"
 
-    # Verify persistent get settings
+
     get_res = privacy_repo.get_privacy_settings(user.id)
     all_settings = {s["domain"]: s for s in get_res}
     assert all_settings["location_data"]["stored_locally"] is False
@@ -120,14 +120,14 @@ def test_update_domain_setting_invalid_sharing_level(temp_db, rbac_repo, auth_se
     assert "Invalid sharing level" in str(exc_info.value)
 
 
-# =============================================================================
-# 3. Domain Purges (Database and File Deletions)
-# =============================================================================
+
+
+
 
 def test_purge_location_data(temp_db, rbac_repo, auth_service, privacy_repo):
     user, ctx, raw_token = _create_user_and_context(rbac_repo, auth_service, "purge.loc@example.com", "Purge Location User")
 
-    # Add a saved place and recent search for user
+
     conn = connect_db(temp_db)
     c = conn.cursor()
     c.execute(
@@ -141,13 +141,13 @@ def test_purge_location_data(temp_db, rbac_repo, auth_service, privacy_repo):
     conn.commit()
     conn.close()
 
-    # Trigger purge
+
     res = privacy_repo.purge_domain_data(user_id=user.id, domain="location_data")
     assert res["domain"] == "location_data"
     assert res["purged"] is True
     assert res["deleted_records"] == 2
 
-    # Verify DB records are gone
+
     conn = connect_db(temp_db)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM saved_places WHERE user_id = ?", (user.id,))
@@ -160,12 +160,12 @@ def test_purge_location_data(temp_db, rbac_repo, auth_service, privacy_repo):
 def test_purge_dataset_contributions_physical_file_deletion(temp_db, rbac_repo, auth_service, privacy_repo, tmp_path):
     user, ctx, raw_token = _create_user_and_context(rbac_repo, auth_service, "purge.dataset@example.com", "Purge Dataset User", role="internal_contributor")
 
-    # Create dummy dataset file on disk
+
     dummy_file = tmp_path / "sensor_recording_test.bin"
     dummy_file.write_bytes(b"\x00\x01\x02\x03\x04\x05")
     assert dummy_file.exists()
 
-    # Insert dataset_session into DB
+
     ds_id = str(uuid.uuid4())
     conn = connect_db(temp_db)
     c = conn.cursor()
@@ -179,17 +179,17 @@ def test_purge_dataset_contributions_physical_file_deletion(temp_db, rbac_repo, 
     conn.commit()
     conn.close()
 
-    # Trigger dataset contributions purge
+
     res = privacy_repo.purge_domain_data(user_id=user.id, domain="dataset_contributions")
     assert res["domain"] == "dataset_contributions"
     assert res["purged"] is True
     assert res["deleted_records"] == 1
     assert res["deleted_files"] == 1
 
-    # Verify file is physically removed from disk!
+
     assert not dummy_file.exists()
 
-    # Verify DB row is gone
+
     conn = connect_db(temp_db)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM dataset_sessions WHERE contributor_id = ?", (user.id,))
@@ -200,7 +200,7 @@ def test_purge_dataset_contributions_physical_file_deletion(temp_db, rbac_repo, 
 def test_purge_contribution_data(temp_db, rbac_repo, auth_service, privacy_repo):
     user, ctx, raw_token = _create_user_and_context(rbac_repo, auth_service, "purge.contrib@example.com", "Purge Contrib User")
 
-    # Insert draft contribution
+
     contrib_id = str(uuid.uuid4())
     conn = connect_db(temp_db)
     c = conn.cursor()
@@ -224,21 +224,21 @@ def test_purge_contribution_data(temp_db, rbac_repo, auth_service, privacy_repo)
     conn.close()
 
 
-# =============================================================================
-# 4. Complete Account Wipe & Session Revocation
-# =============================================================================
+
+
+
 
 def test_delete_account_full_wipe(temp_db, rbac_repo, auth_service, privacy_repo, tmp_path):
     user, ctx, raw_token = _create_user_and_context(rbac_repo, auth_service, "delete.account@example.com", "Delete Account User")
 
-    # Create dummy dataset file linked to user
+
     dummy_file = tmp_path / "account_dataset.bin"
     dummy_file.write_bytes(b"account data file")
     assert dummy_file.exists()
 
     conn = connect_db(temp_db)
     c = conn.cursor()
-    # Dataset session
+
     c.execute(
         """
         INSERT INTO dataset_sessions (id, contributor_id, activity_type, device, sensor_data_path)
@@ -246,7 +246,7 @@ def test_delete_account_full_wipe(temp_db, rbac_repo, auth_service, privacy_repo
         """,
         (str(uuid.uuid4()), user.id, str(dummy_file)),
     )
-    # Saved place
+
     c.execute(
         "INSERT INTO saved_places (id, user_id, name, latitude, longitude) VALUES (?, ?, ?, ?, ?)",
         (str(uuid.uuid4()), user.id, "Work", 12.98, 77.60),
@@ -254,24 +254,24 @@ def test_delete_account_full_wipe(temp_db, rbac_repo, auth_service, privacy_repo
     conn.commit()
     conn.close()
 
-    # Call delete account endpoint
+
     res = privacy_repo.delete_user_account(user_id=user.id)
     assert res["user_id"] == user.id
     assert res["account_deleted"] is True
     assert res["deleted_files"] == 1
 
-    # Verify physical file is gone
+
     assert not dummy_file.exists()
 
-    # Verify user record is deleted from users table
+
     conn = connect_db(temp_db)
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM users WHERE id = ?", (user.id,))
     assert c.fetchone()[0] == 0
-    # Verify CASCADE wiped saved places
+
     c.execute("SELECT COUNT(*) FROM saved_places WHERE user_id = ?", (user.id,))
     assert c.fetchone()[0] == 0
-    # Verify sessions were revoked
+
     c.execute("SELECT revoked_at FROM sessions WHERE user_id = ?", (user.id,))
     sess_rows = c.fetchall()
     for s in sess_rows:

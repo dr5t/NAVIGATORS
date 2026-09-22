@@ -105,7 +105,7 @@ class CanonicalRepository:
             latest_row = conn.execute("SELECT COALESCE(MAX(sequence_id), 0) FROM canonical_changelog").fetchone()
             latest_sequence = int(latest_row[0]) if latest_row else 0
 
-            # Query one extra item to check if there are more
+
             cur = conn.execute(
                 """
                 SELECT sequence_id, resource_type, resource_id, action, version, data_json, created_at
@@ -155,7 +155,7 @@ class CanonicalRepository:
         if format not in ("sqlite", "json_bundle"):
             raise ValueError("Offline package format must be 'sqlite' or 'json_bundle'")
 
-        # Determine target export directory
+
         if export_dir:
             pkg_dir = Path(export_dir)
         else:
@@ -167,14 +167,14 @@ class CanonicalRepository:
         now = datetime.now(timezone.utc).isoformat()
 
         with get_db(self.db_path) as conn:
-            # Determine next package version
+
             ver_row = conn.execute(
                 "SELECT COALESCE(MAX(package_version), 0) FROM offline_map_packages WHERE region = ?",
                 (region,),
             ).fetchone()
             next_version = (int(ver_row[0]) if ver_row else 0) + 1
 
-            # Fetch all active canonical places
+
             cur = conn.execute(
                 """
                 SELECT id, name, category, latitude, longitude, address, opening_hours,
@@ -194,7 +194,7 @@ class CanonicalRepository:
             file_name = f"offline_map_{region}_v{next_version}_{secrets.token_hex(4)}.db"
             file_path = pkg_dir / file_name
 
-            # Create standalone SQLite database
+
             if file_path.exists():
                 file_path.unlink()
 
@@ -257,7 +257,7 @@ class CanonicalRepository:
                 pkg_conn.close()
 
         else:
-            # JSON bundle format
+
             file_name = f"offline_map_{region}_v{next_version}_{secrets.token_hex(4)}.json"
             file_path = pkg_dir / file_name
             bundle_data = {
@@ -274,7 +274,7 @@ class CanonicalRepository:
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(bundle_data, f, indent=2)
 
-        # Compute SHA-256 hash and file size
+
         hasher = hashlib.sha256()
         with open(file_path, "rb") as f:
             while chunk := f.read(65536):
@@ -282,7 +282,7 @@ class CanonicalRepository:
         checksum = hasher.hexdigest()
         size_bytes = file_path.stat().st_size
 
-        # Record in offline_map_packages table
+
         with get_db(self.db_path) as conn:
             conn.execute(
                 """

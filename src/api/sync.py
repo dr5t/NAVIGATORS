@@ -26,9 +26,9 @@ auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class SyncItemModel(BaseModel):
     client_id: Optional[str] = Field(None, description="Client generated UUID for idempotent deduplication")
@@ -57,9 +57,9 @@ def _extract_query_val(val: Any, default: Any = None) -> Any:
     return val if val is not None else default
 
 
-# =============================================================================
-# Endpoints
-# =============================================================================
+
+
+
 
 @router.get("/status")
 def api_sync_status():
@@ -160,7 +160,7 @@ def api_get_latest_package(
     region_str = str(_extract_query_val(region, "global")).strip().lower()
     pkg = canonical_repo.get_latest_package(region=region_str)
     if not pkg:
-        # If no package exists yet, build initial default package
+
         pkg = canonical_repo.build_offline_package(region=region_str, format="sqlite")
 
     return {

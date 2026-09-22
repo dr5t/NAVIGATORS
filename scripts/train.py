@@ -29,7 +29,7 @@ def main():
         data_dir, batch_size=256, window_size=200, step_size=10
     )
     
-    # Save stats for inference
+
     dataset_contract = validate_training_splits(data_dir)
     stats_dict = {
         "preprocessing": PREPROCESSING_ID,
@@ -46,7 +46,7 @@ def main():
     print(f"Normalization Stats Saved.")
     
     config = {
-        "epochs": 15, # Fast training for this recovery phase
+        "epochs": 15,
         "learning_rate": 0.001,
         "weight_decay": 1e-4,
         "early_stopping_patience": 5,
@@ -61,12 +61,12 @@ def main():
     model = TCNVelocityEstimator(
         input_channels=6,
         output_dim=2,
-        num_channels=[32, 64, 128], # Lightweight
+        num_channels=[32, 64, 128],
         kernel_size=5,
         dropout=0.2
     )
     
-    # Pack model configuration into trainer config for checkpoint saving
+
     config["data_contract"] = stats_dict
     config["model"] = {
         "type": "tcn",
@@ -88,7 +88,7 @@ def main():
     
     trainer.train()
     
-    # Final Test Set Evaluation
+
     print("\nEvaluating on Test Set...")
     trainer.model, _ = Trainer.load_checkpoint(os.path.join(checkpoint_dir, "best_model.pt"), device=trainer.device)
     trainer.val_loader = test_loader

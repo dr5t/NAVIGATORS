@@ -34,9 +34,9 @@ auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class CreatePlaceRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Place or amenity name")
@@ -82,9 +82,9 @@ class DeletePlaceRequest(BaseModel):
     reason: Optional[str] = None
 
 
-# =============================================================================
-# Helper to resolve optional caller session
-# =============================================================================
+
+
+
 
 def get_optional_session(authorization: Optional[str] = Header(None)) -> Optional[SessionContext]:
     """Resolve session context if bearer token is provided, otherwise return None."""
@@ -105,9 +105,9 @@ def _extract_query_val(val: Any, default: Any = None) -> Any:
     return default if val is None else val
 
 
-# =============================================================================
-# 1. Place Creation & Contribution Flow
-# =============================================================================
+
+
+
 
 @router.post("", status_code=201)
 def add_place(
@@ -156,9 +156,9 @@ def add_place(
     }
 
 
-# =============================================================================
-# 2. Public Canonical Places Reading & POI Taxonomy
-# =============================================================================
+
+
+
 
 @router.get("/poi/categories")
 def get_poi_categories():
@@ -214,9 +214,9 @@ def list_canonical_places(
     }
 
 
-# =============================================================================
-# 3. Community Views: My Contributions & Pending Triage
-# =============================================================================
+
+
+
 
 @router.get("/contributions/my")
 def get_my_contributions(
@@ -256,7 +256,7 @@ def get_pending_contributions(
     lim = _extract_query_val(limit, 50)
     off = _extract_query_val(offset, 0)
     pending_items = contrib_repo.list(status=ContributionState.PENDING_REVIEW, limit=lim, offset=off)
-    # Also include 'submitted' if any
+
     submitted_items = contrib_repo.list(status=ContributionState.SUBMITTED, limit=lim, offset=off)
     all_pending = pending_items + submitted_items
 
@@ -266,9 +266,9 @@ def get_pending_contributions(
     }
 
 
-# =============================================================================
-# 4. Canonical Place Details & Version History
-# =============================================================================
+
+
+
 
 @router.get("/{place_id}")
 def get_place_detail(
@@ -317,9 +317,9 @@ def get_place_version_history(
     }
 
 
-# =============================================================================
-# 5. Suggest Edit (Normal User Workflow for Published Places)
-# =============================================================================
+
+
+
 
 @router.post("/{place_id}/suggest-edit", status_code=201)
 def suggest_edit_place(
@@ -383,9 +383,9 @@ def suggest_edit_place(
     }
 
 
-# =============================================================================
-# 6. Direct Staff Updates & Soft Delete / Archiving
-# =============================================================================
+
+
+
 
 @router.patch("/{place_id}")
 def direct_update_place(

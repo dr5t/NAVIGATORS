@@ -113,7 +113,7 @@ class PhoneVehicleAligner:
         self.is_calibrated = False
         self.confidence = 0.0
 
-        # Accumulation buffers for leveling and heading determination
+
         self.static_accel_samples = []
         self.motion_samples = []
 
@@ -136,8 +136,8 @@ class PhoneVehicleAligner:
         if norm < 1e-3:
             return np.array([0.0, 0.0, 1.0])
 
-        # Phone accelerometer measures reaction force upwards when resting: a = +g * z_up = -g * z_down
-        # So unit vector in direction of gravity (down) is mean_accel / norm
+
+
         z_down_phone = mean_accel / norm
         return z_down_phone
 
@@ -168,15 +168,15 @@ class PhoneVehicleAligner:
         """
         z_down = self.calibrate_gravity(static_accel)
 
-        # Determine forward axis (X_forward)
+
         if forward_motion_accel is not None and len(forward_motion_accel) > 5:
-            # PCA on dynamic acceleration to find longitudinal motion line
+
             lin_accel = forward_motion_accel - (z_down * np.dot(forward_motion_accel, z_down)[:, np.newaxis])
             cov = np.cov(lin_accel.T)
             eigenvals, eigenvecs = np.linalg.eigh(cov)
             principal_axis = eigenvecs[:, np.argmax(eigenvals)]
 
-            # Project to horizontal plane
+
             x_fwd = principal_axis - np.dot(principal_axis, z_down) * z_down
             norm_x = np.linalg.norm(x_fwd)
             if norm_x > 1e-4:
@@ -184,11 +184,11 @@ class PhoneVehicleAligner:
             else:
                 x_fwd = np.array([1.0, 0.0, 0.0])
 
-            # Resolve 180° ambiguity using forward hint or acceleration sign
+
             if forward_hint is not None and np.dot(x_fwd, forward_hint) < 0:
                 x_fwd = -x_fwd
         elif forward_hint is not None:
-            # Project forward hint to horizontal plane
+
             x_fwd = forward_hint - np.dot(forward_hint, z_down) * z_down
             norm_x = np.linalg.norm(x_fwd)
             if norm_x > 1e-4:
@@ -196,7 +196,7 @@ class PhoneVehicleAligner:
             else:
                 x_fwd = np.array([1.0, 0.0, 0.0])
         else:
-            # Pick canonical perpendicular vector for X
+
             if abs(z_down[0]) < 0.9:
                 perp = np.array([1.0, 0.0, 0.0])
             else:
@@ -204,7 +204,7 @@ class PhoneVehicleAligner:
             x_fwd = perp - np.dot(perp, z_down) * z_down
             x_fwd = x_fwd / np.linalg.norm(x_fwd)
 
-        # Right axis = Z_down x X_fwd
+
         y_right = np.cross(z_down, x_fwd)
         norm_y = np.linalg.norm(y_right)
         if norm_y > 1e-4:
@@ -212,12 +212,12 @@ class PhoneVehicleAligner:
         else:
             y_right = np.array([0.0, 1.0, 0.0])
 
-        # Recompute orthogonal X_fwd = Y_right x Z_down
+
         x_fwd = np.cross(y_right, z_down)
         x_fwd = x_fwd / np.linalg.norm(x_fwd)
 
-        # R_vehicle_phone rows are the vehicle axes expressed in phone frame:
-        # v_vehicle = [x_fwd^T; y_right^T; z_down^T] @ v_phone
+
+
         R = np.stack([x_fwd, y_right, z_down], axis=0)
         self.R_vehicle_phone = R
         self.is_calibrated = True

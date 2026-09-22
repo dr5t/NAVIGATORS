@@ -30,7 +30,7 @@ def main():
     print("  Navigators IDR - Model Evaluation")
     print("=" * 60)
 
-    # Load model if available
+
     model = None
     if os.path.exists(args.checkpoint):
         try:
@@ -47,11 +47,11 @@ def main():
         print(f"\n[Model] Checkpoint not found: {args.checkpoint}")
         print("[Model] Evaluating with mock predictions")
 
-    # Performance targets from requirements
+
     targets = {
-        "drift_percent": 10.0,     # < 10%
-        "50m_drift": 5.0,          # < 5m for 50m travel
-        "1km_drift": 100.0,        # < 100m for 1km travel
+        "drift_percent": 10.0,
+        "50m_drift": 5.0,
+        "1km_drift": 100.0,
     }
 
     all_results = []
@@ -63,11 +63,11 @@ def main():
         true_pos = scenario["trajectory"]["positions"]
         true_vel = scenario["trajectory"]["velocities"]
 
-        # Simple evaluation: add noise to velocity as mock prediction
+
         noise_std = 0.3 if model is None else 0.1
         est_vel = true_vel + np.random.normal(0, noise_std, true_vel.shape)
 
-        # Integrate to get estimated positions
+
         est_pos = np.zeros_like(true_pos)
         est_pos[0] = true_pos[0]
         dt = 0.1
@@ -81,7 +81,7 @@ def main():
         print(f"\n  Scenario {scenario_idx+1}: drift={metrics['drift_percent']:.2f}% "
               f"ATE={metrics['ate']['rmse']:.2f}m {status}")
 
-    # Summary
+
     mean_drift = np.mean([r["drift_percent"] for r in all_results])
     mean_ate = np.mean([r["ate"]["rmse"] for r in all_results])
     mean_cep50 = np.mean([r["cep"]["CEP50"] for r in all_results])

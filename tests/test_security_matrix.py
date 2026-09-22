@@ -88,15 +88,15 @@ def role_sessions(temp_db):
     }
 
 
-# =============================================================================
-# 1. Authorization Service Matrix Evaluation Tests
-# =============================================================================
+
+
+
 
 def test_authz_permission_matrix(temp_db, role_sessions):
     """Test explicit ALLOW / DENY permissions matrix across all roles."""
     authz = AuthorizationService(temp_db)
 
-    # Guest: Cannot create contribution, approve, validate datasets, deploy models, or read audit logs
+
     g_ctx = role_sessions["guest"][1]
     assert authz.can(g_ctx, "place:read").allowed is True
     assert authz.can(g_ctx, "contribution:create").allowed is False
@@ -105,7 +105,7 @@ def test_authz_permission_matrix(temp_db, role_sessions):
     assert authz.can(g_ctx, "model:deploy").allowed is False
     assert authz.can(g_ctx, "audit:read").allowed is False
 
-    # User: Can create contribution, but cannot approve, validate datasets, deploy models, or read audit logs
+
     u_ctx = role_sessions["user"][1]
     assert authz.can(u_ctx, "place:read").allowed is True
     assert authz.can(u_ctx, "contribution:create").allowed is True
@@ -114,14 +114,14 @@ def test_authz_permission_matrix(temp_db, role_sessions):
     assert authz.can(u_ctx, "model:deploy").allowed is False
     assert authz.can(u_ctx, "audit:read").allowed is False
 
-    # Local Contributor: Can create contribution, place:create, place:update, but cannot approve or deploy models
+
     lc_ctx = role_sessions["local_contributor"][1]
     assert authz.can(lc_ctx, "place:create").allowed is True
     assert authz.can(lc_ctx, "contribution:approve").allowed is False
     assert authz.can(lc_ctx, "dataset:validate").allowed is False
     assert authz.can(lc_ctx, "model:deploy").allowed is False
 
-    # Internal Contributor: Can upload datasets, train models, but CANNOT validate datasets or deploy models
+
     ic_ctx = role_sessions["internal_contributor"][1]
     assert authz.can(ic_ctx, "dataset:create").allowed is True
     assert authz.can(ic_ctx, "training:create").allowed is True
@@ -130,7 +130,7 @@ def test_authz_permission_matrix(temp_db, role_sessions):
     assert authz.can(ic_ctx, "model:deploy").allowed is False
     assert authz.can(ic_ctx, "audit:read").allowed is False
 
-    # Moderator: Can approve contributions, resolve reports, read audit logs, but CANNOT deploy models or validate datasets
+
     m_ctx = role_sessions["moderator"][1]
     assert authz.can(m_ctx, "contribution:approve").allowed is True
     assert authz.can(m_ctx, "report:resolve").allowed is True
@@ -138,7 +138,7 @@ def test_authz_permission_matrix(temp_db, role_sessions):
     assert authz.can(m_ctx, "dataset:validate").allowed is False
     assert authz.can(m_ctx, "model:deploy").allowed is False
 
-    # Team Admin: Full operational privileges (validate datasets, approve models, deploy models, manage users)
+
     ta_ctx = role_sessions["team_admin"][1]
     assert authz.can(ta_ctx, "contribution:approve").allowed is True
     assert authz.can(ta_ctx, "dataset:validate").allowed is True
@@ -147,15 +147,15 @@ def test_authz_permission_matrix(temp_db, role_sessions):
     assert authz.can(ta_ctx, "audit:read").allowed is True
     assert authz.can(ta_ctx, "role:assign").allowed is True
 
-    # Super Admin: Universal grant
+
     sa_ctx = role_sessions["super_admin"][1]
     assert authz.can(sa_ctx, "model:deploy").allowed is True
     assert authz.can(sa_ctx, "dataset:validate").allowed is True
 
 
-# =============================================================================
-# 2. Direct API Endpoint Rejection & Security Enforcement Tests
-# =============================================================================
+
+
+
 
 def test_api_rejection_guest_place_creation(role_sessions):
     """Guest -> add place endpoint raises HTTP 401 Unauthorized."""
@@ -182,18 +182,18 @@ def test_api_rejection_user_contribution_approval(temp_db, role_sessions):
         status="pending_review",
     )
 
-    # 1. User attempts approval -> 403
+
     with pytest.raises(HTTPException) as exc_info:
         approve_contribution(contrib_id=contrib.id, context=user_ctx)
     assert exc_info.value.status_code == 403
 
-    # 2. Local Contributor attempts review -> 403
+
     lc_ctx = role_sessions["local_contributor"][1]
     with pytest.raises(HTTPException) as exc_info:
         review_contribution(contrib_id=contrib.id, req=ReviewContributionRequest(decision="approved"), context=lc_ctx)
     assert exc_info.value.status_code == 403
 
-    # 3. Moderator attempts review -> succeeds
+
     res = review_contribution(contrib_id=contrib.id, req=ReviewContributionRequest(decision="approved"), context=mod_ctx)
     assert res["contribution"]["status"] == "approved"
 
@@ -213,12 +213,12 @@ def test_api_rejection_internal_contributor_dataset_validation(temp_db, role_ses
         consent=True,
     )
 
-    # 1. Internal Contributor attempts validation -> 403
+
     with pytest.raises(HTTPException) as exc_info:
         api_validate_session(session_id=session.id, context=ic_ctx)
     assert exc_info.value.status_code == 403
 
-    # 2. Team Admin attempts validation -> succeeds
+
     dataset_repo.start_validation(session.id, validator_id=role_sessions["team_admin"][0].id)
     res = api_validate_session(session_id=session.id, context=admin_ctx)
     assert res["session"]["status"] == "validated"
@@ -236,17 +236,17 @@ def test_api_rejection_internal_contributor_model_deployment(temp_db, role_sessi
     model_repo.open_for_review(model.id, reviewer_id=role_sessions["team_admin"][0].id)
     model_repo.approve_model(model.id, reviewer_id=role_sessions["team_admin"][0].id)
 
-    # 1. Internal Contributor attempts deploy -> 403
+
     with pytest.raises(HTTPException) as exc_info:
         deploy_model(model_id=model.id, context=ic_ctx)
     assert exc_info.value.status_code == 403
 
-    # 2. Moderator attempts deploy -> 403
+
     with pytest.raises(HTTPException) as exc_info:
         deploy_model(model_id=model.id, context=mod_ctx)
     assert exc_info.value.status_code == 403
 
-    # 3. Team Admin attempts deploy -> succeeds
+
     res = deploy_model(model_id=model.id, context=admin_ctx)
     assert res["status"] == "success"
     assert res["model"]["status"] == "production"
@@ -284,17 +284,17 @@ def test_api_rejection_moderator_internal_access_approval(temp_db, role_sessions
         experience="3 years GNSS research",
     )
 
-    # 1. User attempts approval -> 403
+
     with pytest.raises(HTTPException) as exc_info:
         api_approve_internal_request(request_id=req.id, context=user_ctx)
     assert exc_info.value.status_code == 403
 
-    # 2. Moderator attempts approval -> 403
+
     with pytest.raises(HTTPException) as exc_info:
         api_approve_internal_request(request_id=req.id, context=mod_ctx)
     assert exc_info.value.status_code == 403
 
-    # 3. Team Admin attempts approval -> succeeds
+
     res = api_approve_internal_request(request_id=req.id, context=admin_ctx)
     assert res["status"] == "approved"
 

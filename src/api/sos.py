@@ -23,9 +23,9 @@ contacts_repo = EmergencyContactsRepository()
 auth_service = AuthService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class TriggerSOSRequest(BaseModel):
     latitude: Optional[float] = Field(None, ge=-90.0, le=90.0)
@@ -44,9 +44,9 @@ class AddEmergencyContactRequest(BaseModel):
     relationship: Optional[str] = None
 
 
-# =============================================================================
-# SOS Flow Endpoints
-# =============================================================================
+
+
+
 
 @router.post("/trigger", status_code=202)
 def trigger_sos(
@@ -138,9 +138,9 @@ def get_live_location_public(token: str):
     return res
 
 
-# =============================================================================
-# Emergency Contacts Endpoints
-# =============================================================================
+
+
+
 
 @router.get("/contacts")
 def list_emergency_contacts(

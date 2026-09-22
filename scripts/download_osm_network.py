@@ -11,7 +11,7 @@ import math
 
 def latlon_to_enu(lat, lon, lat_ref, lon_ref):
     """Simple equirectangular projection to ENU in meters."""
-    R = 6371000.0  # Earth radius in meters
+    R = 6371000.0
     dLat = math.radians(lat - lat_ref)
     dLon = math.radians(lon - lon_ref)
     
@@ -25,8 +25,8 @@ def download_osm_network(lat: float, lon: float, radius: float = 1000.0, output_
     """
     print(f"Downloading OSM road network around {lat}, {lon} (Radius: {radius}m)...")
     
-    # Calculate bounding box roughly
-    # 1 deg lat = 111km
+
+
     dlat = radius / 111000.0
     dlon = radius / (111000.0 * math.cos(math.radians(lat)))
     
@@ -116,7 +116,7 @@ def download_osm_network(lat: float, lon: float, radius: float = 1000.0, output_
         
     print(f"Saved road network to {output_file}")
     
-    # Also save to simulator directory
+
     sim_file = "simulator/data/road_network.json"
     os.makedirs(os.path.dirname(sim_file), exist_ok=True)
     with open(sim_file, 'w') as f:

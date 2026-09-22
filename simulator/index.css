@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ==========================================================================
-   NAVIGATORS DESIGN SYSTEM (OBSIDIAN & EMERALD)
-   Full-Bleed Map-First Professional Navigation UI
-   ========================================================================== */
+
+
+
+
 
 :root {
-    /* Restrained Color Tokens System */
+    
     --bg-base: #0b0f19;
     --bg-dark: #0b0f19;
     --bg-surface: #111827;
@@ -14,17 +14,17 @@
     --bg-glass: #111827;
     --bg-glass-heavy: #0b0f19;
 
-    /* Text Tokens */
+    
     --text-primary: #f9fafb;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
 
-    /* Border Tokens (Solid & Crisp) */
+    
     --border-color: #1f2937;
     --border-glass: #1f2937;
     --border-glass-light: #1f2937;
 
-    /* Accent & Semantic State Tokens */
+    
     --accent-primary: #10b981;
     --accent-emerald: #10b981;
     --accent-cyan: #06b6d4;
@@ -36,62 +36,62 @@
     --color-error: #ef4444;
     --color-info: #06b6d4;
 
-    /* Map & HUD Overlay Tokens (Solid Opaque) */
+    
     --map-overlay-bg: #0f172a;
     --map-overlay-border: #1f2937;
 
-    /* GNSS State Colors */
+    
     --gnss-active: var(--color-success);
     --gnss-denied: var(--color-error);
     --gnss-reacq: var(--color-warning);
 
 
-    /* Fonts & Typography System */
+    
     --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
-    /* Typographic Scale Tokens */
-    --type-display-size: 1.75rem;   /* 28px */
+    
+    --type-display-size: 1.75rem;   
     --type-display-weight: 700;
     --type-display-lh: 1.2;
     --type-display-ls: -0.02em;
 
-    --type-h1-size: 1.25rem;        /* 20px */
+    --type-h1-size: 1.25rem;        
     --type-h1-weight: 600;
     --type-h1-lh: 1.3;
     --type-h1-ls: -0.01em;
 
-    --type-h2-size: 1rem;           /* 16px */
+    --type-h2-size: 1rem;           
     --type-h2-weight: 600;
     --type-h2-lh: 1.35;
 
-    --type-body-size: 0.875rem;      /* 14px */
+    --type-body-size: 0.875rem;      
     --type-body-weight: 400;
     --type-body-lh: 1.5;
 
-    --type-body-sm-size: 0.8125rem;  /* 13px */
+    --type-body-sm-size: 0.8125rem;  
     --type-body-sm-weight: 400;
     --type-body-sm-lh: 1.45;
 
-    --type-label-size: 0.8125rem;    /* 13px */
+    --type-label-size: 0.8125rem;    
     --type-label-weight: 500;
     --type-label-ls: 0.01em;
 
-    --type-upper-size: 0.6875rem;    /* 11px */
+    --type-upper-size: 0.6875rem;    
     --type-upper-weight: 600;
     --type-upper-ls: 0.06em;
 
-    --type-caption-size: 0.75rem;    /* 12px */
+    --type-caption-size: 0.75rem;    
     --type-caption-weight: 400;
     --type-caption-lh: 1.4;
 
-    /* Radii */
+    
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 20px;
     --radius-full: 9999px;
 
-    /* Shadows & Transitions */
+    
     --shadow-hud: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
     --shadow-sheet: 0 -8px 30px rgba(0, 0, 0, 0.6);
     --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -99,7 +99,7 @@
 }
 
 
-/* Reset & Global */
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
     width: 100vw;
@@ -128,9 +128,9 @@ button:active:not(:disabled) { transform: scale(0.96); }
 
 [hidden], .hidden { display: none !important; }
 
-/* ==========================================================================
-   TYPOGRAPHY HIERARCHY SYSTEM (INTER SANS-SERIF)
-   ========================================================================== */
+
+
+
 .type-display {
     font-family: var(--font-main);
     font-size: var(--type-display-size);
@@ -208,9 +208,9 @@ svg {
     stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
 }
 
-/* ==========================================================================
-   FULL-BLEED MAP SURFACE
-   ========================================================================== */
+
+
+
 #map {
     position: absolute;
     inset: 0;
@@ -225,7 +225,7 @@ svg {
     background: #0f172a !important;
 }
 
-/* Dark mode Leaflet tile adjustment */
+
 .leaflet-tile-container img {
     filter: brightness(0.7) contrast(1.2) invert(0.9) hue-rotate(200deg) saturate(0.4);
 }
@@ -256,7 +256,7 @@ svg {
 }
 .leaflet-control-attribution a { color: var(--accent-cyan) !important; }
 
-/* Custom Vehicle & Track Markers */
+
 .vehicle-marker-inner {
     width: 20px; height: 20px;
     border: 2px solid #ffffff;
@@ -278,7 +278,7 @@ svg {
     border-bottom-color: var(--accent-amber);
 }
 
-/* Map Status Message overlay */
+
 .map-message {
     position: absolute;
     bottom: 220px;
@@ -295,7 +295,7 @@ svg {
     box-shadow: var(--shadow-hud);
 }
 
-/* Temporary Non-Blocking Navigation Toast */
+
 .nav-toast {
     position: fixed;
     top: 80px;
@@ -328,9 +328,9 @@ svg {
     margin-top: 2px;
 }
 
-/* ==========================================================================
-   TOP FLOATING HUD & HEADER BAR
-   ========================================================================== */
+
+
+
 .top-hud-container {
     position: fixed;
     top: 16px;
@@ -386,7 +386,7 @@ svg {
     gap: 16px;
 }
 
-/* Live Telemetry Pill */
+
 .telemetry-pill {
     display: flex;
     align-items: center;
@@ -425,7 +425,7 @@ svg {
 }
 .heading-badge svg { width: 14px; height: 14px; color: var(--accent-cyan); }
 
-/* GNSS Status Indicator */
+
 .gnss-pill {
     display: flex;
     align-items: center;
@@ -474,7 +474,7 @@ svg {
 .nav-mode-indicator.dead-reckoning { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); }
 .nav-mode-indicator.reacquisition { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
 
-/* Quick Action Engine Button */
+
 .btn-engine {
     pointer-events: auto;
     background: var(--accent-primary);
@@ -507,7 +507,7 @@ svg {
 
 
 
-/* Floating Search Bar */
+
 .search-bar-floating {
     pointer-events: auto;
     display: flex;
@@ -548,9 +548,9 @@ svg {
     font-size: 11px; outline: none;
 }
 
-/* ==========================================================================
-   FLOATING MAP ACTION BUTTONS (FABs)
-   ========================================================================== */
+
+
+
 .map-fabs-right {
     position: fixed;
     right: 16px;
@@ -625,7 +625,7 @@ svg {
     color: #ffffff;
 }
 
-/* User Profile Badge */
+
 .user-profile-badge {
     width: 34px; height: 34px;
     border-radius: var(--radius-full);
@@ -638,9 +638,9 @@ svg {
     border-color: var(--accent-emerald);
 }
 
-/* ==========================================================================
-   DESKTOP NAVIGATION SHELL (MIN-WIDTH: 1024PX)
-   ========================================================================== */
+
+
+
 .desktop-sidebar {
     display: none;
 }
@@ -690,15 +690,15 @@ svg {
     }
     .desktop-nav-item.selected svg { color: var(--accent-emerald); }
 
-    /* Adjust map left FABs to sit below desktop sidebar */
+    
     .map-fabs-left {
         top: 420px;
     }
 }
 
-/* ==========================================================================
-   MULTI-SNAP INTERACTIVE BOTTOM SHEET
-   ========================================================================== */
+
+
+
 .bottom-sheet {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -726,7 +726,7 @@ svg {
     border-radius: var(--radius-full);
 }
 
-/* Navigation Tab Header inside Bottom Sheet */
+
 .sheet-nav-tabs {
     display: flex;
     align-items: center;
@@ -759,11 +759,11 @@ svg {
     max-height: calc(80vh - 100px);
 }
 
-/* Tab Panels */
+
 .tab-panel { display: flex; flex-direction: column; gap: 16px; }
 .tab-panel[hidden] { display: none !important; }
 
-/* Dashboard Card Grid in Bottom Sheet */
+
 .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -804,7 +804,7 @@ svg {
     transition: width var(--transition-smooth);
 }
 
-/* Nav Sequence Indicator */
+
 .run-sequence {
     list-style: none;
     display: flex;
@@ -832,7 +832,7 @@ svg {
     border-color: var(--accent-emerald);
 }
 
-/* Pipeline Panel */
+
 .pipeline-nodes {
     display: flex; justify-content: space-between; gap: 8px;
     background: var(--bg-surface); border: 1px solid var(--border-glass);
@@ -845,9 +845,9 @@ svg {
 .pipeline-nodes span { font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); }
 .pipeline-nodes small { color: var(--accent-emerald); font-weight: 500; }
 
-/* ==========================================================================
-   NAVIGATOR LAB DRAWER / OVERLAY
-   ========================================================================== */
+
+
+
 .lab-drawer {
     position: fixed;
     inset: 0;
@@ -885,7 +885,7 @@ svg {
     font-weight: 600; border-color: var(--accent-cyan);
 }
 
-/* Replay & Experiments Tables */
+
 .experiment-table {
     width: 100%; border-collapse: collapse; text-align: left;
     margin-top: 12px; font-size: 12px;
@@ -896,7 +896,7 @@ svg {
 .experiment-table th { color: var(--text-muted); font-weight: 500; }
 .experiment-table td { font-family: var(--font-mono); }
 
-/* Playback Control Bar */
+
 .playback-controls {
     display: flex; align-items: center; gap: 12px;
     background: var(--bg-surface); border: 1px solid var(--border-glass);
@@ -904,9 +904,9 @@ svg {
     margin-top: 16px;
 }
 
-/* ==========================================================================
-   BUTTON SYSTEM (CONVENTIONAL HIERARCHY, HOVER, ACTIVE, DISABLED, LOADING)
-   ========================================================================== */
+
+
+
 .button, .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-ghost {
     display: inline-flex;
     align-items: center;
@@ -926,7 +926,7 @@ svg {
     box-sizing: border-box;
 }
 
-/* Primary Conventional Button */
+
 .button.primary, .btn-primary {
     background: var(--accent-primary, #10b981);
     color: #0b0f19;
@@ -944,7 +944,7 @@ svg {
     box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
 }
 
-/* Secondary Button */
+
 .button.secondary, .btn-secondary {
     background: var(--bg-surface-elevated, #1f2937);
     color: var(--text-primary, #f9fafb);
@@ -960,7 +960,7 @@ svg {
     transform: translateY(0) scale(0.98);
 }
 
-/* Danger Button */
+
 .btn-danger {
     background: var(--color-error, #ef4444);
     color: #ffffff;
@@ -977,7 +977,7 @@ svg {
     transform: translateY(0) scale(0.98);
 }
 
-/* Ghost Button */
+
 .btn-ghost {
     background: transparent;
     color: var(--text-secondary, #9ca3af);
@@ -992,7 +992,7 @@ svg {
     transform: scale(0.98);
 }
 
-/* Disabled State */
+
 button:disabled, .button:disabled, .btn:disabled, .btn-primary:disabled, .btn-secondary:disabled {
     opacity: 0.5;
     cursor: not-allowed !important;
@@ -1001,7 +1001,7 @@ button:disabled, .button:disabled, .btn:disabled, .btn-primary:disabled, .btn-se
     box-shadow: none !important;
 }
 
-/* Loading State */
+
 .button.is-loading, .btn.is-loading, .btn-primary.is-loading, .btn-secondary.is-loading {
     position: relative;
     color: transparent !important;
@@ -1023,7 +1023,7 @@ button:disabled, .button:disabled, .btn:disabled, .btn-primary:disabled, .btn-se
 }
 
 
-/* Dialogs & Overlays */
+
 dialog {
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-lg);
@@ -1035,30 +1035,30 @@ dialog {
 }
 dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
 
-/* ==========================================================================
-   DELIBERATE RESPONSIVE BREAKPOINT SYSTEM
-   1. Large Desktop (>= 1280px)
-   2. Laptop (1024px - 1279px)
-   3. Tablet (768px - 1023px)
-   4. Mobile (480px - 767px)
-   5. Narrow Mobile (< 480px)
-   ========================================================================== */
 
-/* --- 1. LARGE DESKTOP (>= 1280px) --- */
+
+
+
+
+
+
+
+
+
 @media (min-width: 1280px) {
     .cards-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
-/* --- 2. LAPTOP / COMPACT DESKTOP (1024px - 1279px) --- */
+
 @media (min-width: 1024px) and (max-width: 1279px) {
     .cards-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* --- 3. TABLET (768px - 1023px) --- */
+
 @media (min-width: 768px) and (max-width: 1023px) {
     .desktop-sidebar { display: none !important; }
     .top-hud-bar { padding: 8px 16px; }
@@ -1066,7 +1066,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
     .sheet-nav-tabs { justify-content: space-around; }
 }
 
-/* --- 4. MOBILE (480px - 767px) --- */
+
 @media (min-width: 480px) and (max-width: 767px) {
     .desktop-sidebar { display: none !important; }
     
@@ -1101,7 +1101,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
     .btn-engine { width: 100%; min-height: 44px; justify-content: center; }
 }
 
-/* --- 5. NARROW MOBILE (< 480px) --- */
+
 @media (max-width: 479px) {
     html, body {
         overflow-x: hidden !important;
@@ -1174,9 +1174,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
 }
 
 
-/* ==========================================================================
-   COMPACT FOOTER COMPONENT
-   ========================================================================== */
+
+
+
 .compact-footer {
     display: flex;
     flex-wrap: wrap;
@@ -1246,15 +1246,15 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
     }
 }
 
-/* ==========================================================================
-   ACCESSIBILITY & INCLUSIVITY SYSTEM (WCAG 2.1 AA COMPLIANCE)
-   1. Keyboard Focus States (:focus-visible)
-   2. Reduced Motion Support (@media prefers-reduced-motion)
-   3. Screen Reader Utilities (.sr-only)
-   4. High Contrast & Non-Color Dependent State Helpers
-   ========================================================================== */
 
-/* 1. Visible Focus States for Keyboard Navigation */
+
+
+
+
+
+
+
+
 :focus {
     outline: none;
 }
@@ -1271,7 +1271,7 @@ textarea:focus-visible,
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25) !important;
 }
 
-/* 2. Reduced Motion Support */
+
 @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
         animation-duration: 0.01ms !important;
@@ -1286,7 +1286,7 @@ textarea:focus-visible,
     }
 }
 
-/* 3. Screen Reader Utility Class */
+
 .sr-only {
     position: absolute !important;
     width: 1px !important;
@@ -1299,7 +1299,7 @@ textarea:focus-visible,
     border: 0 !important;
 }
 
-/* 4. High Contrast Text & Non-Color Dependent State Helpers */
+
 .high-contrast-text {
     color: #ffffff !important;
 }
@@ -1312,9 +1312,9 @@ textarea:focus-visible,
     border-color: var(--accent-emerald) !important;
 }
 
-/* ==========================================================================
-   5. Performance & Responsiveness Optimizations (Requirement 33)
-   ========================================================================== */
+
+
+
 #map {
     contain: layout size style;
     will-change: transform;
@@ -1337,9 +1337,9 @@ textarea:focus-visible,
     contain: content;
 }
 
-/* ==========================================================================
-   6. Phase 2: Active Routing & Turn Maneuver Styles
-   ========================================================================== */
+
+
+
 .active-route-card {
     position: absolute;
     top: 104px;

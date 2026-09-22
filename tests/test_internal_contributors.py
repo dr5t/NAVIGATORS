@@ -97,29 +97,29 @@ def test_team_admin_can_approve_request_and_promote_role():
     rbac_repo = RBACRepository()
     audit_repo = AuditRepository()
 
-    # Submit request
+
     req = icr_repo.submit_request(
         user_id=user.id,
         reason="I want to contribute driving session datasets",
         experience="Automotive engineer with MEMS sensor experience",
     )
 
-    # Verify user does NOT have internal_contributor role yet
+
     roles_before = {r.id for r in rbac_repo.get_user_roles(user.id)}
     assert "internal_contributor" not in roles_before
 
-    # Approve
+
     approved = icr_repo.approve_request(request_id=req.id, reviewer_id=admin.id)
 
     assert approved.status == "approved"
     assert approved.reviewed_by == admin.id
     assert approved.reviewed_at is not None
 
-    # Verify user NOW has internal_contributor role
+
     roles_after = {r.id for r in rbac_repo.get_user_roles(user.id)}
     assert "internal_contributor" in roles_after
 
-    # Verify audit log
+
     logs = audit_repo.list_logs(resource_type="internal_contributor_request", resource_id=req.id)
     actions = [log.action for log in logs]
     assert "APPROVE_INTERNAL_ACCESS" in actions
@@ -151,11 +151,11 @@ def test_team_admin_can_reject_request_with_reason():
     assert "Insufficient" in rejected.rejection_reason
     assert rejected.reviewed_by == admin.id
 
-    # Verify user does NOT have internal_contributor role
+
     roles = {r.id for r in rbac_repo.get_user_roles(user.id)}
     assert "internal_contributor" not in roles
 
-    # Verify audit log
+
     logs = audit_repo.list_logs(resource_type="internal_contributor_request", resource_id=req.id)
     actions = [log.action for log in logs]
     assert "REJECT_INTERNAL_ACCESS" in actions
@@ -174,18 +174,18 @@ def test_unauthorized_user_cannot_access_review_or_approval_endpoints():
         experience="Testing experience field",
     )
 
-    # Try list_requests via API (requires internal_contributor:review)
+
     from fastapi import HTTPException
     with pytest.raises(HTTPException) as exc_info:
         api_list_internal_requests(context=user_session)
     assert exc_info.value.status_code == 403
 
-    # Try approve via API (requires internal_contributor:approve)
+
     with pytest.raises(HTTPException) as exc_info:
         api_approve_internal_request(request_id=req.id, context=user_session)
     assert exc_info.value.status_code == 403
 
-    # Try reject via API (requires internal_contributor:reject)
+
     with pytest.raises(HTTPException) as exc_info:
         api_reject_internal_request(
             request_id=req.id,
@@ -232,26 +232,26 @@ def test_engineering_controls_hidden_for_normal_users():
 
     user_context = session.to_dict()
 
-    # Normal user cannot create training jobs
+
     decision_train = authz.can(user=user_context, action="training:create", resource="training")
     assert not decision_train.allowed
 
-    # Normal user cannot create datasets
+
     decision_dataset = authz.can(user=user_context, action="dataset:create", resource="dataset")
     assert not decision_dataset.allowed
 
-    # Normal user cannot deploy models
+
     decision_deploy = authz.can(user=user_context, action="model:deploy", resource="model")
     assert not decision_deploy.allowed
 
-    # But normal user CAN request internal contributor access
+
     decision_request = authz.can(user=user_context, action="internal_contributor:request", resource="contributor")
     assert decision_request.allowed
 
 
-# =============================================================================
-# API-Level Integration Tests (Phase 11 & 12)
-# =============================================================================
+
+
+
 
 def test_api_submit_and_approve_full_flow(monkeypatch):
     """
@@ -285,7 +285,7 @@ def test_api_submit_and_approve_full_flow(monkeypatch):
     monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
     monkeypatch.setattr(ic_mod, "authz_service", test_authz)
 
-    # 1. Submit via API
+
     submit_resp = api_submit_internal_request(
         body=SubmitInternalRequestModel(
             reason="I collect IMU trajectories for urban navigation research",
@@ -300,17 +300,17 @@ def test_api_submit_and_approve_full_flow(monkeypatch):
     assert submit_resp["request"]["user_id"] == user.id
     request_id = submit_resp["request"]["id"]
 
-    # 2. Verify role NOT yet granted
+
     rbac_repo = RBACRepository()
     roles_before = {r.id for r in rbac_repo.get_user_roles(user.id)}
     assert "internal_contributor" not in roles_before
 
-    # 3. Approve via API
+
     approved = api_approve_internal_request(request_id=request_id, context=admin_session)
     assert approved["status"] == "approved"
     assert approved["reviewed_by"] == admin.id
 
-    # 4. Verify role IS now granted
+
     roles_after = {r.id for r in rbac_repo.get_user_roles(user.id)}
     assert "internal_contributor" in roles_after
 
@@ -347,7 +347,7 @@ def test_api_submit_and_reject_full_flow(monkeypatch):
     monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
     monkeypatch.setattr(ic_mod, "authz_service", test_authz)
 
-    # Submit
+
     submit_resp = api_submit_internal_request(
         body=SubmitInternalRequestModel(
             reason="I want to upload training datasets",
@@ -357,7 +357,7 @@ def test_api_submit_and_reject_full_flow(monkeypatch):
     )
     request_id = submit_resp["request"]["id"]
 
-    # Reject
+
     rejected = api_reject_internal_request(
         request_id=request_id,
         body=RejectInternalRequestModel(
@@ -368,7 +368,7 @@ def test_api_submit_and_reject_full_flow(monkeypatch):
     assert rejected["status"] == "rejected"
     assert "Insufficient" in rejected["rejection_reason"]
 
-    # Role must NOT be granted
+
     rbac_repo = RBACRepository()
     roles = {r.id for r in rbac_repo.get_user_roles(user.id)}
     assert "internal_contributor" not in roles
@@ -401,11 +401,11 @@ def test_api_duplicate_submission_returns_409(monkeypatch):
         experience="Graduate researcher in inertial navigation",
     )
 
-    # First submission must succeed
+
     first = api_submit_internal_request(body=body, context=user_session)
     assert first["request"]["status"] == "pending"
 
-    # Second submission must be blocked with 409
+
     with pytest.raises(FHTTPException) as exc_info:
         api_submit_internal_request(body=body, context=user_session)
     assert exc_info.value.status_code == 409
@@ -438,12 +438,12 @@ def test_api_get_my_request_status(monkeypatch):
     monkeypatch.setattr(ic_mod, "icr_repo", test_icr_repo)
     monkeypatch.setattr(ic_mod, "authz_service", test_authz)
 
-    # User with no request
+
     resp_none = api_get_my_latest_request(context=session_no_req)
     assert "request" in resp_none
     assert resp_none["request"] is None
 
-    # Submit a request, then check
+
     api_submit_internal_request(
         body=SubmitInternalRequestModel(
             reason="I want to contribute trajectory datasets for my MSc thesis",

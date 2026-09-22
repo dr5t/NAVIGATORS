@@ -26,10 +26,10 @@ def positional_drift_percent(
     Returns:
         Drift percentage (e.g., 5.2 means 5.2% drift).
     """
-    # Final position error
+
     final_error = np.linalg.norm(estimated_positions[-1, :2] - true_positions[-1, :2])
 
-    # Total distance traveled (ground truth)
+
     deltas = np.diff(true_positions[:, :2], axis=0)
     total_distance = np.sum(np.linalg.norm(deltas, axis=1))
 
@@ -118,7 +118,7 @@ def along_cross_track_error(
     cross_track = np.zeros(N)
 
     for i in range(1, N):
-        # Direction of travel (from ground truth)
+
         direction = true_positions[i, :2] - true_positions[i - 1, :2]
         dist = np.linalg.norm(direction)
 
@@ -128,7 +128,7 @@ def along_cross_track_error(
         unit_along = direction / dist
         unit_cross = np.array([-unit_along[1], unit_along[0]])
 
-        # Position error vector
+
         error = estimated_positions[i, :2] - true_positions[i, :2]
 
         along_track[i] = np.dot(error, unit_along)
@@ -154,17 +154,17 @@ def velocity_error(
     Returns:
         Dict with speed and heading error statistics.
     """
-    # Speed errors
+
     est_speed = np.linalg.norm(estimated_velocity, axis=1)
     true_speed = np.linalg.norm(true_velocity, axis=1)
     speed_errors = np.abs(est_speed - true_speed)
 
-    # Heading errors (angular)
+
     est_heading = np.arctan2(estimated_velocity[:, 1], estimated_velocity[:, 0])
     true_heading = np.arctan2(true_velocity[:, 1], true_velocity[:, 0])
 
     heading_errors = np.abs(est_heading - true_heading)
-    # Wrap to [0, π]
+
     heading_errors = np.minimum(heading_errors, 2 * np.pi - heading_errors)
 
     return {

@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.db.database import get_db, DEFAULT_DB_PATH
 from src.db.audit import AuditRepository
 
-# ─── State machine ────────────────────────────────────────────────────────────
+
 
 MODEL_STATUSES = frozenset({
     "candidate_training",
@@ -46,9 +46,9 @@ VALID_TRANSITIONS: Dict[str, frozenset] = {
     "evaluating":           frozenset({"review"}),
     "review":               frozenset({"approved", "rejected"}),
     "approved":             frozenset({"production_candidate"}),
-    "rejected":             frozenset(),        # terminal
+    "rejected":             frozenset(),
     "production_candidate": frozenset({"production"}),
-    "production":           frozenset(),        # terminal
+    "production":           frozenset(),
 }
 
 
@@ -58,7 +58,7 @@ class ModelEntry:
     name: str
     architecture: str
     status: str
-    # Metrics
+
     test_mae: Optional[float]
     test_rmse: Optional[float]
     val_loss: Optional[float]
@@ -68,23 +68,23 @@ class ModelEntry:
     batch_size: Optional[int]
     window_size: Optional[int]
     total_training_time_s: Optional[float]
-    # Artifacts
+
     checkpoint_path: Optional[str]
     onnx_path: Optional[str]
     norm_stats_path: Optional[str]
-    # Governance
+
     registered_by: Optional[str]
     reviewed_by: Optional[str]
     deployed_by: Optional[str]
     rejection_reason: Optional[str]
     review_notes: Optional[str]
-    # Timestamps
+
     evaluated_at: Optional[str]
     reviewed_at: Optional[str]
     deployed_at: Optional[str]
     created_at: str
     updated_at: str
-    # Joined display names
+
     registered_by_name: Optional[str] = None
     reviewed_by_name: Optional[str] = None
     deployed_by_name: Optional[str] = None
@@ -158,7 +158,7 @@ class ModelRegistryRepository:
         self._db_path = val
         self.audit = AuditRepository(val)
 
-    # ── Helpers ──────────────────────────────────────────────────────────────
+
 
     def _row_to_obj(self, row) -> ModelEntry:
         def _f(v):
@@ -208,7 +208,7 @@ class ModelRegistryRepository:
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
-    # ── Public API ────────────────────────────────────────────────────────────
+
 
     def register_candidate(
         self,
@@ -339,7 +339,7 @@ class ModelRegistryRepository:
         if not entry:
             raise ValueError(f"Model '{model_id}' not found")
         self._assert_transition(entry.status, "approved")
-        self._assert_transition("approved", "production_candidate")  # pre-validate
+        self._assert_transition("approved", "production_candidate")
 
         now = self._now()
         with get_db(self.db_path) as conn:
@@ -420,7 +420,7 @@ class ModelRegistryRepository:
             raise ValueError(f"Model '{model_id}' not found")
         self._assert_transition(entry.status, "production")
 
-        # Validate source files exist before touching production
+
         src_pt    = Path(entry.checkpoint_path)   if entry.checkpoint_path   else None
         src_onnx  = Path(entry.onnx_path)         if entry.onnx_path         else None
         src_stats = Path(entry.norm_stats_path)   if entry.norm_stats_path   else None
@@ -432,7 +432,7 @@ class ModelRegistryRepository:
         if src_stats and not src_stats.exists():
             raise FileNotFoundError(f"Norm stats not found: {src_stats}")
 
-        # Atomic copy: write to .tmp then rename (avoids partial writes)
+
         def atomic_copy(src: Path, dest_str: str):
             dest = Path(dest_str)
             dest.parent.mkdir(parents=True, exist_ok=True)

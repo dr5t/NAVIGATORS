@@ -1,20 +1,20 @@
-/**
- * Navigators IDR - Data Recorder
- * Captures raw smartphone sensor data for dataset generation.
- */
+
+
+
+
 
 class DataRecorder {
     constructor() {
         this.isRecording = false;
         
-        // Sensor State
+        
         this.currentAccel = [0, 0, 0];
         this.currentGyro = [0, 0, 0];
         this.currentOrient = [0, 0, 0];
         this.currentGnss = [null, null, null, null, null, null];
-        this.currentGnssTimestamp = null; // lat, lon, alt, speed, heading, accuracy
+        this.currentGnssTimestamp = null; 
         
-        // Data Buffer
+        
         this.buffer = {
             timestamps: [],
             accel: [],
@@ -26,7 +26,7 @@ class DataRecorder {
         
         this.startTime = 0;
         
-        // Live Telemetry (Mac Dashboard)
+        
         this.ws = null;
         this.wsConnected = false;
         this.telemetryInterval = null;
@@ -48,7 +48,7 @@ class DataRecorder {
                 };
                 this.ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    // Pass message to global handler if exists
+                    
                     if (window.handleServerMessage) window.handleServerMessage(data);
                 };
                 this.ws.onclose = () => {
@@ -63,7 +63,7 @@ class DataRecorder {
     }
 
     async requestPermissionsAndStart() {
-        // iOS requires explicit permission for DeviceMotionEvent and DeviceOrientationEvent
+        
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 const permission = await DeviceMotionEvent.requestPermission();
@@ -96,7 +96,7 @@ class DataRecorder {
         this.isRecording = true;
         this.startTime = Date.now();
         
-        // Clear buffer
+        
         this.buffer = { timestamps: [], accel: [], gyro: [], orient: [], gnss: [], gnss_timestamps: [] };
         this.currentGnss = [null, null, null, null, null, null];
         this.currentGnssTimestamp = null;
@@ -110,7 +110,7 @@ class DataRecorder {
         };
         this.syncTrip = window.recordingSync.start(this.buffer, this.metadata);
 
-        // 1. Device Motion (IMU)
+        
         this.handleMotion = (event) => {
             if (!event.accelerationIncludingGravity || !event.rotationRate) return;
             const accel = event.accelerationIncludingGravity;
@@ -128,14 +128,14 @@ class DataRecorder {
                 ];
             }
             
-            // Record a frame exactly when IMU updates (typically 10Hz)
+            
             this.recordFrame();
         };
         window.addEventListener('devicemotion', this.handleMotion);
 
-        // 2. Device Orientation (Attitude)
+        
         this.handleOrientation = (event) => {
-            // Absolute orientation if available, otherwise relative
+            
             this.currentOrient = [
                 event.alpha || 0,
                 event.beta || 0,
@@ -144,7 +144,7 @@ class DataRecorder {
         };
         window.addEventListener('deviceorientation', this.handleOrientation);
 
-        // 3. GNSS Location
+        
         if ('geolocation' in navigator) {
             this.watchId = navigator.geolocation.watchPosition(
                 (position) => {
@@ -167,7 +167,7 @@ class DataRecorder {
             );
         }
 
-        // 4. Live Telemetry
+        
         this.telemetryInterval = setInterval(() => {
             if (this.wsConnected && this.ws.readyState === WebSocket.OPEN) {
                 const gnssPayload = this.currentGnssTimestamp && (Date.now()/1000 - this.currentGnssTimestamp < 3) ? {
@@ -205,7 +205,7 @@ class DataRecorder {
         if (!this.isRecording) return;
         this.isRecording = false;
         
-        // Remove listeners
+        
         if (this.handleMotion) {
             window.removeEventListener('devicemotion', this.handleMotion);
         }
@@ -223,7 +223,7 @@ class DataRecorder {
         
         const duration = (Date.now() - this.startTime) / 1000.0;
         
-        // Update metadata for final frame count
+        
         this.metadata.duration_sec = duration;
         this.metadata.num_frames = this.buffer.timestamps.length;
         
@@ -231,5 +231,5 @@ class DataRecorder {
     }
 }
 
-// Global instance
+
 window.dataRecorder = new DataRecorder();

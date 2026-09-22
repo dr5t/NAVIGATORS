@@ -52,23 +52,23 @@ def auth_service(temp_db: Path, rbac_repo: RBACRepository):
     return AuthService(temp_db, rbac_repo)
 
 
-# =============================================================================
-# 1. Password Hashing & Verification
-# =============================================================================
+
+
+
 
 def test_password_hashing_and_verification():
     """Verify PBKDF2-HMAC-SHA256 hashing format and constant-time match."""
     password = "NavigatorsSecurePass2026!"
     hashed = hash_password(password)
 
-    # Format check: pbkdf2_sha256$<iterations>$<salt>$<hash>
+
     parts = hashed.split("$")
     assert len(parts) == 4
     assert parts[0] == "pbkdf2_sha256"
     assert int(parts[1]) == 600_000
-    assert len(parts[2]) == 32  # 16 bytes hex
+    assert len(parts[2]) == 32
 
-    # Verification checks
+
     assert verify_password(password, hashed) is True
     assert verify_password("WrongPassword123!", hashed) is False
     assert verify_password("", hashed) is False
@@ -92,9 +92,9 @@ def test_password_length_constraint():
         hash_password("short")
 
 
-# =============================================================================
-# 2. User Registration Flow
-# =============================================================================
+
+
+
 
 def test_user_registration_flow(auth_service: AuthService, temp_db: Path):
     """
@@ -116,21 +116,21 @@ def test_user_registration_flow(auth_service: AuthService, temp_db: Path):
     assert user.status == "active"
     assert session.is_guest is False
 
-    # Check database tables directly
+
     conn = connect_db(temp_db)
-    # Check users
+
     user_row = conn.execute("SELECT * FROM users WHERE id = ?", (user.id,)).fetchone()
     assert user_row is not None
     assert user_row["email"] == "explorer@navigators.dev"
 
-    # Check auth_identities
+
     identity = conn.execute("SELECT * FROM auth_identities WHERE user_id = ?", (user.id,)).fetchone()
     assert identity is not None
     assert identity["provider"] == "local_password"
     assert identity["identifier"] == "explorer@navigators.dev"
     assert verify_password("SecureNavPassword123!", identity["credential_hash"]) is True
 
-    # Check sessions: raw token must NOT be stored in cleartext
+
     token_hash = compute_token_hash(token)
     session_row = conn.execute("SELECT * FROM sessions WHERE token_hash = ?", (token_hash,)).fetchone()
     assert session_row is not None
@@ -138,10 +138,10 @@ def test_user_registration_flow(auth_service: AuthService, temp_db: Path):
     assert session_row["is_guest"] == 0
     conn.close()
 
-    # Permissions check: standard user has place:read, contribution:create, etc.
+
     assert "place:read" in session.permissions
     assert "contribution:create" in session.permissions
-    assert "training:create" not in session.permissions  # Not an internal contributor or admin
+    assert "training:create" not in session.permissions
 
 
 def test_registration_duplicate_rejected(auth_service: AuthService):
@@ -159,10 +159,10 @@ def test_registration_duplicate_rejected(auth_service: AuthService):
         )
 
 
-# =============================================================================
-# 3. Login Flow
-# User -> Login -> Identity Verified -> Session/Token -> User Record -> Role Lookup -> Permissions Loaded
-# =============================================================================
+
+
+
+
 
 def test_login_success(auth_service: AuthService):
     """Successful login verifies identity, updates last_login_at, and issues session."""
@@ -212,10 +212,10 @@ def test_login_suspended_account_rejected(auth_service: AuthService, rbac_repo: 
         auth_service.login(email="suspended@navigators.dev", password="Password123456!")
 
 
-# =============================================================================
-# 4. Session Management Lifecycle
-# (id, user_id, created_at, expires_at, revoked_at, last_seen_at)
-# =============================================================================
+
+
+
+
 
 def test_session_resolution_and_last_seen_update(auth_service: AuthService):
     """Resolving session updates last_seen_at and loads user permissions."""
@@ -260,17 +260,17 @@ def test_session_revocation(auth_service: AuthService, temp_db: Path):
         name="Revoke User",
     )
 
-    # Valid before revocation
+
     assert auth_service.resolve_session(token) is not None
 
-    # Revoke
+
     revoked = auth_service.revoke_session(token)
     assert revoked is True
 
-    # Invalid after revocation
+
     assert auth_service.resolve_session(token) is None
 
-    # Database shows revoked_at is populated
+
     conn = connect_db(temp_db)
     token_hash = compute_token_hash(token)
     row = conn.execute("SELECT revoked_at FROM sessions WHERE token_hash = ?", (token_hash,)).fetchone()
@@ -300,9 +300,9 @@ def test_revoke_all_user_sessions(auth_service: AuthService):
     assert auth_service.resolve_session(token2) is None
 
 
-# =============================================================================
-# 5. Guest Sessions (No account)
-# =============================================================================
+
+
+
 
 def test_guest_session_flow(auth_service: AuthService, temp_db: Path):
     """
@@ -324,23 +324,23 @@ def test_guest_session_flow(auth_service: AuthService, temp_db: Path):
     assert "place:read" in guest_context.permissions
     assert "contribution:create" not in guest_context.permissions
 
-    # Confirm users table was NOT modified
+
     conn = connect_db(temp_db)
     user_count = conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]
     conn.close()
     assert user_count == initial_user_count
 
-    # Resolving the token later still returns guest context
+
     resolved = auth_service.resolve_session(guest_token)
     assert resolved is not None
     assert resolved.is_guest is True
     assert "place:read" in resolved.permissions
 
 
-# =============================================================================
-# 6. Backend RBAC Determination: Never Trust Client Roles
-# authenticated_user -> database -> role -> permissions
-# =============================================================================
+
+
+
+
 
 def test_server_determines_permissions_dynamically(
     auth_service: AuthService,
@@ -357,21 +357,21 @@ def test_server_determines_permissions_dynamically(
         name="Dynamic User",
     )
 
-    # Initial permissions for 'user'
+
     session = auth_service.resolve_session(token)
     assert session is not None
     assert "training:create" not in session.permissions
 
-    # Server elevates user to 'internal_contributor' in DB
+
     rbac_repo.assign_role_to_user(user.id, "internal_contributor")
 
-    # Next session resolution immediately reflects newly granted permissions
+
     updated_session = auth_service.resolve_session(token)
     assert updated_session is not None
     assert "training:create" in updated_session.permissions
     assert "dataset:create" in updated_session.permissions
 
-    # Server revokes 'internal_contributor' in DB
+
     rbac_repo.remove_role_from_user(user.id, "internal_contributor")
 
     revoked_session = auth_service.resolve_session(token)
@@ -379,19 +379,19 @@ def test_server_determines_permissions_dynamically(
     assert "training:create" not in revoked_session.permissions
 
 
-# =============================================================================
-# 7. FastAPI API Endpoints & Dependency
-# =============================================================================
+
+
+
 
 def test_api_auth_endpoints(monkeypatch, temp_db: Path):
     """Test register, login, guest, me, and logout API handlers."""
-    # Wire auth router to use test db
+
     test_auth_service = AuthService(temp_db)
     import src.api.auth as api_mod
     monkeypatch.setattr(api_mod, "auth_service", test_auth_service)
     monkeypatch.setattr(api_mod, "repo", test_auth_service.rbac)
 
-    # 1. API Register
+
     reg_resp = api_register(
         req=RegisterRequest(
             email="api_user@navigators.dev",
@@ -404,7 +404,7 @@ def test_api_auth_endpoints(monkeypatch, temp_db: Path):
     assert token is not None
     assert reg_resp["session"]["is_guest"] is False
 
-    # 2. API /me with Bearer token
+
     auth_header = f"Bearer {token}"
     context = get_current_session(authorization=auth_header)
     assert context.user is not None
@@ -413,7 +413,7 @@ def test_api_auth_endpoints(monkeypatch, temp_db: Path):
     profile_resp = api_get_current_user_profile(context=context)
     assert profile_resp["user"]["email"] == "api_user@navigators.dev"
 
-    # 3. Require permission dependency
+
     check_read = require_permission("place:read")
     assert check_read(context) is context
 
@@ -422,7 +422,7 @@ def test_api_auth_endpoints(monkeypatch, temp_db: Path):
         check_deploy(context)
     assert exc_info.value.status_code == 403
 
-    # 4. API Login
+
     login_resp = api_login(
         req=LoginRequest(
             email="api_user@navigators.dev",
@@ -433,16 +433,16 @@ def test_api_auth_endpoints(monkeypatch, temp_db: Path):
     new_token = login_resp["token"]
     assert new_token is not None
 
-    # 5. API Guest
+
     guest_resp = api_create_guest(user_agent="TestRunner")
     assert guest_resp["session"]["is_guest"] is True
     assert "place:read" in guest_resp["session"]["permissions"]
 
-    # 6. API Logout
+
     logout_resp = api_logout(authorization=auth_header)
     assert logout_resp["revoked"] is True
 
-    # Token now invalid
+
     with pytest.raises(HTTPException) as exc_info:
         get_current_session(authorization=auth_header)
     assert exc_info.value.status_code == 401

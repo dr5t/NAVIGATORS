@@ -33,10 +33,10 @@ class TestDeadReckoning:
         dr.start(np.array([0.0, 0.0]), heading=0.0, speed=10.0, timestamp=0.0)
 
         pos = np.array([0.0, 0.0])
-        for i in range(100):  # 10 seconds
+        for i in range(100):
             pos = dr.update(ai_speed=10.0, timestamp=i * 0.1)
 
-        # After 10s at 10 m/s heading North: expect ~100m North
+
         assert abs(pos[1] - 100.0) < 5.0, f"Expected ~100m North, got {pos[1]:.1f}m"
         assert abs(pos[0]) < 5.0, f"Should not drift East: {pos[0]:.1f}m"
 
@@ -77,18 +77,18 @@ class TestDeadReckoning:
 class TestNHC:
     def test_zero_lateral_velocity(self):
         nhc = NonHolonomicConstraints()
-        # Vehicle heading North, velocity has lateral component
-        vel = np.array([3.0, 10.0])  # [East, North] - 3 m/s lateral
-        heading = 0.0  # North
+
+        vel = np.array([3.0, 10.0])
+        heading = 0.0
 
         constrained = nhc.apply_constraints(vel, heading)
-        # After NHC, lateral velocity should be removed
+
         body_vel = nhc.compute_body_velocity(constrained, heading)
         assert abs(body_vel[1]) < 0.01, "Lateral velocity should be zero after NHC"
 
     def test_forward_velocity_preserved(self):
         nhc = NonHolonomicConstraints()
-        vel = np.array([0.0, 10.0])  # Pure North velocity
+        vel = np.array([0.0, 10.0])
         heading = 0.0
 
         constrained = nhc.apply_constraints(vel, heading)
@@ -115,7 +115,7 @@ class TestZUPT:
             detection_window=5,
         )
 
-        # Feed constant (gravity-only) readings
+
         for _ in range(10):
             accel = np.array([0.0, 0.0, 9.81]) + np.random.normal(0, 0.01, 3)
             gyro = np.random.normal(0, 0.001, 3)
@@ -126,7 +126,7 @@ class TestZUPT:
     def test_detects_moving(self):
         zupt = ZUPTDetector(detection_window=5)
 
-        # Feed high-variance readings (moving vehicle)
+
         for _ in range(10):
             accel = np.array([2.0, 0.5, 9.81]) + np.random.normal(0, 1.0, 3)
             gyro = np.array([0.0, 0.0, 0.2]) + np.random.normal(0, 0.1, 3)
@@ -162,7 +162,7 @@ class TestCoordinates:
         assert abs(lon2 - lon) < 1e-6
 
     def test_haversine_known_distance(self):
-        # Delhi to Agra ≈ 178 km (great-circle)
+
         dist = haversine_distance(28.6139, 77.2090, 27.1767, 78.0081)
         assert 170_000 < dist < 190_000, f"Expected ~178km, got {dist/1000:.0f}km"
 
@@ -171,13 +171,13 @@ class TestCoordinates:
         assert dist < 0.01
 
     def test_bearing_north(self):
-        # Point directly north
+
         bearing = compute_bearing(28.0, 77.0, 29.0, 77.0)
         assert abs(bearing) < 0.01 or abs(bearing - 2 * np.pi) < 0.01
 
     def test_destination_point(self):
         lat, lon = 28.6139, 77.2090
-        # Go 1000m North
+
         dest_lat, dest_lon = destination_point(lat, lon, 0.0, 1000.0)
         dist = haversine_distance(lat, lon, dest_lat, dest_lon)
         assert abs(dist - 1000.0) < 1.0

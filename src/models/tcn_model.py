@@ -45,7 +45,7 @@ class CausalConv1d(nn.Module):
             (batch, out_channels, seq_len)
         """
         out = self.conv(x)
-        # Remove the extra padding on the right (causal = no future leakage)
+
         if self.padding > 0:
             out = out[:, :, :-self.padding]
         return out
@@ -78,7 +78,7 @@ class TCNBlock(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
-        # 1x1 convolution for residual connection if channel dims differ
+
         self.residual = (
             nn.Conv1d(in_channels, out_channels, 1)
             if in_channels != out_channels
@@ -143,25 +143,25 @@ class TCNVelocityEstimator(nn.Module):
         self.use_skip = use_skip_connections
         self.num_blocks = len(num_channels)
 
-        # Build TCN blocks with exponentially increasing dilation
+
         self.blocks = nn.ModuleList()
         for i, out_ch in enumerate(num_channels):
             in_ch = input_channels if i == 0 else num_channels[i - 1]
-            dilation = 2 ** i  # 1, 2, 4, 8, ...
+            dilation = 2 ** i
             self.blocks.append(
                 TCNBlock(in_ch, out_ch, kernel_size, dilation, dropout)
             )
 
-        # Skip connection projections (project each block output to same dim)
+
         if use_skip_connections:
             self.skip_projections = nn.ModuleList([
                 nn.Conv1d(ch, num_channels[-1], 1) for ch in num_channels
             ])
 
-        # Global average pooling + regression head
+
         final_channels = num_channels[-1]
         self.head = nn.Sequential(
-            nn.AdaptiveAvgPool1d(1),  # Pool across time
+            nn.AdaptiveAvgPool1d(1),
             nn.Flatten(),
             nn.Linear(final_channels, 64),
             nn.ReLU(),
@@ -169,7 +169,7 @@ class TCNVelocityEstimator(nn.Module):
             nn.Linear(64, output_dim),
         )
 
-        # Initialize weights
+
         self._init_weights()
 
     def _init_weights(self):
@@ -194,7 +194,7 @@ class TCNVelocityEstimator(nn.Module):
         Returns:
             (batch, output_dim) predicted velocity.
         """
-        # Transpose to (batch, channels, seq_len) for Conv1d
+
         x = x.transpose(1, 2)
 
         if self.use_skip:
@@ -220,6 +220,6 @@ class TCNVelocityEstimator(nn.Module):
         Compute the effective receptive field of the TCN.
         RF = 1 + 2 * (kernel_size - 1) * sum(dilations)
         """
-        kernel_size = int(self.blocks[0].conv1.conv.kernel_size[0])  # type: ignore
+        kernel_size = int(self.blocks[0].conv1.conv.kernel_size[0])
         dilations = [2 ** i for i in range(self.num_blocks)]
         return 1 + 2 * (kernel_size - 1) * sum(dilations)

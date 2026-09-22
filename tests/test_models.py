@@ -15,7 +15,7 @@ from models.lstm_model import LSTMVelocityEstimator
 class TestTCNModel:
     def test_forward_pass_shape(self):
         model = TCNVelocityEstimator(input_channels=6, output_dim=2)
-        x = torch.randn(4, 200, 6)  # batch=4, window=200, channels=6
+        x = torch.randn(4, 200, 6)
         out = model(x)
         assert out.shape == (4, 2), f"Expected (4, 2), got {out.shape}"
 
@@ -90,7 +90,7 @@ class TestLSTMModel:
             out, attn = model(x, return_attention=True)
         assert out.shape == (2, 2)
         assert attn.shape == (2, 100)
-        # Attention weights should sum to 1
+
         assert torch.allclose(attn.sum(dim=1), torch.ones(2), atol=1e-5)
 
     def test_no_attention(self):

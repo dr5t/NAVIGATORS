@@ -53,7 +53,7 @@ def run_simulation(
     print("  Navigators IDR - Full Navigation Simulation")
     print("=" * 60)
 
-    # --- Generate scenario ---
+
     print("\n[1/4] Generating synthetic scenario...")
     gen = SyntheticDataGenerator(sample_rate=10.0, seed=42)
     scenario = gen.generate_full_scenario()
@@ -78,7 +78,7 @@ def run_simulation(
     print(f"    Outage:   {meta['outage_ranges']}")
     print(f"    Samples:  {N}")
 
-    # --- Initialize components ---
+
     print("\n[2/4] Initializing navigation engine...")
 
     ekf = ExtendedKalmanFilter(dt=dt)
@@ -86,12 +86,12 @@ def run_simulation(
     nhc = NonHolonomicConstraints()
     zupt = ZUPTDetector()
 
-    # Create a simple road network for map matching
+
     road_net = RoadNetwork()
     road_net.generate_grid_network(center=np.array([0.0, 0.0]), grid_size=200, num_blocks=10)
     map_matcher = create_map_matcher("geometric", road_net, search_radius=100.0)
 
-    # Initialize EKF from first GNSS fix
+
     first_gnss_idx = np.where(gnss_available)[0][0]
     ekf.initialize_from_gnss(
         position=gnss_positions[first_gnss_idx],
@@ -99,7 +99,7 @@ def run_simulation(
         heading=true_headings[first_gnss_idx],
     )
 
-    # --- Try loading trained model ---
+
     model = None
     if checkpoint_path and os.path.exists(checkpoint_path):
         print(f"\n[Model] Loading checkpoint: {checkpoint_path}")
@@ -111,10 +111,10 @@ def run_simulation(
         except Exception as e:
             print(f"[Model] Could not load: {e}. Using ground truth velocity.")
 
-    # --- Run simulation ---
+
     print("\n[3/4] Running navigation simulation...")
 
-    # Results storage
+
     results = {
         "timestamps": [],
         "true_positions": [],
@@ -142,11 +142,11 @@ def run_simulation(
     for i in range(N):
         t = timestamps[i]
 
-        # --- ZUPT detection ---
+
         is_stationary = zupt.update(accel[i], gyro[i], dt)
 
-        # --- AI velocity estimation ---
-        # Use ground truth with noise as mock (replace with model inference when trained)
+
+
         if model is not None and len(window_buffer) >= window_size:
             import torch
             window = np.array(window_buffer[-window_size:])
@@ -154,19 +154,19 @@ def run_simulation(
             with torch.no_grad():
                 ai_velocity = model(window_tensor).numpy()[0]
         else:
-            # Mock: ground truth + noise
+
             noise = np.random.normal(0, 0.5, 2)
             ai_velocity = true_velocities[i] + noise
 
         window_buffer.append(np.concatenate([accel[i], gyro[i]]))
 
-        # --- EKF prediction ---
+
         ekf.predict(accel[i], gyro[i], ai_velocity)
 
-        # --- GNSS update ---
+
         if gnss_available[i]:
             if not prev_gnss:
-                # GNSS just restored - end DR
+
                 if dr.is_active:
                     dr_summary = dr.stop(gnss_restore_position=gnss_positions[i])
                     print(f"    t={t:.1f}s: GNSS restored | "
@@ -177,37 +177,37 @@ def run_simulation(
             prev_gnss = True
         else:
             if prev_gnss:
-                # GNSS just lost - start DR
+
                 ekf.set_gnss_denied(timestamp=t)
                 pos = ekf.get_position()
                 dr.start(pos[:2], ekf.get_heading(), np.linalg.norm(ekf.get_velocity()[:2]), t)
                 print(f"    t={t:.1f}s: GNSS DENIED - Dead reckoning active")
 
-            # DR update
+
             dr.update(ai_velocity=ai_velocity, gyro_yaw_rate=gyro[i, 2], timestamp=t)
             prev_gnss = False
 
-        # --- ZUPT ---
+
         if is_stationary:
             ekf.update_zupt()
 
-        # --- NHC ---
+
         vel_nav = ekf.get_velocity()
         heading = ekf.get_heading()
         constrained_vel = nhc.apply_constraints(vel_nav[:2], heading)
 
-        # --- Get estimated position ---
+
         est_pos = ekf.get_position()
         pos_error = float(np.linalg.norm(est_pos[:2] - true_positions[i]))
 
-        # Convert to lat/lon for visualization
+
         ref_lat, ref_lon = meta["ref_lat"], meta["ref_lon"]
         meters_per_deg_lat = 111320.0
         meters_per_deg_lon = 111320.0 * np.cos(np.radians(ref_lat))
         est_lat = ref_lat + est_pos[1] / meters_per_deg_lat
         est_lon = ref_lon + est_pos[0] / meters_per_deg_lon
 
-        # --- Record ---
+
         results["timestamps"].append(float(t))
         results["true_positions"].append(true_positions[i].tolist())
         results["estimated_positions"].append(est_pos[:2].tolist())
@@ -226,13 +226,13 @@ def run_simulation(
             dr.get_drift_percentage() if dr.is_active else 0.0
         )
 
-    # --- Compute final metrics ---
+
     print("\n[4/4] Computing metrics...")
 
     est_pos_array = np.array(results["estimated_positions"])
     true_pos_array = np.array(results["true_positions"])
 
-    # Compute metrics specifically during GNSS outages
+
     outage_mask = ~np.array(results["gnss_available"])
     if np.any(outage_mask):
         outage_est = est_pos_array[outage_mask]
@@ -259,7 +259,7 @@ def run_simulation(
     print(f"  CEP95:                   {metrics['cep']['CEP95']:.2f} m")
     print(f"{'─'*40}")
 
-    # --- Save results ---
+
     output = {
         "metadata": {
             **meta,

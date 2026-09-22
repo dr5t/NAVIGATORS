@@ -32,9 +32,9 @@ auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class ApproveContributionRequest(BaseModel):
     notes: Optional[str] = Field(None, description="Optional reviewer approval rationale")
@@ -66,7 +66,7 @@ def _enrich_contribution(c: Contribution) -> Dict[str, Any]:
     base = c.to_dict()
     data = base.get("data", {})
 
-    # 1. Author profile
+
     author_info = {"id": c.owner_id, "name": "Unknown", "email": ""}
     try:
         user = rbac_repo.get_user(c.owner_id)
@@ -78,14 +78,14 @@ def _enrich_contribution(c: Contribution) -> Dict[str, Any]:
     except Exception:
         pass
 
-    # 2. Location
+
     location = {
         "latitude": data.get("latitude"),
         "longitude": data.get("longitude"),
         "address": data.get("address"),
     }
 
-    # 3. Evidence
+
     evidence = {
         "notes": data.get("notes") or c.review_notes,
         "signage_verified": data.get("signage_verified", False),
@@ -95,7 +95,7 @@ def _enrich_contribution(c: Contribution) -> Dict[str, Any]:
         "opening_hours": data.get("opening_hours"),
     }
 
-    # 4. Changes diff
+
     diff = contrib_repo.get_diff_summary(c.id)
 
     return {
@@ -107,9 +107,9 @@ def _enrich_contribution(c: Contribution) -> Dict[str, Any]:
     }
 
 
-# =============================================================================
-# 1. Contributions Triage Queues (Pending, Approved, Rejected, Changes Requested)
-# =============================================================================
+
+
+
 
 @router.get("/contributions")
 def list_moderation_queue(
@@ -174,9 +174,9 @@ def get_moderation_contribution_detail(
     }
 
 
-# =============================================================================
-# 2. Moderation Actions: Approve, Reject, Request Changes
-# =============================================================================
+
+
+
 
 @router.post("/contributions/{contrib_id}/approve")
 def approve_contribution(
@@ -285,9 +285,9 @@ def request_changes_on_contribution(
     }
 
 
-# =============================================================================
-# 3. Community Reports Triage & Resolution
-# =============================================================================
+
+
+
 
 @router.get("/reports")
 def list_reported_items(
@@ -349,7 +349,7 @@ def resolve_report(
         notes=req.notes,
     )
 
-    # Record audit log
+
     try:
         audit_repo.log(
             action=f"report:{req.decision}",
@@ -371,9 +371,9 @@ def resolve_report(
     }
 
 
-# =============================================================================
-# 4. Immutable Audit Logs Inspection
-# =============================================================================
+
+
+
 
 @router.get("/audit-logs")
 def list_audit_trail(

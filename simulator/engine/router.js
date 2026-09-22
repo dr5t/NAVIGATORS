@@ -1,35 +1,35 @@
-/**
- * Navigators IDR - Real Routing Engine
- * Dual-engine routing:
- *   1. Online: OSRM (Open Source Routing Machine) public driving API
- *   2. Offline: Local A* graph pathfinder computed over downloaded OSM road vector network
- *
- * Adheres strictly to Requirement 37: Zero fake routes. If no traversable path exists,
- * explicitly returns an error.
- */
+
+
+
+
+
+
+
+
+
 
 class NavigatorsRouter {
     constructor() {
         this.osrmBaseUrl = 'https://router.project-osrm.org/route/v1/driving';
     }
 
-    /**
-     * Route between two coordinates
-     * @param {number} startLat
-     * @param {number} startLon
-     * @param {number} endLat
-     * @param {number} endLon
-     * @param {LocalMap|null} localMap
-     * @param {boolean} forceOffline
-     * @returns {Promise<Object>}
-     */
+    
+
+
+
+
+
+
+
+
+
     async route(startLat, startLon, endLat, endLon, localMap = null, forceOffline = false) {
         if (!Number.isFinite(startLat) || !Number.isFinite(startLon) ||
             !Number.isFinite(endLat) || !Number.isFinite(endLon)) {
             return { success: false, error: 'Invalid start or destination coordinates.' };
         }
 
-        // Try Online Routing first if online and not forced offline
+        
         if (!forceOffline && typeof navigator !== 'undefined' && navigator.onLine) {
             try {
                 const onlineResult = await this.routeOnline(startLat, startLon, endLat, endLon);
@@ -42,7 +42,7 @@ class NavigatorsRouter {
             }
         }
 
-        // Fallback to Offline A* Graph Routing
+        
         if (localMap && localMap.data && Array.isArray(localMap.data.roads) && localMap.data.roads.length > 0) {
             return this.routeOffline(startLat, startLon, endLat, endLon, localMap);
         }
@@ -55,9 +55,9 @@ class NavigatorsRouter {
         };
     }
 
-    /**
-     * Online OSRM routing
-     */
+    
+
+
     async routeOnline(startLat, startLon, endLat, endLon) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 6000);
@@ -112,22 +112,22 @@ class NavigatorsRouter {
         }
     }
 
-    /**
-     * Offline A* graph pathfinder computed directly on downloaded OSM roads
-     */
+    
+
+
     routeOffline(startLat, startLon, endLat, endLon, localMap) {
         const roads = localMap.data.roads;
         const origin = localMap.data.origin;
         const metersPerDegree = localMap.metersPerDegree;
         const lonScale = localMap.lonScale;
 
-        // Convert coordinates to ENU local meters
+        
         const startENU = [(startLon - origin.lon) * lonScale, (startLat - origin.lat) * metersPerDegree];
         const endENU = [(endLon - origin.lon) * lonScale, (endLat - origin.lat) * metersPerDegree];
 
-        // 1. Build discrete graph nodes from road segments
-        const snapDist = 18.0; // snap road vertices within 18m as shared intersections
-        const nodes = []; // { id, x, y, neighbors: [{ id, dist, roadName }] }
+        
+        const snapDist = 18.0; 
+        const nodes = []; 
 
         function getOrCreateNode(x, y) {
             for (let i = 0; i < nodes.length; i++) {
@@ -163,7 +163,7 @@ class NavigatorsRouter {
             return { success: false, error: 'Insufficient road network vertices to compute offline route.' };
         }
 
-        // 2. Find nearest graph nodes to start and end
+        
         let startNode = -1, endNode = -1;
         let minStartDist = Infinity, minEndDist = Infinity;
 
@@ -184,13 +184,13 @@ class NavigatorsRouter {
                 success: true,
                 source: 'local_astar',
                 distance_m: minStartDist + minEndDist,
-                duration_s: Math.round((minStartDist + minEndDist) / 8.33), // ~30 km/h
+                duration_s: Math.round((minStartDist + minEndDist) / 8.33), 
                 coordinates: [[startLat, startLon], [endLat, endLon]],
                 steps: [{ instruction: 'Arrive at destination', distance_m: minStartDist + minEndDist, duration_s: 10, location: [endLat, endLon] }]
             };
         }
 
-        // 3. A* Search
+        
         const openSet = new Set([startNode]);
         const cameFrom = new Map();
         const cameFromEdge = new Map();
@@ -205,7 +205,7 @@ class NavigatorsRouter {
         const maxIterations = 20000;
 
         while (openSet.size > 0 && iterations++ < maxIterations) {
-            // Find node in openSet with lowest fScore
+            
             let current = -1;
             let lowestF = Infinity;
             for (const nodeId of openSet) {
@@ -216,14 +216,14 @@ class NavigatorsRouter {
             }
 
             if (current === endNode) {
-                // Reconstruct path
+                
                 const pathNodeIds = [current];
                 while (cameFrom.has(current)) {
                     current = cameFrom.get(current);
                     pathNodeIds.unshift(current);
                 }
 
-                // Map ENU path back to lat/lon coordinates
+                
                 const coords = [[startLat, startLon]];
                 let totalDist = minStartDist;
 
@@ -236,7 +236,7 @@ class NavigatorsRouter {
                 coords.push([endLat, endLon]);
                 totalDist += gScore[endNode] + minEndDist;
 
-                // Build turn maneuvers
+                
                 const steps = [{ instruction: 'Start along local road network', distance_m: minStartDist, duration_s: Math.round(minStartDist / 8.33), location: coords[0] }];
                 for (let i = 1; i < pathNodeIds.length - 1; i++) {
                     const edge = cameFromEdge.get(pathNodeIds[i]);

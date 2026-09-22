@@ -1,13 +1,13 @@
-/**
- * Navigators IDR - Map Matching (JavaScript Edge Port)
- * Snaps estimated positions to the road network to bound drift.
- */
+
+
+
+
 
 class RoadSegment {
     constructor(id, start, end, name = "", speed_limit = 50.0, one_way = false) {
         this.id = id;
-        this.start = start; // [East, North]
-        this.end = end;     // [East, North]
+        this.start = start; 
+        this.end = end;     
         this.name = name;
         this.speed_limit = speed_limit;
         this.one_way = one_way;
@@ -19,7 +19,7 @@ class RoadSegment {
         this.direction = [0, 0];
 
         if (this.length > 0) {
-            this.heading = Math.atan2(dx, dy); // East, North
+            this.heading = Math.atan2(dx, dy); 
             this.direction = [dx / this.length, dy / this.length];
         }
     }
@@ -29,7 +29,7 @@ class RoadNetwork {
     constructor() {
         this.segments = [];
         this.spatialHash = new Map();
-        this.gridSize = 200.0; // 200m grid cells
+        this.gridSize = 200.0; 
     }
 
     async loadOSMNetwork(url) {
@@ -60,7 +60,7 @@ class RoadNetwork {
     buildSpatialHash() {
         this.spatialHash.clear();
         for (let seg of this.segments) {
-            // Index the entire segment so long roads remain matchable at their midpoint.
+            
             const minX = Math.floor(Math.min(seg.start[0], seg.end[0]) / this.gridSize);
             const maxX = Math.floor(Math.max(seg.start[0], seg.end[0]) / this.gridSize);
             const minY = Math.floor(Math.min(seg.start[1], seg.end[1]) / this.gridSize);
@@ -79,7 +79,7 @@ class RoadNetwork {
         if (this.spatialHash.size === 0) return this.segments;
 
         let candidates = new Set();
-        let r = searchRadius + 100.0; // Margin
+        let r = searchRadius + 100.0; 
 
         let minX = position[0] - r;
         let maxX = position[0] + r;
@@ -120,7 +120,7 @@ class RoadNetwork {
     generateGridNetwork(center = [0, 0], grid_size = 100.0, num_blocks = 5) {
         let half = num_blocks * grid_size / 2;
 
-        // East-West
+        
         for (let i = 0; i <= num_blocks; i++) {
             let y = center[1] - half + i * grid_size;
             this.addRoad([
@@ -129,7 +129,7 @@ class RoadNetwork {
             ], `ew_${i}`, `East-West Road ${i}`);
         }
 
-        // North-South
+        
         for (let i = 0; i <= num_blocks; i++) {
             let x = center[0] - half + i * grid_size;
             this.addRoad([
@@ -217,7 +217,7 @@ class GeometricMapMatcher {
     }
 }
 
-// Export
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { RoadSegment, RoadNetwork, GeometricMapMatcher };
 } else {

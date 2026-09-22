@@ -1,9 +1,9 @@
-/**
- * Navigators IDR - Phone-to-Vehicle Alignment
- * 
- * Estimates the orientation of the phone relative to the vehicle frame.
- * Assumes the vehicle travels mostly forward and flat.
- */
+
+
+
+
+
+
 
 class PhoneVehicleAligner {
     constructor() {
@@ -18,16 +18,16 @@ class PhoneVehicleAligner {
         this.lastSpeed = -1;
         this.lastSpeedTime = 0;
         
-        // Rotation Matrix (Phone to Vehicle)
+        
         this.R = [
             [1, 0, 0],
             [0, 1, 0],
             [0, 0, 1]
         ];
         
-        // Configuration
-        this.GRAVITY_SAMPLES_REQUIRED = 100; // 10 seconds at 10Hz
-        this.FORWARD_SAMPLES_REQUIRED = 50;  // 0.5 seconds of pure acceleration
+        
+        this.GRAVITY_SAMPLES_REQUIRED = 100; 
+        this.FORWARD_SAMPLES_REQUIRED = 50;  
     }
 
     reset() {
@@ -40,9 +40,9 @@ class PhoneVehicleAligner {
     }
 
     feed(accel, gnssSpeed, timestamp) {
-        if (this.isAligned) return true; // Already calibrated
+        if (this.isAligned) return true; 
 
-        // 1. Estimate Gravity (Z-axis)
+        
         if (this.gravityCount < this.GRAVITY_SAMPLES_REQUIRED) {
             this.gravityAccumulator[0] += accel[0];
             this.gravityAccumulator[1] += accel[1];
@@ -57,13 +57,13 @@ class PhoneVehicleAligner {
             this.gravityAccumulator[2] / this.gravityCount
         ]);
 
-        // 2. Estimate Forward (X-axis)
+        
         if (this.lastSpeed >= 0 && timestamp - this.lastSpeedTime > 0.1) {
             const accelMagnitude = (gnssSpeed - this.lastSpeed) / (timestamp - this.lastSpeedTime);
             
-            // If accelerating forward > 0.5 m/s^2
+            
             if (accelMagnitude > 0.5) {
-                // Project current acceleration onto horizontal plane
+                
                 const dotZ = accel[0]*Z[0] + accel[1]*Z[1] + accel[2]*Z[2];
                 const accelHoriz = [
                     accel[0] - dotZ * Z[0],
@@ -81,7 +81,7 @@ class PhoneVehicleAligner {
         this.lastSpeed = gnssSpeed;
         this.lastSpeedTime = timestamp;
 
-        // 3. Finalize Alignment
+        
         if (this.forwardCount >= this.FORWARD_SAMPLES_REQUIRED) {
             let X_raw = [
                 this.forwardAccumulator[0] / this.forwardCount,
@@ -89,7 +89,7 @@ class PhoneVehicleAligner {
                 this.forwardAccumulator[2] / this.forwardCount
             ];
             
-            // Ensure X is perfectly orthogonal to Z
+            
             const dotXZ = X_raw[0]*Z[0] + X_raw[1]*Z[1] + X_raw[2]*Z[2];
             let X = this._normalize([
                 X_raw[0] - dotXZ * Z[0],
@@ -97,14 +97,14 @@ class PhoneVehicleAligner {
                 X_raw[2] - dotXZ * Z[2]
             ]);
             
-            // Y = Z cross X
+            
             let Y = this._normalize([
                 Z[1]*X[2] - Z[2]*X[1],
                 Z[2]*X[0] - Z[0]*X[2],
                 Z[0]*X[1] - Z[1]*X[0]
             ]);
             
-            // R = [X, Y, Z]^T
+            
             this.R = [
                 [X[0], X[1], X[2]],
                 [Y[0], Y[1], Y[2]],

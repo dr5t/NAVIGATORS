@@ -26,28 +26,28 @@ class SensorTrajectoryDataset(Dataset):
             if n < window_size:
                 continue
                 
-            # Convert to numpy arrays
+
             a_arr = np.array(accel, dtype=np.float32)
             g_arr = np.array(gyro, dtype=np.float32)
             
-            # Combine IMU [batch, channels] (accel X,Y,Z, gyro X,Y,Z)
+
             imu_arr = np.concatenate([a_arr, g_arr], axis=1)
             
-            # Extract GNSS speed & heading
+
             for start in range(0, n - window_size, step_size):
                 end = start + window_size
                 
-                # Check target (the GNSS at the end of the window)
-                # target GNSS row is [lat, lon, alt, speed, heading, accuracy]
+
+
                 target_gnss = gnss[end - 1]
                 if target_gnss is None or target_gnss[3] is None or target_gnss[4] is None:
-                    # Skip windows without valid GNSS at the end
+
                     continue
                     
                 speed = float(target_gnss[3])
                 heading_deg = float(target_gnss[4])
                 
-                # Convert heading to radians and compute N, E velocity components
+
                 heading_rad = math.radians(heading_deg)
                 v_n = speed * math.cos(heading_rad)
                 v_e = speed * math.sin(heading_rad)
@@ -58,10 +58,10 @@ class SensorTrajectoryDataset(Dataset):
                 self.targets.append([v_n, v_e])
                 
         if self.windows:
-            self.windows = np.array(self.windows, dtype=np.float32) # (N, seq_len, channels)
-            # CNNs expect (batch, channels, seq_len)
+            self.windows = np.array(self.windows, dtype=np.float32)
+
             self.windows = np.transpose(self.windows, (0, 2, 1))
-            self.targets = np.array(self.targets, dtype=np.float32) # (N, 2)
+            self.targets = np.array(self.targets, dtype=np.float32)
         else:
             self.windows = np.zeros((0, 6, window_size), dtype=np.float32)
             self.targets = np.zeros((0, 2), dtype=np.float32)
@@ -86,7 +86,7 @@ def create_dataloaders(recordings_dir: Path, window_size: int = 200, batch_size:
         except Exception as e:
             print(f"Skipping {f}: {e}")
             
-    # Trajectory-level split: 70% Train, 15% Val, 15% Test
+
     n = len(trips)
     train_end = max(1, int(0.7 * n))
     val_end = max(train_end + 1, int(0.85 * n))

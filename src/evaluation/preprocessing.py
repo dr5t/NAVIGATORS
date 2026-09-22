@@ -38,7 +38,7 @@ class CausalFilter:
         self.filtered = median.copy() if self.filtered is None else self.filtered + gain * (median - self.filtered)
         linear = self.filtered.copy()
         linear[2] -= 9.81
-        return aligned, linear  # raw gravity-included IMU, model linear IMU
+        return aligned, linear
 
 
 def prepare_features(recording, calibration_seconds=5, aligned=False):

@@ -93,9 +93,9 @@ def audit_repo(temp_db: Path):
     return AuditRepository(temp_db)
 
 
-# =============================================================================
-# 1. Moderation Queue Filtering & Enriched Cards
-# =============================================================================
+
+
+
 
 def test_moderation_queue_filtering_and_enrichment(
     monkeypatch,
@@ -121,7 +121,7 @@ def test_moderation_queue_filtering_and_enrichment(
     author, session_author, _ = auth_service.register("author_queue@navigators.dev", "Password123!", "Alice Author")
     mod, session_mod, _ = auth_service.register("mod_queue@navigators.dev", "Password123!", "Bob Moderator", role_id="moderator")
 
-    # 1. Author creates a new place contribution and submits it
+
     c1 = contrib_repo.create(
         contribution_id="c_pending_1",
         owner_id=author.id,
@@ -140,12 +140,12 @@ def test_moderation_queue_filtering_and_enrichment(
         status=ContributionState.PENDING_REVIEW,
     )
 
-    # 2. Query pending queue as moderator
+
     res = api_list_moderation_queue(status="pending", context=session_mod)
     assert res["count"] == 1
     item = res["items"][0]
 
-    # Verify enrichment
+
     assert item["id"] == "c_pending_1"
     assert item["author"]["name"] == "Alice Author"
     assert item["author"]["email"] == "author_queue@navigators.dev"
@@ -157,9 +157,9 @@ def test_moderation_queue_filtering_and_enrichment(
     assert item["changes"]["name"]["new"] == "Highway Rest Stop"
 
 
-# =============================================================================
-# 2. Moderator Actions: Approve & Audit Logging
-# =============================================================================
+
+
+
 
 def test_moderator_approve_and_audit_record(
     monkeypatch,
@@ -192,7 +192,7 @@ def test_moderator_approve_and_audit_record(
         status=ContributionState.PENDING_REVIEW,
     )
 
-    # Moderator approves
+
     res = api_approve_contribution(
         contrib_id=contrib.id,
         req=ApproveContributionRequest(notes="Signboard photo confirmed"),
@@ -200,7 +200,7 @@ def test_moderator_approve_and_audit_record(
     )
     assert res["item"]["status"] == ContributionState.APPROVED
 
-    # Verify audit log was recorded
+
     logs = audit_repo.list_logs(resource_id=contrib.id, action="contribution:approved")
     assert len(logs) == 1
     audit = logs[0]
@@ -210,9 +210,9 @@ def test_moderator_approve_and_audit_record(
     assert audit.metadata.get("notes") == "Signboard photo confirmed"
 
 
-# =============================================================================
-# 3. Moderator Actions: Reject & Audit Logging
-# =============================================================================
+
+
+
 
 def test_moderator_reject_and_audit_record(
     monkeypatch,
@@ -246,7 +246,7 @@ def test_moderator_reject_and_audit_record(
         status=ContributionState.PENDING_REVIEW,
     )
 
-    # Moderator rejects
+
     res = api_reject_contribution(
         contrib_id=contrib.id,
         req=RejectContributionRequest(reason="Location duplicates existing canonical fuel station #402"),
@@ -254,7 +254,7 @@ def test_moderator_reject_and_audit_record(
     )
     assert res["item"]["status"] == ContributionState.REJECTED
 
-    # Verify audit log was recorded
+
     logs = audit_repo.list_logs(resource_id=contrib.id, action="contribution:rejected")
     assert len(logs) == 1
     audit = logs[0]
@@ -264,9 +264,9 @@ def test_moderator_reject_and_audit_record(
     assert "duplicates" in audit.metadata.get("notes", "")
 
 
-# =============================================================================
-# 4. Request Changes & Resubmission Lifecycle
-# =============================================================================
+
+
+
 
 def test_moderator_request_changes_and_resubmission_flow(
     monkeypatch,
@@ -302,7 +302,7 @@ def test_moderator_request_changes_and_resubmission_flow(
         status=ContributionState.PENDING_REVIEW,
     )
 
-    # 1. Moderator requests changes
+
     res = api_request_changes(
         contrib_id=contrib.id,
         req=RequestChangesRequest(notes="Please specify opening hours and contact phone number."),
@@ -310,32 +310,32 @@ def test_moderator_request_changes_and_resubmission_flow(
     )
     assert res["item"]["status"] == ContributionState.CHANGES_REQUESTED
 
-    # 2. Audit log recorded
+
     logs = audit_repo.list_logs(resource_id=contrib.id, action="contribution:changes_requested")
     assert len(logs) == 1
     assert logs[0].actor_id == mod.id
     assert logs[0].new_state == ContributionState.CHANGES_REQUESTED
 
-    # 3. Author updates draft content
+
     contrib_repo.update_content(
         contribution_id=contrib.id,
         title="Apex Specialty Clinic",
         data={"name": "Apex Specialty Clinic", "category": "hospital", "opening_hours": "08:00 - 20:00", "phone": "+91 11 7777 8888"},
     )
 
-    # 4. Author resubmits for review
+
     resubmitted = contrib_repo.submit(contrib.id, user=session_author)
     assert resubmitted.status == ContributionState.PENDING_REVIEW
 
-    # 5. Item is visible in moderator pending queue
+
     pending = api_list_moderation_queue(status="pending", context=session_mod)
     pending_ids = [it["id"] for it in pending["items"]]
     assert contrib.id in pending_ids
 
 
-# =============================================================================
-# 5. Access Control: Non-Moderators Denied
-# =============================================================================
+
+
+
 
 def test_non_moderator_cannot_access_moderation_endpoints(
     monkeypatch,
@@ -356,25 +356,25 @@ def test_non_moderator_cannot_access_moderation_endpoints(
     user, session_user, _ = auth_service.register("regular_user@navigators.dev", "Password123!", "Regular User")
     guest_session, _ = auth_service.create_guest_session()
 
-    # 1. Regular user cannot view moderation queue
+
     with pytest.raises(HTTPException) as exc_queue:
         api_list_moderation_queue(status="pending", context=session_user)
     assert exc_queue.value.status_code == 403
 
-    # 2. Guest cannot view moderation queue
+
     with pytest.raises(HTTPException) as exc_guest:
         api_list_moderation_queue(status="pending", context=guest_session)
     assert exc_guest.value.status_code == 401
 
-    # 3. Regular user cannot approve
+
     with pytest.raises(HTTPException) as exc_app:
         api_approve_contribution(contrib_id="c_fake", context=session_user)
     assert exc_app.value.status_code == 403
 
 
-# =============================================================================
-# 6. Community Reports & Moderator Resolution Workflow
-# =============================================================================
+
+
+
 
 def test_community_reports_and_moderator_resolution_workflow(
     monkeypatch,
@@ -410,7 +410,7 @@ def test_community_reports_and_moderator_resolution_workflow(
     user, session_user, _ = auth_service.register("citizen@navigators.dev", "Password123!", "Citizen User")
     mod, session_mod, _ = auth_service.register("mod_reports@navigators.dev", "Password123!", "Mod Reports", role_id="moderator")
 
-    # 1. User reports an inaccurate place
+
     rep_res = api_submit_report(
         req=CreateReportRequest(
             target_type="place",
@@ -424,19 +424,19 @@ def test_community_reports_and_moderator_resolution_workflow(
     assert report_id.startswith("rep_")
     assert rep_res["report"]["status"] == "pending"
 
-    # Verify audit log was recorded for report creation
+
     logs_created = audit_repo.list_logs(resource_id=report_id, action="report:created")
     assert len(logs_created) == 1
     assert logs_created[0].actor_id == user.id
 
-    # 2. Moderator checks reported queue
+
     mod_reports = api_list_reports(status="pending", context=session_mod)
     assert mod_reports["count"] == 1
     r_item = mod_reports["reports"][0]
     assert r_item["id"] == report_id
     assert r_item["reason"] == "Place closed permanently and building demolished"
 
-    # 3. Moderator resolves the report
+
     res_resolved = api_resolve_report(
         report_id=report_id,
         req=ResolveReportRequest(decision="resolved", notes="Verified demolition notice; place archived."),
@@ -444,16 +444,16 @@ def test_community_reports_and_moderator_resolution_workflow(
     )
     assert res_resolved["report"]["status"] == "resolved"
 
-    # 4. Verify audit log was recorded for resolution
+
     logs_res = audit_repo.list_logs(resource_id=report_id, action="report:resolved")
     assert len(logs_res) == 1
     assert logs_res[0].actor_id == mod.id
     assert logs_res[0].new_state == "resolved"
 
 
-# =============================================================================
-# 7. Audit Trail Querying & Governance Inspection
-# =============================================================================
+
+
+
 
 def test_audit_logs_querying_and_governance(
     monkeypatch,
@@ -476,21 +476,21 @@ def test_audit_logs_querying_and_governance(
     user, session_user, _ = auth_service.register("aud_user@navigators.dev", "Password123!", "User")
     mod, session_mod, _ = auth_service.register("aud_mod@navigators.dev", "Password123!", "Mod", role_id="moderator")
 
-    # Log several actions
+
     audit_repo.log(action="place:create", resource_type="place", resource_id="plc_1", actor_id=mod.id)
     audit_repo.log(action="contribution:approve", resource_type="contribution", resource_id="c_1", actor_id=mod.id)
     audit_repo.log(action="report:created", resource_type="report", resource_id="r_1", actor_id=user.id)
 
-    # 1. Moderator queries audit trail
+
     res_all = api_list_audit_trail(context=session_mod)
     assert res_all["count"] == 3
 
-    # 2. Filter by resource_type
+
     res_place = api_list_audit_trail(resource_type="place", context=session_mod)
     assert res_place["count"] == 1
     assert res_place["audit_logs"][0]["action"] == "place:create"
 
-    # 3. Regular user denied access
+
     with pytest.raises(HTTPException) as exc_aud:
         api_list_audit_trail(context=session_user)
     assert exc_aud.value.status_code == 403
@@ -516,7 +516,7 @@ def test_contributor_experience_history_and_real_badges(
     user, session_user, _ = auth_service.register("contributor_badge@navigators.dev", "Password123!", "Badge Contributor")
     mod, session_mod, _ = auth_service.register("mod_badge@navigators.dev", "Password123!", "Mod", role_id="moderator")
 
-    # 1. User submits 1 contribution (starts in DRAFT)
+
     c1 = contrib_repo.create(
         contribution_id="c_badge_1",
         owner_id=user.id,
@@ -528,24 +528,24 @@ def test_contributor_experience_history_and_real_badges(
     )
     contrib_repo.submit(c1.id, user=session_user)
 
-    # 2. Check my contributions endpoint
+
     my_res = contrib_api_mod.get_my_contributions_endpoint(context=session_user)
     assert my_res["count"] == 1
     assert my_res["items"][0]["title"] == "Dehradun Petrol Pump"
     assert my_res["items"][0]["status"] == ContributionState.PENDING_REVIEW
 
-    # Initial stats (1 pending = 10 points, level 1, no approved badges)
+
     stats1 = contrib_api_mod.get_contributor_stats_endpoint(context=session_user)
     assert stats1["points"] == 10
     assert stats1["level"] == 1
     assert stats1["approved_count"] == 0
     assert len(stats1["badges"]) == 0
 
-    # 3. Moderator approves and staff publishes contribution
+
     contrib_repo.approve(c1.id, reviewer=session_mod, notes="Verified station on site")
     contrib_repo.publish(c1.id, staff=session_mod)
 
-    # 4. Check updated stats: +50 points for approved place creation = 50 points, Level 2, "First Step" badge unlocked!
+
     stats2 = contrib_api_mod.get_contributor_stats_endpoint(context=session_user)
     assert stats2["points"] == 50
     assert stats2["level"] == 2

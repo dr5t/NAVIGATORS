@@ -56,7 +56,7 @@ def verify(args):
     with tempfile.TemporaryDirectory(prefix='onnx-parity-', dir=args.onnx.parent) as directory:
         candidate = Path(directory) / args.onnx.name if args.export else args.onnx
         if args.export:
-            # Export the checkpoint's recorded architecture on a real input window.
+
             torch.onnx.export(model, (torch.from_numpy(windows[:1]),), str(candidate),
                               input_names=['imu_window'], output_names=['velocity'],
                               opset_version=18, dynamo=False, external_data=False,

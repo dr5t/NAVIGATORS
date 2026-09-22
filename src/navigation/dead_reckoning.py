@@ -26,20 +26,20 @@ class DeadReckoningEngine:
         self.max_outage_duration = max_outage_duration
         self.drift_warning_threshold = drift_warning_threshold
 
-        # State (ENU coordinates in meters)
-        self.position = np.zeros(2, dtype=np.float64)          # [East, North]
-        self.heading = 0.0                                     # radians (0 = North, π/2 = East)
-        self.speed = 0.0                                       # m/s
-        self.velocity = np.zeros(2, dtype=np.float64)          # [v_east, v_north]
 
-        # Outage tracking
+        self.position = np.zeros(2, dtype=np.float64)
+        self.heading = 0.0
+        self.speed = 0.0
+        self.velocity = np.zeros(2, dtype=np.float64)
+
+
         self.is_active = False
         self.outage_start_time: Optional[float] = None
         self.outage_duration = 0.0
         self.distance_traveled = 0.0
         self.outage_start_position = np.zeros(2, dtype=np.float64)
 
-        # Trajectory history
+
         self.trajectory: List[Dict] = []
 
     def start(
@@ -56,8 +56,8 @@ class DeadReckoningEngine:
         self.heading = float(heading)
         self.speed = float(speed)
         self.velocity = np.array([
-            self.speed * np.sin(self.heading),  # v_east
-            self.speed * np.cos(self.heading),  # v_north
+            self.speed * np.sin(self.heading),
+            self.speed * np.cos(self.heading),
         ], dtype=np.float64)
         self.outage_start_position = self.position.copy()
 
@@ -88,36 +88,36 @@ class DeadReckoningEngine:
         if not self.is_active:
             return self.position.copy()
 
-        # Integrate heading from gyroscope yaw rate
+
         self.heading += gyro_yaw_rate * self.dt
         self.heading = (self.heading + np.pi) % (2.0 * np.pi) - np.pi
 
-        # Update velocity
+
         if ai_velocity is not None:
-            # Handle AI velocity: default standard ENU [v_east, v_north]
+
             v_input = np.asarray(ai_velocity, dtype=np.float64)
             self.velocity = v_input[:2].copy()
             self.speed = float(np.linalg.norm(self.velocity))
         elif ai_speed is not None:
             self.speed = float(ai_speed)
             self.velocity = np.array([
-                self.speed * np.sin(self.heading),  # v_east
-                self.speed * np.cos(self.heading),  # v_north
+                self.speed * np.sin(self.heading),
+                self.speed * np.cos(self.heading),
             ], dtype=np.float64)
         else:
-            # Maintain previous speed along current heading
+
             self.velocity = np.array([
                 self.speed * np.sin(self.heading),
                 self.speed * np.cos(self.heading),
             ], dtype=np.float64)
 
-        # Integrate position
+
         displacement = self.velocity * self.dt
         self.position += displacement
         step_dist = float(np.linalg.norm(displacement))
         self.distance_traveled += step_dist
 
-        # Update outage duration
+
         if timestamp is not None and self.outage_start_time is not None:
             self.outage_duration = timestamp - self.outage_start_time
         else:
@@ -136,10 +136,10 @@ class DeadReckoningEngine:
         self.is_active = False
 
         if gnss_restore_position is not None:
-            # True drift error relative to GNSS fix at the end of the outage
+
             drift_error = float(np.linalg.norm(self.position - gnss_restore_position[:2]))
         else:
-            # Estimated statistical drift (modeled as 3% of distance traveled)
+
             drift_error = self.get_estimated_drift()
 
         drift_pct = (drift_error / max(self.distance_traveled, 1e-6)) * 100.0

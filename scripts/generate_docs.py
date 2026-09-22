@@ -158,7 +158,7 @@ def generate_docs():
             
         print(f"Generated {md_path}")
         
-        # Convert to DOCX using pandoc
+
         docx_path = md_path.replace(".md", ".docx")
         try:
             subprocess.run(["pandoc", md_path, "-o", docx_path], check=True)
@@ -166,7 +166,7 @@ def generate_docs():
         except Exception as e:
             print(f"Failed to generate {docx_path}: {e}")
             
-        # Convert to PDF using md-to-pdf
+
         pdf_path = md_path.replace(".md", ".pdf")
         try:
             subprocess.run(["npx", "-y", "md-to-pdf", md_path], check=True)

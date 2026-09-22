@@ -19,7 +19,7 @@ class Recording:
     timestamps: np.ndarray
     accel: np.ndarray
     gyro: np.ndarray
-    gnss: np.ndarray  # lat, lon, alt, speed m/s, heading degrees, accuracy meters
+    gnss: np.ndarray
     valid: np.ndarray
     fresh: np.ndarray
     metadata: dict
@@ -73,7 +73,7 @@ def load_recording(path, gyro_order=None):
     if order not in ('xyz', 'alpha-beta-gamma'):
         raise ValueError('gyro_order must be xyz or alpha-beta-gamma')
     if order == 'alpha-beta-gamma':
-        gyro = gyro[:, [1, 2, 0]]  # DeviceMotion beta=x, gamma=y, alpha=z
+        gyro = gyro[:, [1, 2, 0]]
     valid = (np.isfinite(gnss).all(axis=1) & (np.abs(gnss[:, 0]) < 85)
              & (np.abs(gnss[:, 1]) <= 180) & (gnss[:, 3] >= 0)
              & (gnss[:, 3] <= 100) & (gnss[:, 4] >= 0) & (gnss[:, 4] < 360)
@@ -86,7 +86,7 @@ def load_recording(path, gyro_order=None):
         valid &= np.isfinite(fix_time) & (ts - fix_time >= -0.1) & (ts - fix_time <= 3)
         fresh = np.r_[True, np.diff(fix_time) != 0]
     else:
-        # Older recorder versions repeat the last fix; expire unchanged values after 3s.
+
         last_change = np.maximum.accumulate(np.where(fresh, ts, ts[0]))
         valid &= ts - last_change <= 3
         notes.append('No GNSS timestamps: freshness inferred from changed GNSS values')
@@ -97,7 +97,7 @@ def load_recording(path, gyro_order=None):
     dt = np.diff(ts[indices])
     delta = np.diff(fixes[:, :2], axis=0) * METERS_PER_DEGREE
     delta[:, 1] *= np.cos(np.deg2rad(fixes[:-1, 0]))
-    # Allow 100 m/s plus both fixes' uncertainty. Reject corrupt geodetic coordinates.
+
     if np.any(np.linalg.norm(delta, axis=1) > 100 * dt + fixes[:-1, 5] + fixes[1:, 5]):
         raise ValueError('Implausible GNSS coordinate jumps: recording is not suitable for navigation evaluation')
     return Recording(ts - ts[0], accel, gyro, gnss, valid, fresh,

@@ -1,6 +1,6 @@
 const byId = id => document.getElementById(id);
 
-// --- Navigation ---
+
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -10,7 +10,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     });
 });
 
-// --- WebSocket Connection ---
+
 let ws;
 let receivedSamples = 0;
 let isConnected = false;
@@ -45,12 +45,12 @@ function connectWebSocket() {
     };
 }
 
-// --- Data Handling ---
+
 function handleMessage(msg) {
     if (msg.type === 'telemetry') {
         updateTelemetry(msg.payload);
         
-        // Update Phone Status
+        
         if (byId('badgePhone').textContent.includes('OFFLINE')) {
             byId('badgePhone').textContent = 'Phone: ONLINE';
             byId('badgePhone').className = 'badge online';
@@ -75,8 +75,8 @@ function updateTelemetry(payload) {
     const now = performance.now();
     const dt = now - lastTelemetryTime;
     if (dt > 1000) {
-        // We received X samples in the last second?
-        // Let's just estimate it, or assume 1 if it's the first.
+        
+        
     }
     lastTelemetryTime = now;
     
@@ -95,7 +95,7 @@ function updateTelemetry(payload) {
     }
 }
 
-// --- Canvas Charts ---
+
 const accelCtx = byId('accelCanvas').getContext('2d');
 const gyroCtx = byId('gyroCanvas').getContext('2d');
 const MAX_HISTORY = 100;
@@ -123,9 +123,9 @@ function drawChart(ctx, history, min, max) {
         ctx.stroke();
     };
     
-    drawLine(history.x, '#f44336'); // Red
-    drawLine(history.y, '#4caf50'); // Green
-    drawLine(history.z, '#2196f3'); // Blue
+    drawLine(history.x, '#f44336'); 
+    drawLine(history.y, '#4caf50'); 
+    drawLine(history.z, '#2196f3'); 
 }
 
 function drawAccel(accel) {
@@ -143,7 +143,7 @@ function drawGyro(gyro) {
     drawChart(gyroCtx, gyroHistory, -5, 5);
 }
 
-// --- System Logs ---
+
 function logMessage(severity, message) {
     const container = byId('logConsole');
     const entry = document.createElement('div');
@@ -159,14 +159,14 @@ function logMessage(severity, message) {
     container.scrollTop = container.scrollHeight;
 }
 
-// --- API Calls ---
+
 async function refreshDataset() {
     try {
         const res = await fetch('/recordings/status', { headers: { 'Authorization': 'Bearer ' + (sessionStorage.getItem('pc-pairing-token') || '') }});
         if (res.ok) {
             const data = await res.json();
             byId('valTotalTrips').textContent = data.completed_trips;
-            // Additional endpoint needed for /dataset/details
+            
             fetchDatasetDetails();
         }
     } catch (e) {
@@ -250,7 +250,7 @@ async function pollTrainingStatus() {
                 }
                 byId('trainStatusLabel').textContent = data.status;
                 
-                // If there's an error status string, colour it red
+                
                 if (data.status.startsWith('Error') || data.status.startsWith('Failed')) {
                     byId('trainStatusLabel').style.color = '#ef4444';
                 } else {
@@ -300,7 +300,7 @@ async function pollTrainingStatus() {
     trainingPollInterval = setInterval(checkStatus, 2000);
 }
 
-// Initial setup
+
 byId('btnRefreshDataset').addEventListener('click', refreshDataset);
 byId('btnStartTraining').addEventListener('click', startTraining);
 if (byId('btnImportDataset')) {
@@ -342,9 +342,9 @@ connectWebSocket();
 refreshDataset();
 pollTrainingStatus();
 
-// =============================================================================
-// Phase 13 - Submitted Datasets
-// =============================================================================
+
+
+
 
 const DS_STATUS_COLORS = {
     uploaded:   '#f59e0b',
@@ -392,7 +392,7 @@ function dsActionButtons(session) {
 }
 
 async function refreshDatasets() {
-    // Fetch stats
+    
     try {
         const r = await fetch('/api/v1/datasets/sessions/stats');
         if (r.ok) {
@@ -404,9 +404,9 @@ async function refreshDatasets() {
             byId('dsStatTotal').textContent      = stats.total ?? 0;
             byId('dsStatReady').textContent      = stats.validated_for_training ?? 0;
         }
-    } catch (e) { /* dashboard may be open before server starts */ }
+    } catch (e) {  }
 
-    // Fetch sessions with current filters
+    
     const status       = byId('dsFilterStatus')?.value   || '';
     const activityType = byId('dsFilterActivity')?.value || '';
     let url = `/api/v1/datasets/sessions?limit=${DS_PAGE_SIZE}&offset=${dsCurrentOffset}`;
@@ -416,7 +416,7 @@ async function refreshDatasets() {
     try {
         const r = await fetch(url);
         if (!r.ok) {
-            // 403 = not an internal contributor - hide the section gracefully
+            
             byId('dsSessionTbody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b;">No access or no sessions.</td></tr>`;
             return;
         }
@@ -508,7 +508,7 @@ async function dsConfirmReject() {
     } catch (e) { logMessage('ERROR', `Error: ${e.message}`); }
 }
 
-// Wire up Datasets tab controls
+
 if (byId('btnRefreshDatasets'))
     byId('btnRefreshDatasets').addEventListener('click', () => { dsCurrentOffset = 0; refreshDatasets(); });
 
@@ -521,7 +521,7 @@ if (byId('dsRejectCancel'))
 if (byId('dsRejectConfirm'))
     byId('dsRejectConfirm').addEventListener('click', dsConfirmReject);
 
-// Auto-refresh datasets when the tab becomes active
+
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         if (btn.dataset.target === 'datasets') {
@@ -531,10 +531,10 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     });
 });
 
-// Initial load
+
 refreshDatasets();
 
-// --- Model Registry & Governance (Phase 15) ---
+
 const MR_STATUS_BADGES = {
     candidate_training:   '<span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">Candidate Training</span>',
     evaluating:           '<span style="background:#1e3a8a;color:#93c5fd;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">Evaluating</span>',

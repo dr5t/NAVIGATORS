@@ -87,7 +87,7 @@ class InternalContributorRepository:
         if not clean_experience:
             raise ValueError("Experience details cannot be empty")
 
-        # Check existing user roles
+
         existing_roles = {r.id for r in self.rbac_repo.get_user_roles(user_id)}
         if "internal_contributor" in existing_roles:
             raise ValueError("User already holds the internal contributor role")
@@ -96,7 +96,7 @@ class InternalContributorRepository:
         request_id = f"icr_{secrets.token_hex(8)}"
 
         with get_db(self.db_path) as conn:
-            # Check for existing pending request
+
             cur = conn.execute(
                 "SELECT id FROM internal_contributor_requests WHERE user_id = ? AND status = 'pending'",
                 (user_id,),
@@ -275,10 +275,10 @@ class InternalContributorRepository:
                 (reviewer_id, now, now, request_id),
             )
 
-        # Escalate role to internal_contributor
+
         self.rbac_repo.assign_role_to_user(req.user_id, "internal_contributor")
 
-        # Record audit log
+
         self.audit_repo.log(
             actor_id=reviewer_id,
             action="APPROVE_INTERNAL_ACCESS",

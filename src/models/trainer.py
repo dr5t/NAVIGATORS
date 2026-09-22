@@ -53,17 +53,17 @@ class AngularLoss(nn.Module):
         Returns:
             Scalar loss.
         """
-        # MSE component
+
         mse_loss = self.mse(pred, target)
 
-        # Angular component: cosine similarity between direction vectors
+
         pred_norm = torch.norm(pred, dim=1, keepdim=True).clamp(min=1e-6)
         target_norm = torch.norm(target, dim=1, keepdim=True).clamp(min=1e-6)
 
         cos_sim = torch.sum(
             (pred / pred_norm) * (target / target_norm), dim=1
         )
-        angular_loss = 1.0 - cos_sim.mean()  # 0 when perfectly aligned
+        angular_loss = 1.0 - cos_sim.mean()
 
         return mse_loss + self.angular_weight * angular_loss
 
@@ -98,7 +98,7 @@ class Trainer:
         """
         self.config = config or {}
 
-        # Device selection
+
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
@@ -112,14 +112,14 @@ class Trainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
 
-        # Training hyperparameters
+
         self.epochs = self.config.get("epochs", 100)
         self.lr = self.config.get("learning_rate", 0.001)
         self.weight_decay = self.config.get("weight_decay", 0.0001)
         self.gradient_clip = self.config.get("gradient_clip", 1.0)
         self.patience = self.config.get("early_stopping_patience", 15)
 
-        # Loss function
+
         loss_type = self.config.get("loss", "mse_angular")
         if loss_type == "mse_angular":
             angular_weight = self.config.get("angular_loss_weight", 0.3)
@@ -129,7 +129,7 @@ class Trainer:
         else:
             self.criterion = nn.MSELoss()
 
-        # Optimizer
+
         opt_name = self.config.get("optimizer", "adamw")
         if opt_name == "adamw":
             self.optimizer = optim.AdamW(
@@ -145,7 +145,7 @@ class Trainer:
                 model.parameters(), lr=self.lr, weight_decay=self.weight_decay
             )
 
-        # Learning rate scheduler
+
         scheduler_name = self.config.get("scheduler", "cosine")
         if scheduler_name == "cosine":
             self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
@@ -164,18 +164,18 @@ class Trainer:
         else:
             self.scheduler = None
 
-        # Checkpointing
+
         self.checkpoint_dir = self.config.get("checkpoint_dir", "./checkpoints")
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-        # TensorBoard
+
         self.writer = None
         if HAS_TENSORBOARD:
             from torch.utils.tensorboard import SummaryWriter
             log_dir = self.config.get("log_dir", "./runs")
             self.writer = SummaryWriter(log_dir)
 
-        # Training state
+
         self.best_val_loss = float("inf")
         self.epochs_without_improvement = 0
         self.training_history = {"train_loss": [], "val_loss": [], "lr": []}
@@ -190,26 +190,26 @@ class Trainer:
             batch_x = batch_x.to(self.device)
             batch_y = batch_y.to(self.device)
 
-            # Data Augmentation (Vibrations, speed variation, random orientation)
+
             if self.config.get("use_augmentation", True):
-                # 1. Continuous sensor noise
+
                 batch_x += torch.randn_like(batch_x) * 0.01
 
-                # 2. Impulsive vibration noise (potholes/bumps) affecting accelerometer (first 3 channels)
+
                 mask = torch.rand_like(batch_x[:, :, :3]) < 0.01
                 batch_x[:, :, :3] += mask.float() * torch.randn_like(batch_x[:, :, :3]) * 1.5
 
-                # 3. Random speed scaling (+/- 10%)
+
                 scale = torch.empty(batch_x.shape[0], 1, 1, device=self.device).uniform_(0.9, 1.1)
                 batch_x = batch_x * scale
                 batch_y = batch_y * scale.squeeze(1)
 
-                # 4. Small random yaw rotation (heading misalignment)
+
                 angles = torch.empty(batch_x.shape[0], device=self.device).uniform_(-0.15, 0.15)
                 cos_a = torch.cos(angles).unsqueeze(1)
                 sin_a = torch.sin(angles).unsqueeze(1)
 
-                # Rotate Accel (channels 0, 1) and Gyro (channels 3, 4)
+
                 a_f = batch_x[:, :, 0].clone()
                 a_r = batch_x[:, :, 1].clone()
                 batch_x[:, :, 0] = a_f * cos_a - a_r * sin_a
@@ -226,7 +226,7 @@ class Trainer:
 
             loss.backward()
 
-            # Gradient clipping
+
             if self.gradient_clip > 0:
                 nn.utils.clip_grad_norm_(
                     self.model.parameters(), self.gradient_clip
@@ -266,7 +266,7 @@ class Trainer:
 
         mean_loss = total_loss / max(num_batches, 1)
 
-        # Compute additional metrics
+
         if all_preds:
             preds = np.concatenate(all_preds)
             targets = np.concatenate(all_targets)
@@ -304,13 +304,13 @@ class Trainer:
         for epoch in range(1, self.epochs + 1):
             epoch_start = time.time()
 
-            # Train
+
             train_loss = self.train_epoch()
 
-            # Validate
+
             val_loss, val_metrics = self.validate()
 
-            # Learning rate scheduling
+
             current_lr = self.optimizer.param_groups[0]["lr"]
             if self.scheduler:
                 if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
@@ -318,12 +318,12 @@ class Trainer:
                 else:
                     self.scheduler.step()
 
-            # Record history
+
             self.training_history["train_loss"].append(train_loss)
             self.training_history["val_loss"].append(val_loss)
             self.training_history["lr"].append(current_lr)
 
-            # TensorBoard logging
+
             if self.writer:
                 self.writer.add_scalar("Loss/train", train_loss, epoch)
                 self.writer.add_scalar("Loss/val", val_loss, epoch)
@@ -331,7 +331,7 @@ class Trainer:
                 for k, v in val_metrics.items():
                     self.writer.add_scalar(f"Metrics/{k}", v, epoch)
 
-            # Checkpointing
+
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self.epochs_without_improvement = 0
@@ -341,7 +341,7 @@ class Trainer:
                 self.epochs_without_improvement += 1
                 marker = ""
 
-            # Print progress
+
             elapsed = time.time() - epoch_start
             speed_str = f", speed_rmse={val_metrics.get('speed_rmse', 0):.4f}" if val_metrics else ""
             print(
@@ -356,7 +356,7 @@ class Trainer:
                 except TypeError:
                     epoch_callback(epoch, self.epochs, train_loss, val_loss, elapsed)
 
-            # Early stopping
+
             if self.epochs_without_improvement >= self.patience:
                 print(f"\n[Trainer] Early stopping at epoch {epoch} "
                       f"(no improvement for {self.patience} epochs)")
@@ -415,12 +415,12 @@ class Trainer:
         checkpoint = torch.load(checkpoint_path, map_location=device)
         config = checkpoint.get("config", {})
 
-        # Reconstruct model
+
         model_class = checkpoint.get("model_class", "TCNVelocityEstimator")
         
-        # Determine top-level config for model creation
+
         if "model" not in config:
-            # Fallback if old format
+
             config["model"] = {
                 "type": "lstm" if model_class == "LSTMVelocityEstimator" else "tcn",
                 "input_channels": config.get("input_channels", 6),

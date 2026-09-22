@@ -1,7 +1,7 @@
--- Navigators IDR - Relational Database Schema & RBAC Data Model
--- Enforces relational integrity, foreign key constraints, and dynamic permission evaluation.
 
--- 1. Users Table
+
+
+
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -13,14 +13,14 @@ CREATE TABLE IF NOT EXISTS users (
     last_login_at TEXT
 );
 
--- 2. Roles Table
+
 CREATE TABLE IF NOT EXISTS roles (
     id TEXT PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     description TEXT NOT NULL
 );
 
--- 3. Permissions Table
+
 CREATE TABLE IF NOT EXISTS permissions (
     id TEXT PRIMARY KEY,
     resource TEXT NOT NULL,
@@ -29,14 +29,14 @@ CREATE TABLE IF NOT EXISTS permissions (
     UNIQUE (resource, action)
 );
 
--- 4. Role Permissions Mapping Table
+
 CREATE TABLE IF NOT EXISTS role_permissions (
     role_id TEXT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     permission_id TEXT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
     PRIMARY KEY (role_id, permission_id)
 );
 
--- 5. User Roles Mapping Table
+
 CREATE TABLE IF NOT EXISTS user_roles (
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role_id TEXT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
@@ -44,24 +44,24 @@ CREATE TABLE IF NOT EXISTS user_roles (
     PRIMARY KEY (user_id, role_id)
 );
 
--- 6. Authentication Identities (Extensible multi-provider credentials)
+
 CREATE TABLE IF NOT EXISTS auth_identities (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    provider TEXT NOT NULL, -- 'local_password', 'google', 'apple', 'github'
-    identifier TEXT NOT NULL, -- email or external subject id
-    credential_hash TEXT, -- hashed password / secret
+    provider TEXT NOT NULL, 
+    identifier TEXT NOT NULL, 
+    credential_hash TEXT, 
     metadata_json TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     UNIQUE (provider, identifier)
 );
 
--- 7. Sessions Table (Secure server-managed sessions)
+
 CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
     token_hash TEXT UNIQUE NOT NULL,
-    user_id TEXT REFERENCES users(id) ON DELETE CASCADE, -- NULL for anonymous guest sessions
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE, 
     is_guest INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     expires_at TEXT NOT NULL,
@@ -71,11 +71,11 @@ CREATE TABLE IF NOT EXISTS sessions (
     ip_address TEXT
 );
 
--- 8. Canonical Places Table (Live map data with versioning and soft-delete)
+
 CREATE TABLE IF NOT EXISTS places (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    category TEXT NOT NULL, -- 'fuel', 'hospital', 'ev_charging', 'atm', 'pharmacy', 'restaurant', etc.
+    category TEXT NOT NULL, 
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     address TEXT,
@@ -91,23 +91,23 @@ CREATE TABLE IF NOT EXISTS places (
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- 9. Place Version History Table (Immutable audit trail of place mutations)
+
 CREATE TABLE IF NOT EXISTS place_history (
     id TEXT PRIMARY KEY,
     place_id TEXT NOT NULL REFERENCES places(id) ON DELETE CASCADE,
     version INTEGER NOT NULL,
-    action TEXT NOT NULL, -- 'created', 'updated', 'archived', 'soft_deleted', 'restored'
+    action TEXT NOT NULL, 
     changed_by TEXT REFERENCES users(id),
     snapshot_json TEXT NOT NULL,
     change_summary TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- 10. Community Contributions Table (Ownership & moderation lifecycle)
+
 CREATE TABLE IF NOT EXISTS contributions (
     id TEXT PRIMARY KEY,
     owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    resource_type TEXT NOT NULL, -- 'place', 'road_hazard', 'amenity'
+    resource_type TEXT NOT NULL, 
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'pending_review', 'pending', 'changes_requested', 'approved', 'published', 'rejected', 'withdrawn')),
     title TEXT NOT NULL,
     data_json TEXT NOT NULL DEFAULT '{}',
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS contributions (
     published_at TEXT
 );
 
--- 11. Platform Audit Logs Table (Full mutation and state transition traceability)
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id TEXT PRIMARY KEY,
     actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- 12. Community Reports & Flagging Table (User issue reporting on places and contributions)
+
 CREATE TABLE IF NOT EXISTS reports (
     id TEXT PRIMARY KEY,
     reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -150,11 +150,11 @@ CREATE TABLE IF NOT EXISTS reports (
     resolved_at TEXT
 );
 
--- ========================================================
--- Canonical Map Pipeline & Offline Synchronization Tables
--- ========================================================
 
--- Canonical Changelog: Monotonically increasing sequence stream for incremental delta synchronization
+
+
+
+
 CREATE TABLE IF NOT EXISTS canonical_changelog (
     sequence_id INTEGER PRIMARY KEY AUTOINCREMENT,
     resource_type TEXT NOT NULL DEFAULT 'place',
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS canonical_changelog (
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- Offline Map Packages: Pre-compiled standalone map packages for offline sync
+
 CREATE TABLE IF NOT EXISTS offline_map_packages (
     id TEXT PRIMARY KEY,
     package_version INTEGER NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS offline_map_packages (
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- Device Sync Queue: Tracking offline sync queues submitted by devices
+
 CREATE TABLE IF NOT EXISTS device_sync_queue (
     id TEXT PRIMARY KEY,
     device_id TEXT NOT NULL,
@@ -193,9 +193,9 @@ CREATE TABLE IF NOT EXISTS device_sync_queue (
     synced_at TEXT
 );
 
--- ========================================================
--- Phase 12: Internal Contributor Request & Approval Tables
--- ========================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS internal_contributor_requests (
     id TEXT PRIMARY KEY,
@@ -211,9 +211,9 @@ CREATE TABLE IF NOT EXISTS internal_contributor_requests (
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- ========================================================
--- Phase 13: Dataset Sessions (Internal Contributor Uploads)
--- ========================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS dataset_sessions (
     id TEXT PRIMARY KEY,
@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS dataset_sessions (
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- Indices for performance
+
 CREATE INDEX IF NOT EXISTS idx_icr_user_id ON internal_contributor_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_icr_status ON internal_contributor_requests(status);
 CREATE INDEX IF NOT EXISTS idx_dataset_sessions_contributor ON dataset_sessions(contributor_id);
@@ -244,9 +244,9 @@ CREATE INDEX IF NOT EXISTS idx_dataset_sessions_status ON dataset_sessions(statu
 CREATE INDEX IF NOT EXISTS idx_dataset_sessions_activity ON dataset_sessions(activity_type);
 CREATE INDEX IF NOT EXISTS idx_dataset_sessions_created ON dataset_sessions(created_at);
 
--- ========================================================
--- Phase 15: Model Registry (Approval Workflow)
--- ========================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS model_registry (
     id TEXT PRIMARY KEY,
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS model_registry (
             'candidate_training', 'evaluating', 'review',
             'approved', 'rejected', 'production_candidate', 'production'
         )),
-    -- Evaluation metrics
+    
     test_mae REAL,
     test_rmse REAL,
     val_loss REAL,
@@ -267,17 +267,17 @@ CREATE TABLE IF NOT EXISTS model_registry (
     batch_size INTEGER,
     window_size INTEGER,
     total_training_time_s REAL,
-    -- File artifact paths
+    
     checkpoint_path TEXT,
     onnx_path TEXT,
     norm_stats_path TEXT,
-    -- Governance
+    
     registered_by TEXT REFERENCES users(id),
     reviewed_by TEXT REFERENCES users(id),
     deployed_by TEXT REFERENCES users(id),
     rejection_reason TEXT,
     review_notes TEXT,
-    -- Timestamps
+    
     evaluated_at TEXT,
     reviewed_at TEXT,
     deployed_at TEXT,
@@ -285,9 +285,9 @@ CREATE TABLE IF NOT EXISTS model_registry (
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- ========================================================
--- Phase 33: Saved Places & Recent Search History Tables
--- ========================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS saved_places (
     id TEXT PRIMARY KEY,
@@ -315,9 +315,9 @@ CREATE TABLE IF NOT EXISTS recent_searches (
 CREATE INDEX IF NOT EXISTS idx_saved_places_user ON saved_places(user_id);
 CREATE INDEX IF NOT EXISTS idx_recent_searches_user ON recent_searches(user_id, created_at);
 
--- ========================================================
--- Phase 34: Emergency Contacts & SOS Session Flow Tables
--- ========================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS emergency_contacts (
     id TEXT PRIMARY KEY,
@@ -348,9 +348,9 @@ CREATE INDEX IF NOT EXISTS idx_emergency_contacts_user ON emergency_contacts(use
 CREATE INDEX IF NOT EXISTS idx_sos_sessions_user ON sos_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_sos_sessions_token ON sos_sessions(live_location_token);
 
--- ========================================================
--- Phase 35: User Privacy & Data Controls Table
--- ========================================================
+
+
+
 
 CREATE TABLE IF NOT EXISTS user_privacy_settings (
     id TEXT PRIMARY KEY,
@@ -404,7 +404,7 @@ CREATE INDEX IF NOT EXISTS idx_offline_map_packages_region ON offline_map_packag
 CREATE INDEX IF NOT EXISTS idx_device_sync_queue_dev ON device_sync_queue(device_id);
 CREATE INDEX IF NOT EXISTS idx_device_sync_queue_status ON device_sync_queue(status);
 
--- Trigger: auto-update updated_at on user modification
+
 CREATE TRIGGER IF NOT EXISTS trg_users_updated_at
 AFTER UPDATE ON users
 FOR EACH ROW
@@ -412,7 +412,7 @@ BEGIN
     UPDATE users SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
--- Trigger: auto-update updated_at on place modification
+
 CREATE TRIGGER IF NOT EXISTS trg_places_updated_at
 AFTER UPDATE ON places
 FOR EACH ROW
@@ -420,7 +420,7 @@ BEGIN
     UPDATE places SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
--- Trigger: auto-update updated_at on contribution modification
+
 CREATE TRIGGER IF NOT EXISTS trg_contributions_updated_at
 AFTER UPDATE ON contributions
 FOR EACH ROW
@@ -428,7 +428,7 @@ BEGIN
     UPDATE contributions SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
--- Trigger: auto-update updated_at on internal_contributor_requests modification
+
 CREATE TRIGGER IF NOT EXISTS trg_icr_updated_at
 AFTER UPDATE ON internal_contributor_requests
 FOR EACH ROW
@@ -436,7 +436,7 @@ BEGIN
     UPDATE internal_contributor_requests SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
--- Trigger: auto-update updated_at on dataset_sessions modification
+
 CREATE TRIGGER IF NOT EXISTS trg_dataset_sessions_updated_at
 AFTER UPDATE ON dataset_sessions
 FOR EACH ROW
@@ -444,7 +444,7 @@ BEGIN
     UPDATE dataset_sessions SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = OLD.id;
 END;
 
--- Trigger: auto-update updated_at on model_registry modification
+
 CREATE TRIGGER IF NOT EXISTS trg_model_registry_updated_at
 AFTER UPDATE ON model_registry
 FOR EACH ROW
@@ -453,9 +453,9 @@ BEGIN
 END;
 
 
--- ========================================================
--- Seed Initial Roles
--- ========================================================
+
+
+
 INSERT OR IGNORE INTO roles (id, name, description) VALUES
     ('guest', 'Guest', 'Unauthenticated visitor with read-only navigation and map access'),
     ('user', 'Registered User', 'Standard member with saved places and personal contribution drafting'),
@@ -465,9 +465,9 @@ INSERT OR IGNORE INTO roles (id, name, description) VALUES
     ('team_admin', 'Engineering Team Admin', 'Full engineering lifecycle administrator with dataset, model deployment, and role privileges'),
     ('super_admin', 'Super Administrator', 'Unrestricted administrative governance and security control');
 
--- ========================================================
--- Seed Permissions Catalog
--- ========================================================
+
+
+
 INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
     ('place:create', 'place', 'create', 'Create and submit community place contributions'),
     ('place:read', 'place', 'read', 'Read published canonical places and public map metadata'),
@@ -517,15 +517,15 @@ INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
 
     ('dataset:validate', 'dataset', 'validate', 'Validate or reject uploaded dataset sessions for training eligibility');
 
--- ========================================================
--- Seed Role Permissions Mapping
--- ========================================================
 
--- 1. Guest permissions
+
+
+
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('guest', 'place:read');
 
--- 2. Registered User permissions
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('user', 'place:read'),
     ('user', 'contribution:create'),
@@ -538,7 +538,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('user', 'internal_contributor:request'),
     ('user', 'user:read');
 
--- 3. Local Contributor permissions
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('local_contributor', 'place:read'),
     ('local_contributor', 'place:create'),
@@ -553,7 +553,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('local_contributor', 'internal_contributor:request'),
     ('local_contributor', 'user:read');
 
--- 4. Internal Contributor permissions
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('internal_contributor', 'place:read'),
     ('internal_contributor', 'place:create'),
@@ -573,9 +573,9 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('internal_contributor', 'sync:pull'),
     ('internal_contributor', 'sync:push'),
     ('internal_contributor', 'user:read');
-    -- NOTE: internal_contributor does NOT have dataset:validate or model:deploy
+    
 
--- 5. Moderator permissions
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('moderator', 'place:read'),
     ('moderator', 'place:create'),
@@ -597,7 +597,7 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('moderator', 'package:build'),
     ('moderator', 'user:read');
 
--- 6. Team Admin permissions
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'place:read'),
     ('team_admin', 'place:create'),
@@ -637,6 +637,6 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES
     ('team_admin', 'user:update'),
     ('team_admin', 'role:assign');
 
--- 7. Super Admin permissions (Universal grant)
+
 INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
 SELECT 'super_admin', id FROM permissions;

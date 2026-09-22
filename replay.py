@@ -62,7 +62,7 @@ def save_browser_trajectory(path, recording, estimates, modes, allowed, report):
             'gnss_available': allowed[indices].tolist(),
             'nav_mode': [modes[i] for i in indices],
             'position_error': [float(error) if valid else None for error, valid in zip(errors, scored)],
-            # These quantities are not retained per sample by the replay engine.
+
             'confidence': [None] * len(indices),
             'dr_drift_percent': [None] * len(indices),
             'zupt_active': [None] * len(indices),
@@ -120,7 +120,7 @@ def main(argv=None):
         results.append(report)
     output = args.output / f'{args.dataset.stem}_results.json'
     output.write_text(json.dumps(results, indent=2, allow_nan=False) + '\n')
-    # A compact comparison file carries status as well as scores; blocked rows have no invented zeros.
+
     with (args.output / f'{args.dataset.stem}_ablation.csv').open('w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['mode', 'status', 'final_error_m', 'mean_error_m', 'max_error_m', 'velocity_rmse_mps', 'heading_rmse_deg', 'reason'])

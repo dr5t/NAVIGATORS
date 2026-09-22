@@ -113,7 +113,7 @@ def test_user_contribute_flow(temp_db):
     """
     user_ctx = temp_db["user_session"]
 
-    # 1. User -> Add Place (ALLOWED)
+
     place_req = CreatePlaceRequest(
         name="Community Central Park",
         category="park",
@@ -123,7 +123,7 @@ def test_user_contribute_flow(temp_db):
     res_place = add_place(place_req, context=user_ctx)
     assert res_place["contribution"]["title"] == "Community Central Park"
 
-    # 2. User -> Dataset Submission (DENIED)
+
     ds_req = SubmitSessionModel(
         activity_type="walking",
         device="Pixel 8",
@@ -135,7 +135,7 @@ def test_user_contribute_flow(temp_db):
         api_submit_session(ds_req, context=user_ctx)
     assert exc_info.value.status_code == 403
 
-    # 3. User -> Model Deploy (DENIED)
+
     with pytest.raises(HTTPException) as exc_info:
         deploy_model("model_v1.0", context=user_ctx)
     assert exc_info.value.status_code == 403
@@ -149,7 +149,7 @@ def test_internal_contributor_flow(temp_db):
     """
     internal_ctx = temp_db["ic_session"]
 
-    # 1. Internal -> Dataset Submission (ALLOWED)
+
     ds_req = SubmitSessionModel(
         activity_type="gnss_outage",
         device="Mac M2 + Android Sensor Logger",
@@ -161,7 +161,7 @@ def test_internal_contributor_flow(temp_db):
     assert res_ds["session"]["id"] is not None
     assert res_ds["session"]["status"] == "uploaded"
 
-    # 2. Internal -> Model Deploy (DENIED)
+
     with pytest.raises(HTTPException) as exc_info:
         deploy_model("candidate_v2", context=internal_ctx)
     assert exc_info.value.status_code == 403
@@ -176,11 +176,11 @@ def test_team_admin_flow(temp_db, tmp_path):
     db_path = temp_db["db_path"]
     repo = ModelRegistryRepository(db_path)
 
-    # Create dummy ONNX artifact file
+
     dummy_onnx = tmp_path / "ekf_tcn_v2.1.0.onnx"
     dummy_onnx.write_bytes(b"dummy_onnx_model_content")
 
-    # Register candidate model in repository
+
     candidate = repo.register_candidate(
         name="v2.1.0-production-candidate",
         registered_by=temp_db["admin_usr"].id,
@@ -190,13 +190,13 @@ def test_team_admin_flow(temp_db, tmp_path):
     repo.record_evaluation(candidate.id, {"test_mae": 0.42})
     repo.open_for_review(candidate.id, reviewer_id=temp_db["admin_usr"].id)
 
-    # 1. Approve Model via API (ALLOWED for Team Admin)
+
     appr_req = ApproveModelRequest(notes="Evaluated on 50 GNSS outage benchmark sessions.")
     res_appr = approve_model(candidate.id, body=appr_req, context=admin_ctx)
     assert res_appr["status"] == "success"
     assert res_appr["model"]["status"] in ("approved", "production_candidate")
 
-    # 2. Deploy Model via API (ALLOWED for Team Admin)
+
     prod_onnx_dest = tmp_path / "prod_sim_model.onnx"
     deployed_entry = repo.deploy(candidate.id, deployer_id=temp_db["admin_usr"].id, production_onnx_dest=str(prod_onnx_dest))
     prod_model = repo.get_model(candidate.id)
@@ -213,7 +213,7 @@ def test_end_to_end_audit_trail_system_architecture(temp_db, tmp_path):
     db_path = temp_db["db_path"]
     repo = ModelRegistryRepository(db_path)
 
-    # Perform action sequence
+
     add_place(
         CreatePlaceRequest(name="Audit Test Place", category="park", latitude=10.0, longitude=20.0),
         context=user_ctx
@@ -240,7 +240,7 @@ def test_end_to_end_audit_trail_system_architecture(temp_db, tmp_path):
     prod_onnx_dest = tmp_path / "prod_sim_audit.onnx"
     repo.deploy(cand.id, deployer_id=temp_db["admin_usr"].id, production_onnx_dest=str(prod_onnx_dest))
 
-    # Fetch audit logs as Admin
+
     logs_res = list_audit_logs(limit=50, session=admin_ctx)
     actions = [log["action"] for log in logs_res["items"]]
 

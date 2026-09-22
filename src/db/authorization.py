@@ -24,7 +24,7 @@ class AuthorizationResult:
     """Standardized decision returned by the AuthorizationService."""
     allowed: bool
     reason: str
-    code: str  # AUTHORIZED, UNAUTHENTICATED, ACCOUNT_INACTIVE, PERMISSION_DENIED, NOT_OWNER, INVALID_RESOURCE_STATE
+    code: str
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -60,9 +60,9 @@ class AuthorizationService:
             resource: Target entity (dict, dataclass, or object)
             context: Additional environmental context (optional)
         """
-        # =====================================================================
-        # 1. Authentication Check
-        # =====================================================================
+
+
+
         user_id = None
         user_status = "active"
         is_guest = False
@@ -109,7 +109,7 @@ class AuthorizationService:
                 code="UNAUTHENTICATED",
             )
 
-        # Check account lifecycle
+
         if user_status != "active":
             return AuthorizationResult(
                 allowed=False,
@@ -117,7 +117,7 @@ class AuthorizationService:
                 code="ACCOUNT_INACTIVE",
             )
 
-        # Unauthenticated guest check
+
         if is_guest and action != "place:read":
             return AuthorizationResult(
                 allowed=False,
@@ -125,10 +125,10 @@ class AuthorizationService:
                 code="UNAUTHENTICATED",
             )
 
-        # =====================================================================
-        # 2. Role & Permission Check
-        # =====================================================================
-        # Check if user holds super_admin role for universal access
+
+
+
+
         is_super_admin = "super_admin" in user_roles
 
         if not is_super_admin and action not in user_perms:
@@ -138,7 +138,7 @@ class AuthorizationService:
                 code="PERMISSION_DENIED",
             )
 
-        # If no resource is specified, permission grant is sufficient
+
         if resource is None:
             return AuthorizationResult(
                 allowed=True,
@@ -146,13 +146,13 @@ class AuthorizationService:
                 code="AUTHORIZED",
             )
 
-        # =====================================================================
-        # 3. Ownership Check
-        # =====================================================================
+
+
+
         resource_owner_id = self._extract_owner_id(resource)
         is_owner = (resource_owner_id is not None) and (str(resource_owner_id) == str(user_id))
 
-        # Draft contribution privacy: Unsubmitted drafts are strictly private to author
+
         res_state_initial = self._extract_state(resource)
         if action == "contribution:read" and res_state_initial:
             if str(res_state_initial).lower() == "draft":
@@ -164,7 +164,7 @@ class AuthorizationService:
                         code="NOT_OWNER",
                     )
 
-        # Actions strictly constrained to resource author/owner
+
         author_only_actions = {
             "contribution:withdraw",
             "contribution:update",
@@ -178,7 +178,7 @@ class AuthorizationService:
                     code="NOT_OWNER",
                 )
 
-        # Mutating existing user records (unless administrator)
+
         if action == "user:update" and resource_owner_id:
             has_admin_override = ("team_admin" in user_roles) or is_super_admin
             if not is_owner and not has_admin_override:
@@ -188,7 +188,7 @@ class AuthorizationService:
                     code="NOT_OWNER",
                 )
 
-        # Deleting or modifying datasets (owner or admin override)
+
         if action in ("dataset:update", "dataset:delete") and resource_owner_id:
             has_admin_override = ("team_admin" in user_roles) or is_super_admin
             if not is_owner and not has_admin_override:
@@ -198,15 +198,15 @@ class AuthorizationService:
                     code="NOT_OWNER",
                 )
 
-        # =====================================================================
-        # 4. Resource State Validation
-        # =====================================================================
+
+
+
         res_state = self._extract_state(resource)
 
         if res_state:
             res_state_norm = str(res_state).lower()
 
-            # Contribution state transitions
+
             if action in ("contribution:update", "contribution:withdraw"):
                 if res_state_norm in ("approved", "rejected", "withdrawn"):
                     return AuthorizationResult(
@@ -223,7 +223,7 @@ class AuthorizationService:
                         code="INVALID_RESOURCE_STATE",
                     )
 
-            # Model deployment state constraints
+
             if action == "model:deploy":
                 if res_state_norm not in ("approved", "qualified", "ready"):
                     return AuthorizationResult(
@@ -232,7 +232,7 @@ class AuthorizationService:
                         code="INVALID_RESOURCE_STATE",
                     )
 
-            # Dataset mutation state constraints
+
             if action in ("dataset:update", "dataset:delete"):
                 if res_state_norm in ("archived", "locked", "read_only"):
                     return AuthorizationResult(
@@ -241,18 +241,18 @@ class AuthorizationService:
                         code="INVALID_RESOURCE_STATE",
                     )
 
-        # =====================================================================
-        # 5. Final Decision
-        # =====================================================================
+
+
+
         return AuthorizationResult(
             allowed=True,
             reason=f"Action '{action}' is authorized.",
             code="AUTHORIZED",
         )
 
-    # -------------------------------------------------------------------------
-    # Helper extractors
-    # -------------------------------------------------------------------------
+
+
+
 
     @staticmethod
     def _extract_owner_id(resource: Any) -> Optional[str]:

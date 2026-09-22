@@ -64,13 +64,13 @@ class NonHolonomicConstraints:
         v_n = velocity_nav[1]
         v_u = velocity_nav[2] if len(velocity_nav) > 2 else 0.0
 
-        # Rotation from navigation to body frame (2D for horizontal)
+
         cos_h = np.cos(heading)
         sin_h = np.sin(heading)
 
         v_forward = v_e * sin_h + v_n * cos_h
         v_lateral = v_e * cos_h - v_n * sin_h
-        v_vertical = -v_u  # Down = -Up
+        v_vertical = -v_u
 
         return np.array([v_forward, v_lateral, v_vertical])
 
@@ -91,11 +91,11 @@ class NonHolonomicConstraints:
         """
         v_body = self.compute_body_velocity(velocity_nav, heading)
 
-        # Zero out lateral and vertical velocity
-        v_body[1] = 0.0  # No sideslip
-        v_body[2] = 0.0  # No vertical motion
 
-        # Convert back to navigation frame
+        v_body[1] = 0.0
+        v_body[2] = 0.0
+
+
         cos_h = np.cos(heading)
         sin_h = np.sin(heading)
 
@@ -130,20 +130,20 @@ class NonHolonomicConstraints:
         cos_h = np.cos(heading)
         sin_h = np.sin(heading)
 
-        # H maps velocity states to lateral and vertical body velocities
+
         H = np.zeros((2, state_dim))
 
-        # Lateral velocity = v_e * cos(h) - v_n * sin(h)
-        H[0, 3] = cos_h    # ∂v_lateral/∂v_east
-        H[0, 4] = -sin_h   # ∂v_lateral/∂v_north
 
-        # Vertical velocity = -v_up
-        H[1, 5] = -1.0     # ∂v_vertical/∂v_up
+        H[0, 3] = cos_h
+        H[0, 4] = -sin_h
 
-        # Zero measurement (lateral and vertical velocity should be zero)
+
+        H[1, 5] = -1.0
+
+
         z = np.zeros(2)
 
-        # Measurement noise
+
         R = np.diag([self.lateral_sigma ** 2, self.vertical_sigma ** 2])
 
         return H, z, R

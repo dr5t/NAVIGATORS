@@ -23,11 +23,11 @@ from enum import Enum
 
 class NavigationMode(Enum):
     """Current navigation operating mode."""
-    GNSS_AIDED = "gnss_aided"          # Standard GNSS + INS fusion
-    GNSS_INS = "gnss_ins"              # Alias for backward compatibility
-    GNSS_DEGRADED = "gnss_degraded"    # Degraded GNSS signal quality
-    DEAD_RECKONING = "dr"              # GNSS denied - AI + DR
-    REACQUISITION = "reacq"            # GNSS restored - smooth re-convergence
+    GNSS_AIDED = "gnss_aided"
+    GNSS_INS = "gnss_ins"
+    GNSS_DEGRADED = "gnss_degraded"
+    DEAD_RECKONING = "dr"
+    REACQUISITION = "reacq"
 
 
 class ExtendedKalmanFilter:
@@ -42,7 +42,7 @@ class ExtendedKalmanFilter:
     - Numerically stable Joseph-form covariance updates
     """
 
-    # State indices
+
     POS = slice(0, 3)
     VEL = slice(3, 6)
     ORI = slice(6, 9)
@@ -60,7 +60,7 @@ class ExtendedKalmanFilter:
     ):
         self.dt = dt
 
-        # Process noise parameters
+
         pn = process_noise or {}
         self.q_pos = pn.get("position", 0.5)
         self.q_vel = pn.get("velocity", 2.0)
@@ -68,7 +68,7 @@ class ExtendedKalmanFilter:
         self.q_abias = pn.get("accel_bias", 0.001)
         self.q_gbias = pn.get("gyro_bias", 0.0001)
 
-        # Measurement noise parameters
+
         gn = gnss_noise or {}
         self.r_gnss_pos = gn.get("position", 2.5)
         self.r_gnss_vel = gn.get("velocity", 0.5)
@@ -76,25 +76,25 @@ class ExtendedKalmanFilter:
         self.r_nhc_lateral = 1.0
         self.r_nhc_vertical = 1.0
 
-        # Initialize state and covariance
+
         self.x = np.zeros(self.STATE_DIM, dtype=np.float64)
         self.P = np.eye(self.STATE_DIM, dtype=np.float64)
 
-        # Initial uncertainties
+
         self.P[self.POS, self.POS] *= 10.0
         self.P[self.VEL, self.VEL] *= 5.0
         self.P[self.ORI, self.ORI] *= 0.1
         self.P[self.ABIAS, self.ABIAS] *= 0.5
         self.P[self.GBIAS, self.GBIAS] *= 0.01
 
-        # Mode and state tracking
+
         self.mode = NavigationMode.GNSS_INS
         self.gnss_outage_start: Optional[float] = None
         self.last_gnss_time: Optional[float] = None
         self.consecutive_good_gnss = 0
         self.reacquisition_steps = 0
 
-        # Diagnostics history
+
         self.innovation_history: List[float] = []
 
     def _build_process_noise(self) -> np.ndarray:
@@ -115,11 +115,11 @@ class ExtendedKalmanFilter:
         """
         cr, sr = np.cos(roll), np.sin(roll)
         cp, sp = np.cos(pitch), np.sin(pitch)
-        cy, sy = np.sin(yaw), np.cos(yaw)  # cy = sin(yaw) [East], sy = cos(yaw) [North]
+        cy, sy = np.sin(yaw), np.cos(yaw)
 
-        # Column 0: Forward axis in ENU
-        # Column 1: Right axis in ENU
-        # Column 2: Down axis in ENU
+
+
+
         R = np.array([
             [cy * cp,   sy * cr + cy * sp * sr,  -sy * sr + cy * sp * cr],
             [sy * cp,  -cy * cr + sy * sp * sr,   cy * sr + sy * sp * cr],
@@ -130,7 +130,7 @@ class ExtendedKalmanFilter:
     def _enforce_covariance_symmetry(self):
         """Guarantee positive-definiteness and symmetry of covariance matrix P."""
         self.P = 0.5 * (self.P + self.P.T)
-        # Floor diagonal elements to prevent numerical collapse
+
         for i in range(self.STATE_DIM):
             if self.P[i, i] < 1e-9:
                 self.P[i, i] = 1e-9
@@ -155,32 +155,32 @@ class ExtendedKalmanFilter:
         accel_bias = self.x[self.ABIAS]
         gyro_bias = self.x[self.GBIAS]
 
-        # Bias compensation
+
         accel_corrected = accel_body - accel_bias
         gyro_corrected = gyro_body - gyro_bias
 
         R_b2n = self._rotation_matrix(roll, pitch, yaw)
 
-        # Specific force in navigation frame: in ENU, gravity acceleration vector is [0, 0, -9.81]
+
         gravity_nav = np.array([0.0, 0.0, -9.81], dtype=np.float64)
         accel_nav = R_b2n @ accel_corrected - gravity_nav
 
-        # State transition: position, velocity, orientation
-        # Always use the EKF's smoothed velocity for position integration.
-        # AI velocity will be handled correctly via pseudo-measurement update.
+
+
+
         self.x[self.POS] += self.x[self.VEL] * self.dt + 0.5 * accel_nav * (self.dt ** 2)
         self.x[self.VEL] += accel_nav * self.dt
 
         self.x[self.ORI] += gyro_corrected * self.dt
 
-        # Normalize yaw to [-pi, pi]
+
         self.x[8] = (self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
 
-        # State Jacobian matrix F
+
         F = np.eye(self.STATE_DIM, dtype=np.float64)
         F[self.POS, self.VEL] = np.eye(3) * self.dt
 
-        # Linearized rotation effect
+
         ax, ay, az = accel_corrected
         skew_accel = np.array([
             [0.0, -az, ay],
@@ -191,7 +191,7 @@ class ExtendedKalmanFilter:
         F[3:6, 9:12] = -R_b2n * self.dt
         F[6:9, 12:15] = -np.eye(3) * self.dt
 
-        # Covariance propagation
+
         Q = self._build_process_noise()
         if self.mode == NavigationMode.DEAD_RECKONING:
             Q[self.POS, self.POS] *= 4.0
@@ -200,11 +200,11 @@ class ExtendedKalmanFilter:
         self.P = F @ self.P @ F.T + Q
         self._enforce_covariance_symmetry()
 
-        # Update with AI velocity pseudo-measurement during DR
+
         if ai_velocity is not None and self.mode in [NavigationMode.DEAD_RECKONING, NavigationMode.GNSS_DEGRADED]:
             self._update_ai_velocity(ai_velocity)
 
-        # Update with NHC
+
         if apply_nhc:
             self.update_nhc(yaw_rate=float(gyro_corrected[2]))
 
@@ -233,7 +233,7 @@ class ExtendedKalmanFilter:
         if timestamp is not None:
             self.last_gnss_time = timestamp
 
-        # Ensure 3D position
+
         if len(gnss_position) == 2:
             gnss_pos_3d = np.array([gnss_position[0], gnss_position[1], 0.0], dtype=np.float64)
         else:
@@ -244,37 +244,37 @@ class ExtendedKalmanFilter:
 
         R_pos = np.eye(3, dtype=np.float64) * (self.r_gnss_pos ** 2)
 
-        # Anti-jump mechanism during reacquisition
-        # Scale measurement noise and clamp innovation so position transitions smoothly
+
+
         if self.mode == NavigationMode.REACQUISITION:
-            # Gradually ramp trust: higher R initially to prevent instant jump
+
             ramp = max(0.1, min(1.0, self.reacquisition_steps / 10.0))
             R_pos = R_pos * (1.0 / ramp)
 
         z_pos = gnss_pos_3d
         y_pos = z_pos - H_pos @ self.x
 
-        # Record innovation
+
         self.innovation_history.append(float(np.linalg.norm(y_pos[:2])))
 
-        # Innovation gating / soft clamping to prevent wild teleports
+
         if self.mode == NavigationMode.REACQUISITION:
-            max_step = 10.0  # Max single-step position correction (m)
+            max_step = 10.0
             y_norm = np.linalg.norm(y_pos[:2])
             if y_norm > max_step:
                 y_pos[:2] = y_pos[:2] * (max_step / y_norm)
 
-        # Kalman gain calculation
+
         S_pos = H_pos @ self.P @ H_pos.T + R_pos
         K_pos = self.P @ H_pos.T @ np.linalg.inv(S_pos)
 
-        # State and covariance update (Joseph form)
+
         self.x += K_pos @ y_pos
         I_KH = np.eye(self.STATE_DIM) - K_pos @ H_pos
         self.P = I_KH @ self.P @ I_KH.T + K_pos @ R_pos @ K_pos.T
         self._enforce_covariance_symmetry()
 
-        # Velocity update
+
         if gnss_velocity is not None:
             if len(gnss_velocity) == 2:
                 gnss_vel_3d = np.array([gnss_velocity[0], gnss_velocity[1], 0.0], dtype=np.float64)
@@ -294,16 +294,16 @@ class ExtendedKalmanFilter:
             self.P = I_KH_v @ self.P @ I_KH_v.T + K_vel @ R_vel @ K_vel.T
             self._enforce_covariance_symmetry()
 
-            # Course over ground heading correction when moving
+
             speed_horiz = float(np.linalg.norm(gnss_vel_3d[:2]))
             if speed_horiz > 2.0:
-                cog = float(np.arctan2(gnss_vel_3d[0], gnss_vel_3d[1]))  # East, North
+                cog = float(np.arctan2(gnss_vel_3d[0], gnss_vel_3d[1]))
                 yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
                 self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
 
         if self.mode == NavigationMode.REACQUISITION:
-            # Limit the complete correction, including position/velocity cross-covariance.
-            # Preserve uncertainty while only applying part of the measurement correction.
+
+
             correction = self.x - prior_x
             correction[8] = (correction[8] + np.pi) % (2 * np.pi) - np.pi
             distance = float(np.linalg.norm(correction[:2]))
@@ -322,12 +322,12 @@ class ExtendedKalmanFilter:
         Standard representation: ai_velocity[0] is East, ai_velocity[1] is North.
         """
         H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
-        H[0, 3] = 1.0  # v_east
-        H[1, 4] = 1.0  # v_north
+        H[0, 3] = 1.0
+        H[1, 4] = 1.0
 
         R = np.eye(2, dtype=np.float64) * (self.r_ai_vel ** 2)
 
-        # Standard measurement vector [v_east, v_north]
+
         z = np.array([ai_velocity[0], ai_velocity[1]], dtype=np.float64)
         y = z - H @ self.x
 
@@ -339,10 +339,10 @@ class ExtendedKalmanFilter:
         self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
         self._enforce_covariance_symmetry()
 
-        # Course over ground heading correction when moving
+
         speed_horiz = float(np.linalg.norm(ai_velocity[:2]))
         if speed_horiz > 2.0:
-            cog = float(np.arctan2(ai_velocity[0], ai_velocity[1]))  # East, North
+            cog = float(np.arctan2(ai_velocity[0], ai_velocity[1]))
             yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
             self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
 
@@ -353,9 +353,9 @@ class ExtendedKalmanFilter:
         """
         speed = float(np.linalg.norm(self.x[self.VEL][:2]))
         if speed < 0.5:
-            return  # Handled by ZUPT when stationary
+            return
 
-        # Dynamic relaxation: widen tolerance during turns
+
         turn_dilation = 1.0 + 30.0 * (abs(yaw_rate) ** 2)
         r_lat = self.r_nhc_lateral * np.sqrt(turn_dilation)
         r_vert = self.r_nhc_vertical
@@ -364,13 +364,13 @@ class ExtendedKalmanFilter:
         cos_h = np.cos(heading)
         sin_h = np.sin(heading)
 
-        # H maps velocity states to body lateral and vertical velocities
-        # v_lateral = v_east * cos(h) - v_north * sin(h)
-        # v_vertical = -v_up
+
+
+
         H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
-        H[0, 3] = cos_h    # ∂v_lat/∂v_east
-        H[0, 4] = -sin_h   # ∂v_lat/∂v_north
-        H[1, 5] = -1.0     # ∂v_vert/∂v_up
+        H[0, 3] = cos_h
+        H[0, 4] = -sin_h
+        H[1, 5] = -1.0
 
         R = np.diag([r_lat ** 2, r_vert ** 2])
 

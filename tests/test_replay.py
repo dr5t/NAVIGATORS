@@ -21,7 +21,7 @@ from replay import save_browser_trajectory
 @pytest.fixture
 def recording():
     ts = np.arange(0, 10, 0.02)
-    # Known vehicle frame, gravity included; deliberately noisy forward acceleration.
+
     accel = np.column_stack((0.5 * np.sin(ts * 13), 0.2 * np.cos(ts * 9), np.full(len(ts), 9.81)))
     gyro = np.zeros((len(ts), 3))
     gnss = np.column_stack((13.0326 + 2 * ts / METERS_PER_DEGREE,
@@ -43,7 +43,7 @@ class TestVelocityModel:
     window_size = 20
     sample_rate = 50
     def predict(self, window):
-        # Unit fixture only; production code never fabricates AI predictions.
+
         return np.array([np.mean(np.asarray(window)[:, 1]) * 0.1, 2])
     def metadata(self):
         return {'provenance': 'synthetic test model'}
@@ -108,7 +108,7 @@ def test_browser_export_preserves_estimates_and_missing_measurements(recording, 
     np.testing.assert_array_equal(data['gnss_available'], allowed[indices])
     np.testing.assert_allclose(data['speed_estimated'], np.linalg.norm(estimates[indices, 2:4], axis=1))
     assert data['nav_mode'] == [modes[i] for i in indices]
-    assert data['timestamps'][0] > 0  # Calibration omitted; original trip clock retained.
+    assert data['timestamps'][0] > 0
     for j, i in enumerate(indices):
         scored = bool(recording.valid[i] and recording.fresh[i])
         assert (data['true_lat_lon'][j] is not None) == scored
@@ -159,7 +159,7 @@ def test_csv_epoch_timestamps_and_stale_fixes(tmp_path, recording):
 
 
 def test_invalid_recording_and_duplicate_training_splits_fail(tmp_path):
-    # Invalid placeholder data must never be laundered into a real benchmark.
+
     invalid = tmp_path / 'invalid.json'
     invalid.write_text(json.dumps({'data': {'timestamps': [0, 0.1, 0.2],
         'accel': [[0, 0, 9.81]] * 3, 'gyro': [[0, 0, 0]] * 3,

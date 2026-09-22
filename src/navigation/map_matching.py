@@ -20,12 +20,12 @@ from scipy.spatial import cKDTree
 class RoadSegment:
     """Represents a single road segment."""
     id: str
-    start: np.ndarray    # (2,) ENU position [East, North]
-    end: np.ndarray      # (2,) ENU position [East, North]
+    start: np.ndarray
+    end: np.ndarray
     name: str = ""
-    speed_limit: float = 50.0  # km/h
+    speed_limit: float = 50.0
     one_way: bool = False
-    heading: float = 0.0      # radians
+    heading: float = 0.0
 
     def __post_init__(self):
         """Compute segment properties."""
@@ -39,11 +39,11 @@ class RoadSegment:
 @dataclass
 class MapMatchResult:
     """Result of a map matching operation."""
-    snapped_position: np.ndarray     # Matched position on road
-    matched_segment: Optional[RoadSegment]  # Which road segment
-    distance_to_road: float          # Perpendicular distance to nearest road
-    confidence: float                # Match confidence [0, 1]
-    heading_correction: Optional[float] = None  # Suggested heading from road
+    snapped_position: np.ndarray
+    matched_segment: Optional[RoadSegment]
+    distance_to_road: float
+    confidence: float
+    heading_correction: Optional[float] = None
 
 
 class RoadNetwork:
@@ -56,13 +56,13 @@ class RoadNetwork:
 
     def __init__(self):
         self.segments: List[RoadSegment] = []
-        self._spatial_index = None  # cKDTree index
+        self._spatial_index = None
         self._segment_midpoints = None
 
     def add_segment(self, segment: RoadSegment):
         """Add a road segment to the network."""
         self.segments.append(segment)
-        self._spatial_index = None  # Invalidate index
+        self._spatial_index = None
 
     def load_osm_network(self, filepath: str):
         """
@@ -105,7 +105,7 @@ class RoadNetwork:
         if self._spatial_index is None:
             return self.segments
             
-        indices = self._spatial_index.query_ball_point(position, r=radius + self._max_half_length) # Includes candidates near endpoints of long roads
+        indices = self._spatial_index.query_ball_point(position, r=radius + self._max_half_length)
         return [self.segments[i] for i in indices]
 
     def add_road(
@@ -153,7 +153,7 @@ class RoadNetwork:
         """
         half = num_blocks * grid_size / 2
 
-        # Horizontal roads (East-West)
+
         for i in range(num_blocks + 1):
             y = center[1] - half + i * grid_size
             points = [
@@ -162,7 +162,7 @@ class RoadNetwork:
             ]
             self.add_road(points, f"ew_{i}", f"East-West Road {i}")
 
-        # Vertical roads (North-South)
+
         for i in range(num_blocks + 1):
             x = center[0] - half + i * grid_size
             points = [
@@ -184,16 +184,16 @@ class RoadNetwork:
         Returns:
             Tuple of (nearest_point, distance).
         """
-        # Vector from segment start to point
+
         v = point - segment.start
-        # Segment direction vector
+
         u = segment.end - segment.start
         length_sq = np.dot(u, u)
 
         if length_sq < 1e-10:
             return segment.start.copy(), float(np.linalg.norm(v))
 
-        # Project point onto segment line
+
         t = np.clip(np.dot(v, u) / length_sq, 0.0, 1.0)
         nearest = segment.start + t * u
 
@@ -242,16 +242,16 @@ class GeometricMapMatcher:
             nearest, dist = self.roads.nearest_point_on_segment(position, seg)
 
             if dist < best_distance and dist <= self.search_radius:
-                # If heading is provided, prefer segments aligned with travel direction
+
                 if heading is not None:
                     heading_diff = abs(heading - seg.heading)
                     heading_diff = min(heading_diff, 2 * np.pi - heading_diff)
-                    # Allow opposite direction (heading_diff ≈ π) for two-way roads
+
                     if not seg.one_way:
                         heading_diff = min(heading_diff, abs(heading_diff - np.pi))
 
-                    # Penalize segments with very different heading
-                    if heading_diff > np.pi / 3:  # > 60°
+
+                    if heading_diff > np.pi / 3:
                         dist *= (1 + heading_diff)
 
                 if dist < best_distance:
@@ -297,7 +297,7 @@ class HMMMapMatcher:
         self.beta = beta
         self.search_radius = search_radius
 
-        # Viterbi state
+
         self.prev_candidates = None
         self.prev_probabilities = None
 
@@ -307,12 +307,12 @@ class HMMMapMatcher:
 
     def _transition_prob(self, seg1: RoadSegment, seg2: RoadSegment, travel_dist: float) -> float:
         """Transition probability between two road segments."""
-        # Route distance approximation (Euclidean between segment midpoints)
+
         mid1 = (seg1.start + seg1.end) / 2
         mid2 = (seg2.start + seg2.end) / 2
         route_dist = np.linalg.norm(mid2 - mid1)
 
-        # Difference between route distance and travel distance
+
         diff = abs(route_dist - travel_dist)
         return np.exp(-diff / self.beta) / self.beta
 
@@ -333,28 +333,28 @@ class HMMMapMatcher:
         Returns:
             MapMatchResult.
         """
-        # Find candidate segments within search radius using spatial index
+
         candidates = []
         possible_segments = self.roads.get_candidate_segments(position, self.search_radius)
         
         for seg in possible_segments:
             nearest, dist = self.roads.nearest_point_on_segment(position, seg)
             
-            # Additional penalty for heading compatibility and motion direction
+
             if heading is not None:
                 heading_diff = abs(heading - seg.heading)
                 heading_diff = min(heading_diff, 2 * np.pi - heading_diff)
                 if not seg.one_way:
                     heading_diff = min(heading_diff, abs(heading_diff - np.pi))
                 
-                # Heavily penalize segments perpendicular to motion
+
                 dist += (dist * heading_diff)
                 
             if dist <= self.search_radius:
                 candidates.append((seg, nearest, dist))
 
         if not candidates:
-            # No candidates - return raw position
+
             return MapMatchResult(
                 snapped_position=position.copy(),
                 matched_segment=None,
@@ -362,11 +362,11 @@ class HMMMapMatcher:
                 confidence=0.0,
             )
 
-        # Compute emission probabilities
+
         emissions = np.array([self._emission_prob(dist) for _, _, dist in candidates])
 
         if self.prev_candidates is not None and travel_distance > 0:
-            # Viterbi step: emission × max(prev_prob × transition)
+
             probs = np.zeros(len(candidates))
             for j, (seg_j, _, _) in enumerate(candidates):
                 max_prev = 0.0
@@ -379,16 +379,16 @@ class HMMMapMatcher:
         else:
             probs = emissions
 
-        # Normalize
+
         total = np.sum(probs)
         if total > 0:
             probs /= total
 
-        # Select best candidate
+
         best_idx = np.argmax(probs)
         best_seg, best_point, best_dist = candidates[best_idx]
 
-        # Store for next step
+
         self.prev_candidates = candidates
         self.prev_probabilities = probs
 

@@ -98,7 +98,7 @@ class SyncRepository:
                 except (ValueError, TypeError):
                     base_version = None
 
-            # 1. Idempotency Check: if this client_id has already been processed, return existing receipt
+
             with get_db(self.db_path) as conn:
                 existing = conn.execute(
                     "SELECT status, server_resource_id, conflict_reason FROM device_sync_queue WHERE id = ?",
@@ -115,7 +115,7 @@ class SyncRepository:
                 ))
                 continue
 
-            # 2. Process according to operation type
+
             receipt: SyncReceipt
             if operation == "add_place":
                 receipt = self._handle_add_place(
@@ -196,7 +196,7 @@ class SyncRepository:
             "evidence": payload.get("evidence", {}),
         }
 
-        # Create contribution draft
+
         contrib = self.contrib_repo.create_contribution(
             owner_id=actor_id,
             resource_type="place",
@@ -206,7 +206,7 @@ class SyncRepository:
             action="create",
         )
 
-        # Auto-submit if requested in payload
+
         if payload.get("auto_submit", True):
             try:
                 self.contrib_repo.transition_state(
@@ -264,7 +264,7 @@ class SyncRepository:
             self._record_queue_item(client_id, device_id, client_seq, "suggest_edit", payload, base_version, "conflict", reason, None, now)
             return SyncReceipt(client_id=client_id, status="conflict", conflict_reason=reason, message="Conflict: place archived")
 
-        # Version Conflict Detection
+
         if base_version is not None and place.version != base_version:
             reason = f"Version conflict: device base version is {base_version}, but canonical version is {place.version}"
             self._record_queue_item(client_id, device_id, client_seq, "suggest_edit", payload, base_version, "conflict", reason, None, now)
@@ -276,7 +276,7 @@ class SyncRepository:
                 message="Conflict detected: local map data is outdated",
             )
 
-        # No conflict: create contribution for edit proposal
+
         proposed_data = {
             "name": payload.get("name", place.name),
             "category": payload.get("category", place.category),

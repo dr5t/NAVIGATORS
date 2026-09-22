@@ -1,4 +1,4 @@
-// Walking prototype: fixed step length and absolute phone heading, anchored by GPS.
+
 class PedestrianTracker {
     constructor(stepLength = 0.7) {
         if (!Number.isFinite(stepLength) || stepLength < 0.3 || stepLength > 1.2) throw new Error('Step length must be between 0.3 and 1.2 meters.');
@@ -25,7 +25,7 @@ class PedestrianTracker {
     hasGps(now) { return now - this.lastFix <= 3; }
 
     orientation(event, now) {
-        // Use the physical top of a screen-up phone; do not treat relative alpha as north.
+        
         if ((Number.isFinite(event.beta) && Math.abs(event.beta) > 45) ||
             (Number.isFinite(event.gamma) && Math.abs(event.gamma) > 45)) {
             this.headingTime = -Infinity;

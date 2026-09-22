@@ -6,7 +6,7 @@
     <title>Navigators: Intelligent Navigation & Dead Reckoning System</title>
     <meta name="description" content="Professional AI/ML navigation application with GNSS + INS dead reckoning, map-matching, and offline capability.">
 
-    <!-- PWA Meta Tags -->
+    
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#0b0f19">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <!-- App Loader -->
+    
     <div id="app-loader" class="app-loader">
         <div class="loader-content">
             <img src="loading_animation.gif" alt="Loading..." class="loader-gif">
@@ -30,7 +30,7 @@
     
     <a class="skip-link" href="#app-main">Skip to map interface</a>
 
-    <!-- Icon Library -->
+    
     <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></symbol>
         <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
@@ -48,10 +48,10 @@
         <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 12h16M4 6h16M4 18h16"/></symbol>
     </svg>
 
-    <!-- FULL-BLEED MAP CONTAINER -->
+    
     <div id="map"></div>
 
-    <!-- DESKTOP NAVIGATION SIDEBAR (LEFT) -->
+    
     <aside class="desktop-sidebar" aria-label="Desktop Primary Navigation">
         <nav class="desktop-nav">
             <button class="desktop-nav-item selected" data-desktop-tab="navigate" title="Navigate">
@@ -81,7 +81,7 @@
         </nav>
     </aside>
 
-    <!-- Hidden Backward Compatibility Elements -->
+    
     <div hidden>
         <aside class="sidebar">
             <button class="nav-link selected" data-view="console"></button>
@@ -98,9 +98,9 @@
     </div>
 
     <main id="app-main" tabindex="-1">
-        <!-- TOP FLOATING HUD CONTAINER -->
+        
         <div class="top-hud-container">
-            <!-- Header Bar -->
+            
             <div class="top-hud-bar">
                 <a class="brand-pill" href="./" aria-label="Navigators home">
                     <div class="brand-icon">N</div>
@@ -111,7 +111,7 @@
                 </a>
 
                 <div class="hud-center-group">
-                    <!-- Speed & Heading Pill -->
+                    
                     <div class="telemetry-pill">
                         <div class="speed-badge">
                             <strong id="speedValue">--</strong>
@@ -123,7 +123,7 @@
                         </div>
                     </div>
 
-                    <!-- GNSS & DR Status Pill -->
+                    
                     <div class="gnss-pill" id="gnssStatusCard">
                         <span class="status-led" id="gnssLed"></span>
                         <span id="gnssStatusText">WAITING</span>
@@ -132,7 +132,7 @@
                         </div>
                     </div>
 
-                    <!-- Navigation Mode Indicator -->
+                    
                     <div class="nav-mode-indicator" id="navModeIndicator" role="status">
                         <span class="mode-dot"></span>
                         <span class="mode-label" id="sourceLabel">STANDBY</span>
@@ -140,24 +140,24 @@
                 </div>
 
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <!-- Network Status / Sync Toggle (Separates connectivity from navigation) -->
+                    
                     <button id="btnNetworkSyncToggle" class="btn-network-sync" title="Network state controls synchronization, never navigation" style="display:flex; align-items:center; gap:6px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.4); color: var(--accent-emerald); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
                         <span id="syncStatusDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-emerald); display: inline-block;"></span>
                         <span id="syncStatusText">ONLINE</span>
                     </button>
-                    <!-- Primary Navigation Start Toggle -->
+                    
                 <button id="btnStartLive" class="btn-engine">
                     <svg><use href="#i-play"/></svg>
                     <span>Start Navigation</span>
                 </button>
-                    <!-- User Profile Icon / Role Access -->
+                    
                     <button id="authProfileBtn" class="user-profile-badge" title="Profile & Roles" aria-label="Profile and Roles" style="background:transparent; border:none; cursor:pointer;">
                         <svg viewBox="0 0 24 24" style="width:18px; height:18px; color:var(--text-secondary);"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
                     </button>
                 </div>
             </div>
 
-            <!-- Floating Search Bar -->
+            
             <div class="search-bar-floating">
                 <svg class="search-icon"><use href="#i-search"/></svg>
                 <input type="text" id="mapSearchInput" class="search-input" placeholder="Search destination, coordinates, or tap map to route..." aria-label="Search destination, coordinates, or tap map to route">
@@ -173,7 +173,7 @@
                 </div>
             </div>
 
-            <!-- Active Route Card (Turn-by-turn maneuvers & ETA) -->
+            
             <div id="activeRouteCard" class="active-route-card" style="display:none;">
                 <div class="route-header">
                     <div class="route-dest-info">
@@ -188,7 +188,7 @@
             </div>
         </div>
 
-        <!-- MINIMAL FLOATING MAP CONTROLS (RIGHT SIDE) -->
+        
         <div class="map-fabs-right">
             <button id="btnFollow" class="fab-btn" aria-pressed="true" title="Recenter Position" aria-label="Recenter Position">
                 <svg><use href="#i-focus"/></svg>
@@ -201,25 +201,25 @@
             </button>
         </div>
 
-        <!-- Hidden Backward Compatibility Lab/Guide Buttons -->
+        
         <div hidden>
             <button id="btnOpenLab"></button>
             <button id="btnGuide"></button>
         </div>
 
-        <!-- OFFLINE MAP STATUS PILL -->
+        
         <div class="map-message" id="mapStatus" role="status">Loading local OSM map…</div>
 
-        <!-- TEMPORARY NON-BLOCKING NAV TOAST NOTIFICATION -->
+        
         <div id="navToast" class="nav-toast" hidden role="status" aria-live="polite"></div>
 
-        <!-- MULTI-SNAP INTERACTIVE BOTTOM SHEET -->
+        
         <div class="bottom-sheet" id="bottomSheet">
             <div class="sheet-handle-bar" id="sheetHandle">
                 <div class="sheet-handle"></div>
             </div>
 
-            <!-- Primary Navigation Tabs Header -->
+            
             <div class="sheet-nav-tabs">
                 <button class="sheet-tab-btn selected" data-sheet-tab="navigate">
                     <svg><use href="#i-compass"/></svg> Navigate
@@ -242,20 +242,20 @@
             </div>
 
             <div class="sheet-content">
-                <!-- TAB 1: NAVIGATE -->
+                
                 <div class="tab-panel" id="panelNavigate">
                     <div id="sessionHint" style="display:none;">Waiting to start a session</div>
                     <div id="walkingHelp" style="display:none;">Hold phone upright for step tracking.</div>
 
                     <div class="cards-grid">
-                        <!-- Quality & Position Card -->
+                        
                         <div class="nav-card">
                             <h3 id="positionMetricLabel">Position Uncertainty</h3>
                             <div class="card-metric"><span id="posErrorValue">--</span> <small style="font-size:12px;">m</small></div>
                             <div class="progress-bar-bg"><div id="posErrorBar" class="progress-bar-fill"></div></div>
                         </div>
 
-                        <!-- Drift & Confidence Card -->
+                        
                         <div class="nav-card">
                             <h3 id="driftMetricLabel">Estimated Drift</h3>
                             <div class="card-metric"><span id="driftValue">--</span><small style="font-size:12px;">%</small> <span id="driftBadge" class="card-badge">--</span></div>
@@ -263,7 +263,7 @@
                             <div class="progress-bar-bg" style="margin-top:4px;"><div id="confidenceBar" class="progress-bar-fill"></div></div>
                         </div>
 
-                        <!-- Coordinates Card -->
+                        
                         <div class="nav-card">
                             <h3>Current Coordinates</h3>
                             <div class="card-metric" style="font-size:14px;" id="positionCoordinates">--</div>
@@ -271,7 +271,7 @@
                         </div>
                     </div>
 
-                    <!-- GNSS Outage Simulation Control & Stage Sequence -->
+                    
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
                         <span style="font-size:12px; font-weight:600; color:var(--text-secondary);">Signal Test</span>
                         <button id="btnGpsOutage" class="button secondary" disabled style="padding:6px 14px;">Simulate GNSS Outage</button>
@@ -282,7 +282,7 @@
                         <li data-stage="reacq"><span>03</span><div><strong>Recovery</strong></div></li>
                     </ol>
 
-                    <!-- Pipeline Overview -->
+                    
                     <div class="pipeline-nodes">
                         <div><span>01</span><strong>IMU</strong><small id="statusIMU">Waiting</small></div>
                         <div><span>02</span><strong>TCN AI</strong><small id="statusAI">Not loaded</small></div>
@@ -299,22 +299,22 @@
                     <div id="navigationWorkspace"></div>
                 </div>
 
-                <!-- TAB 2: EXPLORE -->
+                
                 <div class="tab-panel" id="panelExplore" hidden>
                     <div class="explore-header" style="margin-bottom: 12px;">
                         <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px 0;">Explore</h2>
                         
-                        <!-- Search bar inside Explore -->
+                        
                         <div class="explore-search-box" style="position: relative; display: flex; align-items: center; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 12px; gap: 8px;">
                             <svg style="width:16px; height:16px; fill:var(--text-muted);"><use href="#i-search"/></svg>
                             <input type="text" id="exploreSearchInput" placeholder="Search destination, coordinates, or tap category to route..." aria-label="Search destination, coordinates, or tap category to route" style="background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13px; width: 100%;" />
                         </div>
                     </div>
 
-                    <!-- Explore Sub-Sections Navigation -->
+                    
                     <div class="explore-sections" style="display: flex; flex-direction: column; gap: 12px;">
                         
-                        <!-- 1. Categories Grid -->
+                        
                         <div class="nav-card">
                             <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 4px;">Categories</h3>
                             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">Verified local POI database and canonical community map sync</div>
@@ -358,7 +358,7 @@
                             </div>
                         </div>
 
-                        <!-- 2. Nearby Section -->
+                        
                         <div class="nav-card" id="exploreNearbyCard">
                             <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Nearby</h3>
                             <div id="exploreNearbyList" style="font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
@@ -372,7 +372,7 @@
                             </div>
                         </div>
 
-                        <!-- 3. Saved Places Section -->
+                        
                         <div class="nav-card" id="exploreSavedPlacesCard">
                             <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Saved Places</h3>
                             <div id="exploreSavedList" style="font-size: 12px; color: var(--text-muted);">
@@ -380,20 +380,20 @@
                             </div>
                         </div>
 
-                        <!-- 4. First-Class Offline Maps Section -->
+                        
                         <div class="nav-card" id="offlineMapsCard">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0; display: flex; align-items: center; gap: 6px;">
                                     <svg style="width: 16px; height: 16px; fill: var(--accent-emerald);"><use href="#i-layer"/></svg>
                                     Offline Maps
                                 </h3>
-                                <!-- Connection / Status Badge -->
+                                
                                 <span id="offlineNetStatusBadge" class="badge" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
                                     Online
                                 </span>
                             </div>
 
-                            <!-- Storage & Last Updated Meta Bar -->
+                            
                             <div class="offline-meta-bar" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-surface); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 10px; font-size: 11px;">
                                 <div>
                                     <div style="color: var(--text-muted); margin-bottom: 2px;">STORAGE USED</div>
@@ -405,7 +405,7 @@
                                 </div>
                             </div>
 
-                            <!-- Downloaded Areas Sub-section -->
+                            
                             <div style="margin-bottom: 10px;">
                                 <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;">Downloaded Areas</h4>
                                 <div id="downloadedAreasList" style="display: flex; flex-direction: column; gap: 6px;">
@@ -415,7 +415,7 @@
                                 </div>
                             </div>
 
-                            <!-- Available Areas & Download Controls -->
+                            
                             <div style="margin-bottom: 8px;">
                                 <h4 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;">Available Area</h4>
                                 <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px dashed var(--border-color);">
@@ -445,14 +445,14 @@
                     </div>
                 </div>
 
-                <!-- TAB 3: CONTRIBUTE -->
+                
                 <div class="tab-panel" id="panelContribute" hidden>
                     <div class="contribute-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0;">Contribute</h2>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Help keep map data and road networks accurate</div>
                         </div>
-                        <!-- Area Switcher (Community vs Internal vs Moderation vs Sync) -->
+                        
                         <div class="contribute-mode-toggle" style="display: flex; background: var(--bg-surface); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
                             <button id="btnContribCommunity" class="btn-toggle active" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: var(--accent-emerald); color: var(--bg-main); font-weight: 600; cursor: pointer;">Community</button>
                             <button id="btnContribInternal" class="btn-toggle" style="font-size: 11px; padding: 4px 10px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Internal ML / Data</button>
@@ -461,13 +461,13 @@
                         </div>
                     </div>
 
-                    <!-- AREA 1: COMMUNITY CONTRIBUTIONS (Shown to Normal Users) -->
+                    
                     <div id="areaCommunityContributions" class="contribute-area">
                         <div class="nav-card" style="margin-bottom: 12px;">
                             <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px;">Community Contributions</h3>
                             
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                <!-- 1. Add a Place -->
+                                
                                 <button class="contrib-card-btn" id="btnActionAddPlace" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
                                     <div style="display: flex; align-items: center; gap: 8px;">
                                         <svg style="width: 18px; height: 18px; fill: var(--accent-emerald);"><use href="#i-compass"/></svg>
@@ -476,7 +476,7 @@
                                     <span style="font-size: 11px; color: var(--text-muted);">Add a missing landmark, store, or location to the map</span>
                                 </button>
 
-                                <!-- 2. Report a Map Issue -->
+                                
                                 <button class="contrib-card-btn" id="btnActionReportIssue" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
                                     <div style="display: flex; align-items: center; gap: 8px;">
                                         <svg style="width: 18px; height: 18px; fill: var(--accent-amber);"><use href="#i-alert"/></svg>
@@ -485,7 +485,7 @@
                                     <span style="font-size: 11px; color: var(--text-muted);">Report incorrect details, road hazards, or closures</span>
                                 </button>
 
-                                <!-- 3. Suggest a Road Change -->
+                                
                                 <button class="contrib-card-btn" id="btnActionSuggestRoad" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
                                     <div style="display: flex; align-items: center; gap: 8px;">
                                         <svg style="width: 18px; height: 18px; fill: var(--accent-cyan);"><use href="#i-layer"/></svg>
@@ -494,7 +494,7 @@
                                     <span style="font-size: 11px; color: var(--text-muted);">Suggest speed limit updates, turn restrictions, or directions</span>
                                 </button>
 
-                                <!-- 4. My Contributions -->
+                                
                                 <button class="contrib-card-btn" id="btnActionMyContrib" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; text-align: left; transition: all 0.2s;">
                                     <div style="display: flex; align-items: center; gap: 8px;">
                                         <svg style="width: 18px; height: 18px; fill: var(--accent-emerald);"><use href="#i-users"/></svg>
@@ -505,7 +505,7 @@
                             </div>
                         </div>
 
-                        <!-- Community Submissions Log -->
+                        
                         <div class="nav-card">
                             <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Recent Submissions</h3>
                             <div id="communityContribList" style="font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
@@ -516,10 +516,10 @@
                         </div>
                     </div>
 
-                    <!-- AREA 2: INTERNAL CONTRIBUTIONS (Gated Request Flow & Internal Tools) -->
+                    
                     <div id="areaInternalContributions" class="contribute-area" hidden>
                         
-                        <!-- 1. Access Request Flow Card (Shown when unapproved) -->
+                        
                         <div id="cardInternalAccessRequest" class="nav-card" style="border: 1px solid var(--border-color); margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <h3 style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0;">Become an Internal Contributor</h3>
@@ -552,14 +552,14 @@
                             </div>
                         </div>
 
-                        <!-- 2. Internal Tools Suite (Unlocked ONLY when account is Approved) -->
+                        
                         <div id="containerInternalToolsSuite" class="nav-card" style="border: 1px solid rgba(6,182,212,0.3); display: none;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-cyan); margin: 0;">Internal Developer & ML Suite</h3>
                                 <span class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 2px 8px; border-radius: 4px;">Account Approved</span>
                             </div>
 
-                            <!-- 8 Internal Tools Grid -->
+                            
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px;">
                                 <div class="internal-tool-chip" style="padding: 8px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px;">
                                     <strong style="color: var(--text-primary); display: block;">1. Dataset Contribution</strong>
@@ -595,7 +595,7 @@
                                 </div>
                             </div>
 
-                            <!-- Restricted Production Model Deployment Card -->
+                            
                             <div style="padding: 10px; background: rgba(245,158,11,0.06); border: 1px solid var(--accent-amber); border-radius: 6px; font-size: 11px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                     <strong style="color: var(--accent-amber); font-size: 12px;">Production Model Deployment Policy</strong>
@@ -611,7 +611,7 @@
                         </div>
                     </div>
 
-                    <!-- AREA 3: MODERATOR INTERFACE (Review, Approve, Reject, Request Changes) -->
+                    
                     <div id="areaModerationPanel" class="contribute-area" hidden>
                         <div class="nav-card" style="margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -622,7 +622,7 @@
                                 <span id="modUserRoleBadge" class="badge" style="font-size: 10px; background: rgba(6,182,212,0.15); color: var(--accent-cyan); padding: 3px 8px; border-radius: 4px; font-weight: 600;">Moderator</span>
                             </div>
 
-                            <!-- Queue Status Filter Pills -->
+                            
                             <div style="display: flex; gap: 6px; margin-bottom: 12px; background: var(--bg-surface); padding: 4px; border-radius: 6px; border: 1px solid var(--border-color);">
                                 <button id="btnModQueuePending" class="btn-toggle active" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: var(--accent-cyan); color: var(--bg-main); font-weight: 600; cursor: pointer;">Pending</button>
                                 <button id="btnModQueueApproved" class="btn-toggle" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Approved</button>
@@ -630,7 +630,7 @@
                                 <button id="btnModQueueReported" class="btn-toggle" style="flex: 1; font-size: 11px; padding: 4px 6px; border: none; border-radius: 4px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Reported</button>
                             </div>
 
-                            <!-- Moderation Queue Items -->
+                            
                             <div id="moderationQueueContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding-right: 2px;">
                                 <div style="font-size: 11px; color: var(--text-muted); padding: 12px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 6px;">
                                     Loading moderation triage items...
@@ -638,7 +638,7 @@
                             </div>
                         </div>
 
-                        <!-- Moderation Audit Trail -->
+                        
                         <div class="nav-card">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <h4 style="margin: 0; color: white; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Recent Governance Audit Trail</h4>
@@ -650,7 +650,7 @@
                         </div>
                     </div>
 
-                    <!-- AREA 4: OFFLINE SYNCHRONIZATION & CANONICAL MAP PACKAGES -->
+                    
                     <div id="areaSyncPanel" class="contribute-area" hidden>
                         <div class="nav-card" style="margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -661,7 +661,7 @@
                                 <span id="syncModePill" class="badge" style="font-size: 10px; background: rgba(16,185,129,0.15); color: var(--accent-emerald); padding: 3px 8px; border-radius: 4px; font-weight: 600;">Engine Active</span>
                             </div>
 
-                            <!-- Network Decoupling Architecture Card -->
+                            
                             <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; margin-bottom: 12px; line-height: 1.4;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                     <strong style="color: var(--text-primary);">Network Independence Principle</strong>
@@ -672,7 +672,7 @@
                                 </div>
                             </div>
 
-                            <!-- Sync Status Metrics Grid -->
+                            
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
                                 <div style="background: var(--bg-surface); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center;">
                                     <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Network State</div>
@@ -688,7 +688,7 @@
                                 </div>
                             </div>
 
-                            <!-- Sync Actions -->
+                            
                             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                                 <button id="btnTriggerManualSync" class="button primary" style="flex: 1; padding: 6px 12px; font-size: 12px;">
                                     Sync Now (Push & Pull)
@@ -698,7 +698,7 @@
                                 </button>
                             </div>
 
-                            <!-- Offline Package Section -->
+                            
                             <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 6px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                     <strong style="font-size: 12px; color: white;">Offline Map Package</strong>
@@ -714,7 +714,7 @@
                             </div>
                         </div>
 
-                        <!-- Sync Activity Stream -->
+                        
                         <div class="nav-card">
                             <h3 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px;">Changelog Delta Stream</h3>
                             <div id="syncDeltaListContainer" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;">
@@ -724,9 +724,9 @@
                     </div>
                 </div>
 
-                <!-- TAB 4: NAVIGATOR LAB -->
+                
                 <div class="tab-panel" id="panelLab" hidden>
-                    <!-- Playback Controls -->
+                    
                     <section id="playbackControls" class="playback-controls">
                         <div class="playback-title">
                             <span class="tiny-label">SAVED PLAYBACK</span>
@@ -745,7 +745,7 @@
                         </div>
                     </section>
 
-                    <!-- Trajectory Replay Upload Source -->
+                    
                     <section id="replaySource" class="replay-source" style="margin-top:12px;">
                         <div>
                             <strong>Saved Trajectory</strong>
@@ -757,7 +757,7 @@
                         </label>
                     </section>
 
-                    <!-- Metrics Card -->
+                    
                     <section id="metricsCard" class="playback-metrics" hidden>
                         <span class="tiny-label">SAVED METRICS · NOT LIVE ACCURACY</span>
                         <div class="metrics-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:8px;">
@@ -768,7 +768,7 @@
                         </div>
                     </section>
 
-                    <!-- PC Data Sync & Training -->
+                    
                     <div class="recorder-panel" id="recorderControls" style="margin-top:16px;">
                         <h3>PC Auto-Sync & Training</h3>
                         <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">
@@ -783,7 +783,7 @@
                         <p id="pcSyncStatus" style="font-size:11px; color:var(--text-muted); margin-top:6px;">Not paired.</p>
                     </div>
 
-                    <!-- Mac ML Training Panel -->
+                    
                     <div class="training-panel" id="trainingPanel" style="display:none; margin-top:16px;">
                         <h3>Mac ML Training</h3>
                         <div>Status: <strong id="trainStatusLabel">Idle</strong></div>
@@ -791,9 +791,9 @@
                     </div>
                 </div>
 
-                <!-- TAB 5: ACCOUNT PROFILE -->
+                
                 <div class="tab-panel" id="panelAccount" hidden>
-                    <!-- Account Profile Summary Header Card -->
+                    
                     <div class="nav-card" style="margin-bottom: 12px; border: 1px solid rgba(16,185,129,0.3);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                             <div>
@@ -805,7 +805,7 @@
                             </span>
                         </div>
 
-                        <!-- Active Role Switcher Architecture -->
+                        
                         <div style="background: var(--bg-surface); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
                             <label style="color: var(--text-muted); font-size: 10px; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Account Role Architecture</label>
                             <div style="display: flex; gap: 8px; align-items: center;">
@@ -821,7 +821,7 @@
                         </div>
                     </div>
 
-                    <!-- 6 Profile Sections Toolbar -->
+                    
                     <div class="account-subnav-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 12px; font-size: 11px;">
                         <button class="account-sub-btn active" data-account-target="secAccount" style="padding: 6px; border-radius: 4px; border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.15); color: var(--accent-emerald); font-weight: 600; cursor: pointer; text-align: center;">Account</button>
                         <button class="account-sub-btn" data-account-target="secSavedPlaces" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Saved Places</button>
@@ -831,7 +831,7 @@
                         <button class="account-sub-btn" data-account-target="secSettings" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: center;">Settings</button>
                     </div>
 
-                    <!-- PROFILE SECTION 1: ACCOUNT -->
+                    
                     <div id="secAccount" class="account-sub-panel">
                         <div class="nav-card" style="font-size: 12px;">
                             <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Account Overview & Permissions</h4>
@@ -853,7 +853,7 @@
                             </div>
                         </div>
 
-                        <!-- Authorized Workspaces Card (Reflects Role Authorization) -->
+                        
                         <div id="cardAuthorizedWorkspaces" class="nav-card" style="font-size: 12px; border: 1px solid rgba(6,182,212,0.3); margin-top: 10px;">
                             <h4 style="margin: 0 0 8px 0; color: var(--accent-cyan); font-size: 13px;">Authorized Engineering & Governance Portals</h4>
                             <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;">
@@ -875,7 +875,7 @@
                         </div>
                     </div>
 
-                    <!-- PROFILE SECTION 2: SAVED PLACES -->
+                    
                     <div id="secSavedPlaces" class="account-sub-panel" hidden>
                         <div class="nav-card" style="font-size: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -890,7 +890,7 @@
                         </div>
                     </div>
 
-                    <!-- PROFILE SECTION 3: CONTRIBUTIONS -->
+                    
                     <div id="secContributions" class="account-sub-panel" hidden>
                         <div class="nav-card" style="font-size: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -905,7 +905,7 @@
                         </div>
                     </div>
 
-                    <!-- PROFILE SECTION 4: OFFLINE MAPS -->
+                    
                     <div id="secOfflineMaps" class="account-sub-panel" hidden>
                         <div class="nav-card" style="font-size: 12px;">
                             <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Offline Maps & Cache Storage</h4>
@@ -917,7 +917,7 @@
                         </div>
                     </div>
 
-                    <!-- PROFILE SECTION 5: PRIVACY -->
+                    
                     <div id="secPrivacy" class="account-sub-panel" hidden>
                         <div class="nav-card" style="font-size: 12px;">
                             <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Privacy & Data Control</h4>
@@ -937,7 +937,7 @@
                         </div>
                     </div>
 
-                    <!-- PROFILE SECTION 6: SETTINGS -->
+                    
                     <div id="secSettings" class="account-sub-panel" hidden>
                         <div class="nav-card" style="font-size: 12px;">
                             <h4 style="margin: 0 0 8px 0; color: white; font-size: 13px;">Preferences & Settings</h4>
@@ -960,7 +960,7 @@
                     </div>
                 </div>
 
-                <!-- TAB 6: SETTINGS -->
+                
                 <div class="tab-panel" id="panelSettings" hidden>
                     <div style="font-size:12px; margin-bottom: 6px;">
                         <h3 style="font-size: 16px; margin: 0 0 4px 0; color: white; font-weight: 700;">System Settings & Information</h3>
@@ -968,7 +968,7 @@
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- 1. Account -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -979,7 +979,7 @@
                             </div>
                         </div>
 
-                        <!-- 2. Navigation -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">2. Navigation</strong>
                             <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
@@ -997,7 +997,7 @@
                             </div>
                         </div>
 
-                        <!-- 3. Maps -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">3. Maps</strong>
                             <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
@@ -1018,7 +1018,7 @@
                             </div>
                         </div>
 
-                        <!-- 4. Offline Maps -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1029,7 +1029,7 @@
                             </div>
                         </div>
 
-                        <!-- 5. Privacy -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">5. Privacy & Data</strong>
                             <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
@@ -1044,7 +1044,7 @@
                             </div>
                         </div>
 
-                        <!-- 6. Notifications -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">6. Notifications</strong>
                             <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px;">
@@ -1059,7 +1059,7 @@
                             </div>
                         </div>
 
-                        <!-- 7. Units -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1073,7 +1073,7 @@
                             </div>
                         </div>
 
-                        <!-- 8. Appearance -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1087,7 +1087,7 @@
                             </div>
                         </div>
 
-                        <!-- 9. Help & Support -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <strong style="color: white; font-size: 13px; display: block; margin-bottom: 6px;">9. Help & Support</strong>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -1097,7 +1097,7 @@
                             </div>
                         </div>
 
-                        <!-- 10. Terms & Conditions -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1108,7 +1108,7 @@
                             </div>
                         </div>
 
-                        <!-- 11. Privacy Policy -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1119,7 +1119,7 @@
                             </div>
                         </div>
 
-                        <!-- 12. Cookie Policy -->
+                        
                         <div class="nav-card" style="padding: 12px 14px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
@@ -1130,7 +1130,7 @@
                             </div>
                         </div>
 
-                        <!-- 13. About Navigators -->
+                        
                         <div class="nav-card" style="padding: 12px 14px; border: 1px solid rgba(16,185,129,0.3);">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div>
@@ -1149,7 +1149,7 @@
             </div>
         </div>
 
-        <!-- NAVIGATOR LAB FULL TECHNICAL ENVIRONMENT DRAWER -->
+        
         <div class="lab-drawer" id="labDrawer" hidden style="background: #070A10; color: #F8FAFC;">
             <div class="lab-header" style="background: #0B0F19; padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                 <div class="lab-title" style="display: flex; align-items: center; gap: 10px;">
@@ -1163,7 +1163,7 @@
 
             </div>
 
-            <!-- 12-SECTION TECHNICAL NAVIGATION TOOLBAR -->
+            
             <div class="lab-nav-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 8px 12px; background: #0B0F19; border-bottom: 1px solid var(--border-color); font-size: 11px;">
                 <button class="lab-sec-btn active" data-lab-target="labSecOverview" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.15); color: var(--accent-emerald); font-weight: 600; cursor: pointer; text-align: left;">01. Overview</button>
                 <button class="lab-sec-btn" data-lab-target="labSecSensors" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">02. Sensors</button>
@@ -1179,10 +1179,10 @@
                 <button class="lab-sec-btn" data-lab-target="labSecModelRegistry" style="padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-surface); color: var(--text-secondary); font-weight: 600; cursor: pointer; text-align: left;">12. Model Registry</button>
             </div>
 
-            <!-- LAB WORKSPACE SECTIONS CONTAINER -->
+            
             <div class="lab-workspace-content" style="padding: 16px; overflow-y: auto; max-height: calc(100vh - 120px);">
                 
-                <!-- SECTION 01: OVERVIEW -->
+                
                 <div id="labSecOverview" class="lab-sec-panel">
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">SYSTEM METRICS & PIPELINE WORKFLOW</div>
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
@@ -1204,7 +1204,7 @@
                         </div>
                     </div>
                     
-                    <!-- Architecture Node Diagram -->
+                    
                     <div style="background: var(--bg-surface); padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; font-family: var(--font-mono);">
                         <strong style="color: var(--text-primary); display: block; margin-bottom: 8px;">System Execution Flow:</strong>
                         <div style="display: flex; gap: 8px; align-items: center; color: var(--text-secondary); flex-wrap: wrap;">
@@ -1221,7 +1221,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 02: SENSORS -->
+                
                 <div id="labSecSensors" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">6-DOF INERTIAL MEASUREMENT UNIT (IMU)</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -1240,7 +1240,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 03: GNSS -->
+                
                 <div id="labSecGnss" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">GLOBAL NAVIGATION SATELLITE SYSTEM (GNSS)</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
@@ -1251,7 +1251,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 04: DEAD RECKONING -->
+                
                 <div id="labSecDr" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">INERTIAL DEAD RECKONING (IDR) ENGINE</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
@@ -1262,7 +1262,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 05: AI MODEL -->
+                
                 <div id="labSecAiModel" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">TCN NEURAL NETWORK VELOCITY ESTIMATOR</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
@@ -1273,7 +1273,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 06: SENSOR FUSION -->
+                
                 <div id="labSecSensorFusion" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">15-STATE EXTENDED KALMAN FILTER (EKF)</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px; font-family:var(--font-mono);">
@@ -1283,7 +1283,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 07: MAP MATCHING -->
+                
                 <div id="labSecMapMatching" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">GEOMETRIC ROAD NETWORK MAP MATCHER</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
@@ -1294,10 +1294,10 @@
                     </div>
                 </div>
 
-                <!-- SECTION 08: REPLAY -->
+                
                 <div id="labSecReplay" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">TRAJECTORY REPLAY & TRIP EVALUATION</div>
-                    <!-- Playback Controls -->
+                    
                     <section id="playbackControls" class="playback-controls">
                         <div class="playback-title">
                             <span class="tiny-label">SAVED PLAYBACK</span>
@@ -1327,7 +1327,7 @@
                     </section>
                 </div>
 
-                <!-- SECTION 09: EXPERIMENTS -->
+                
                 <section id="experimentsWorkspace" class="report-workspace lab-sec-panel" hidden>
                     <div class="report-toolbar">
                         <div>
@@ -1359,7 +1359,7 @@
                     <div id="experimentProvenance" style="display:none;"></div>
                 </section>
 
-                <!-- SECTION 10: BENCHMARKS -->
+                
                 <section id="performanceWorkspace" class="report-workspace lab-sec-panel" hidden>
                     <div class="report-toolbar">
                         <div>
@@ -1387,7 +1387,7 @@
                     </div>
                 </section>
 
-                <!-- SECTION 11: DATASETS -->
+                
                 <div id="labSecDatasets" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">RECORDED IMU & SYNTHETIC DATASETS</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
@@ -1403,7 +1403,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION 12: MODEL REGISTRY -->
+                
                 <div id="labSecModelRegistry" class="lab-sec-panel" hidden>
                     <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px;">NEURAL NETWORK MODEL REGISTRY</div>
                     <div style="background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 11px;">
@@ -1418,7 +1418,7 @@
                             </div>
                         </div>
                     </div>
-                <!-- COMPACT FOOTER COMPONENT -->
+                
                 <footer class="compact-footer">
                     <div class="footer-brand">Navigators</div>
                     <nav class="footer-links-primary">
@@ -1444,7 +1444,7 @@
     </main>
 
 
-    <!-- Demo Field Guide Dialog -->
+    
     <dialog id="guideDialog" aria-labelledby="guideTitle">
         <div class="dialog-heading">
             <span class="tiny-label">DEMO FIELD GUIDE</span>
@@ -1458,7 +1458,7 @@
         </ol>
     </dialog>
 
-    <!-- Startup Consent Dialog -->
+    
     <dialog id="startupModal" aria-labelledby="startupTitle">
         <div class="dialog-heading"><span class="tiny-label">PRIVACY & SENSORS</span></div>
         <h2 id="startupTitle">Hardware & Sensor Permission</h2>
@@ -1473,7 +1473,7 @@
         </div>
     </dialog>
 
-    <!-- Compact AI Technical Details Dialog -->
+    
     <dialog id="aiDetailsDialog" aria-labelledby="aiDetailsTitle">
         <div class="dialog-heading">
             <span class="tiny-label">MODEL CONTRACT & RUNTIME</span>
@@ -1489,7 +1489,7 @@
         </div>
     </dialog>
 
-    <!-- Authentication Modal Dialog (Sign In / Register / Guest) -->
+    
     <dialog id="authDialog" aria-labelledby="authTitle" style="max-width: 420px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); padding: 20px;">
         <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
             <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-emerald);">ACCOUNT AUTHENTICATION</span>
@@ -1525,7 +1525,7 @@
         </form>
     </dialog>
 
-    <!-- SOS Step 2: Confirmation Dialog -->
+    
     <dialog id="sosConfirmDialog" aria-labelledby="sosConfirmTitle" style="max-width: 400px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid rgba(239,68,68,0.5); color: var(--text-primary); padding: 20px;">
         <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(239,68,68,0.3); padding-bottom: 8px; margin-bottom: 12px;">
             <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #ef4444; font-weight: 700;">EMERGENCY CONFIRMATION</span>
@@ -1544,7 +1544,7 @@
         </div>
     </dialog>
 
-    <!-- SOS Step 3: Emergency Actions Modal -->
+    
     <dialog id="sosActionsDialog" aria-labelledby="sosActionsTitle" style="max-width: 500px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid rgba(239,68,68,0.5); color: var(--text-primary); padding: 20px;">
         <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
             <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #ef4444; font-weight: 700;">EMERGENCY ACTIONS</span>
@@ -1552,15 +1552,15 @@
         </div>
         <h2 id="sosActionsTitle" style="font-size:18px; font-weight:700; color:white; margin:0 0 12px 0;">Emergency Assistance Actions</h2>
 
-        <!-- Location Banner -->
+        
         <div style="padding:10px; background:rgba(6,182,212,0.08); border:1px solid var(--accent-cyan); border-radius:6px; margin-bottom:14px; font-size:12px;">
             <div style="color:var(--text-muted); font-size:10px; text-transform:uppercase;">Current Emergency Location</div>
             <strong id="sosLocationText" style="color:var(--accent-cyan); font-size:13px; font-family:var(--font-mono);">Acquiring location...</strong>
         </div>
 
-        <!-- 3 Action Channels -->
+        
         <div style="display:flex; flex-direction:column; gap:12px;">
-            <!-- Channel 1: Call Emergency Services -->
+            
             <div style="padding:12px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px;">
                 <h4 style="margin:0 0 4px 0; color:#ef4444; font-size:13px;">1. Call Emergency Services</h4>
                 <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px 0;">Direct manual dial links. Calls are never placed automatically.</p>
@@ -1571,7 +1571,7 @@
                 </div>
             </div>
 
-            <!-- Channel 2: Share Live Location -->
+            
             <div style="padding:12px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px;">
                 <h4 style="margin:0 0 4px 0; color:var(--accent-cyan); font-size:13px;">2. Share Live Location</h4>
                 <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px 0;">Share coordinates via Web Share or copy location link to clipboard.</p>
@@ -1581,7 +1581,7 @@
                 </div>
             </div>
 
-            <!-- Channel 3: Emergency Contacts -->
+            
             <div style="padding:12px; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px;">
                 <h4 style="margin:0 0 4px 0; color:var(--accent-emerald); font-size:13px;">3. Emergency Contacts</h4>
                 <div id="sosContactsList" style="margin-bottom:8px;">
@@ -1596,7 +1596,7 @@
         </div>
     </dialog>
 
-    <!-- Community Add a Place Modal Dialog -->
+    
     <dialog id="addPlaceDialog" aria-labelledby="addPlaceTitle" style="max-width: 480px; width: 90%; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); color: var(--text-primary); padding: 20px;">
         <div class="dialog-heading" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 14px;">
             <span class="tiny-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-emerald);">COMMUNITY CONTRIBUTION</span>
@@ -1651,7 +1651,7 @@
                 <input type="text" id="inputPlacePhoto" placeholder="Photo URL or file description" style="width: 100%; padding: 8px 10px; border-radius: 6px; background: var(--bg-surface); border: 1px solid var(--border-color); color: white; outline: none;" />
             </div>
 
-            <!-- Moderation Status Notice -->
+            
             <div style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 4px;">
                 <strong style="color: var(--accent-amber);">Review Policy:</strong> Submissions enter <em>Pending Review</em> and are checked by map maintainers before publishing to Canonical Map Data.
             </div>
@@ -1663,7 +1663,7 @@
         </form>
     </dialog>
 
-    <!-- Compass & Sensor Loading Overlay -->
+    
     <div id="compassLoadingOverlay" aria-hidden="true" style="display:none;">
         <div class="loader-content">
             <img src="loading_animation.gif" alt="Loading..." style="width: 100px; height: auto;">
@@ -1677,7 +1677,7 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    
     <script src="engine/matrix.js"></script>
     <script src="engine/ekf.js"></script>
     <script src="engine/map_matcher.js"></script>
@@ -1694,7 +1694,7 @@
     <script src="workspace.js"></script>
     <script src="app.js"></script>
 
-    <!-- Bottom Sheet & Lab Drawer Interactive Handlers -->
+    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Bottom Sheet Tab Switching

@@ -59,7 +59,7 @@ def get_admin_overview(
     """
     _require_admin_permission(session, "user:read")
 
-    # DB Connection counts
+
     with get_db() as conn:
         total_users = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
         active_users = conn.execute("SELECT COUNT(*) AS n FROM users WHERE status = 'active'").fetchone()["n"]

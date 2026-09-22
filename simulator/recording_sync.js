@@ -1,4 +1,4 @@
-// Upload raw batches to the paired PC; acknowledged batches are removed from the local outbox.
+
 class RecordingSync {
     constructor() {
         this.token = sessionStorage.getItem('pc-pairing-token') || '';

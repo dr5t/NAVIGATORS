@@ -108,7 +108,7 @@ class VelocityModel:
                 output = self.model(torch.from_numpy(window)).numpy()[0]
         if output.shape != (2,) or not np.isfinite(output).all():
             raise ValueError('AI produced invalid ENU velocity')
-        return output.astype(float)  # Training targets and EKF both use [East, North].
+        return output.astype(float)
 
     def metadata(self):
         files = [self.path]
@@ -134,7 +134,7 @@ def prepare(recording, start, duration, calibration_seconds=5, aligned=False):
     if len(prefix) < 3:
         raise ValueError('Need valid GPS throughout an initial calibration prefix')
     rotation = np.eye(3) if aligned else calibrate(recording.accel[prefix], recording.gnss[prefix, 3], recording.timestamps[prefix])
-    # Initial fix must be available at calibration completion, never from the future.
+
     first = end
     if not recording.valid[first]:
         raise ValueError('No current initial GPS fix at calibration completion')
@@ -276,7 +276,7 @@ def run_replay(recording, config, start, duration, calibration_seconds=5, aligne
     transitions = []
     previous_mode = None
     for i in range(first, len(estimates)):
-        # GPS is physically omitted from the algorithm at the FIRST denied sample.
+
         fix = recording.gnss[i].copy() if allowed[i] else None
         dt = 0.0 if i == first else recording.timestamps[i] - recording.timestamps[i - 1]
         estimates[i], modes[i] = nav.step(recording.accel[i], recording.gyro[i], dt, fix,
@@ -284,7 +284,7 @@ def run_replay(recording, config, start, duration, calibration_seconds=5, aligne
         if modes[i] != previous_mode:
             transitions.append({'time_s': float(recording.timestamps[i]), 'mode': modes[i]})
             previous_mode = modes[i]
-    # References enter only after navigation is finished. They are never interpolated into IMU/GPS inputs.
+
     reference_position = enu(recording.gnss[:, :2], origin)
     heading = np.deg2rad(recording.gnss[:, 4])
     reference_velocity = recording.gnss[:, 3, None] * np.column_stack((np.sin(heading), np.cos(heading)))

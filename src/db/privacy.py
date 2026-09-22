@@ -241,7 +241,7 @@ class PrivacyRepository:
         with get_db(self.db_path) as conn:
             cursor = conn.cursor()
 
-            # 1. Physical file cleanup for user's uploaded datasets
+
             cursor.execute(
                 "SELECT sensor_data_path FROM dataset_sessions WHERE contributor_id = ?",
                 (user_id,),
@@ -256,14 +256,14 @@ class PrivacyRepository:
                     except OSError:
                         pass
 
-            # 2. Revoke all active sessions
+
             now = _current_timestamp()
             cursor.execute(
                 "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
                 (now, user_id),
             )
 
-            # 3. Delete user row (SQLite CASCADE deletes all linked records)
+
             cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
             deleted_records = cursor.rowcount
 

@@ -18,15 +18,15 @@ from typing import Optional, List, Tuple, Dict, Any
 from src.db.database import get_db, DEFAULT_DB_PATH
 from src.db.audit import AuditRepository
 
-# Valid activity types for dataset sessions
+
 ACTIVITY_TYPES = frozenset({"walking", "driving", "gnss_imu", "gnss_outage", "validation"})
 
-# Permitted state transitions: current_status → set of allowed next statuses
+
 VALID_TRANSITIONS: Dict[str, frozenset] = {
     "uploaded":   frozenset({"validating", "rejected"}),
     "validating": frozenset({"validated", "rejected"}),
-    "validated":  frozenset(),          # terminal - cannot move from validated
-    "rejected":   frozenset(),          # terminal - cannot re-open a rejection
+    "validated":  frozenset(),
+    "rejected":   frozenset(),
 }
 
 
@@ -105,9 +105,9 @@ class DatasetRepository:
         self._db_path = val
         self.audit_repo.db_path = val
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
+
+
+
 
     def _row_to_obj(self, row) -> DatasetSession:
         return DatasetSession(
@@ -139,9 +139,9 @@ class DatasetRepository:
                 f"Allowed from '{current}': {sorted(allowed) or 'none (terminal state)'}"
             )
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
+
+
+
 
     def submit_session(
         self,

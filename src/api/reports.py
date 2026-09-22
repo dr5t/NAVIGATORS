@@ -56,7 +56,7 @@ def submit_report(
         details=req.details,
     )
 
-    # Record audit log
+
     try:
         audit_repo.log(
             action="report:created",

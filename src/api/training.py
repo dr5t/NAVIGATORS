@@ -29,7 +29,7 @@ import numpy as np
 
 router = APIRouter(prefix="/training", tags=["training"])
 
-# Global training state
+
 training_state = {
     "is_training": False,
     "current_epoch": 0,
@@ -71,7 +71,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         training_state["metrics"] = {}
         training_state["status"] = "Loading IO-VNBD Data..."
         
-        # Load the official IO-VNBD dataset (144 synchronized sessions)
+
         iovnbd_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "IO-VNBD")
         result = create_iovnbd_dataloaders(
             base_dir=iovnbd_dir,
@@ -96,7 +96,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         training_state["test_samples"] = test_count
         training_state["status"] = f"Initializing TCN... (Train: {train_count}, Val: {val_count}, Test: {test_count})"
         
-        # Instantiate model (TCN with 559,234 parameters)
+
         model = TCNVelocityEstimator(
             input_channels=6,
             output_dim=2,
@@ -110,7 +110,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
             "learning_rate": learning_rate,
             "loss": "mse_angular",
             "checkpoint_dir": candidate_dir,
-            "early_stopping_patience": epochs + 10,  # Run all configured epochs
+            "early_stopping_patience": epochs + 10,
             "optimizer": "adamw",
             "scheduler": "cosine",
             "use_augmentation": True
@@ -147,7 +147,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         
         training_state["status"] = "Evaluating candidate on held-out test set..."
         
-        # Load best candidate checkpoint for test set evaluation
+
         import torch
         best_candidate_path = os.path.join(candidate_dir, "best_model.pt")
         if os.path.exists(best_candidate_path):
@@ -190,7 +190,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         print(f"Mean Velocity Baseline MAE: {mean_velocity_mae:.4f} m/s")
         print(f"Error Reduction vs Mean:    {error_reduction_pct:.2f}%")
         
-        # ONNX Export for Candidate
+
         candidate_onnx_path = os.path.join(candidate_dir, "model.onnx")
         model_cpu = model.to("cpu")
         dummy_input = torch.randn(1, window_size, 6, device="cpu")
@@ -201,7 +201,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
             dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
         )
         
-        # Verify ONNX Parity
+
         import onnxruntime as ort
         ort_sess = ort.InferenceSession(candidate_onnx_path)
         dummy_np = np.random.randn(1, window_size, 6).astype(np.float32)
@@ -211,7 +211,7 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         onnx_parity_max_diff = float(np.max(np.abs(pt_out - ort_out)))
         print(f"ONNX / PyTorch Numerical Parity Max Diff: {onnx_parity_max_diff:.8f}")
         
-        # Register in Model Registry (Phase 15 governance)
+
         from src.db.model_registry import ModelRegistryRepository
         model_repo = ModelRegistryRepository()
         candidate_entry = model_repo.register_candidate(
@@ -224,9 +224,9 @@ def run_training(epochs: int, batch_size: int, learning_rate: float, window_size
         model_id = candidate_entry.id
         training_state["model_registry_id"] = model_id
 
-        # Phase 15 Model Governance Rule:
-        # Evaluated candidate is recorded in Model Registry in 'evaluating' state.
-        # No automatic overwriting of production files!
+
+
+
         production_mae = 4.2039
         production_rmse = 6.0735
         
@@ -281,13 +281,13 @@ def start_training(req: TrainingRequest, background_tasks: BackgroundTasks):
     if training_state["is_training"]:
         raise HTTPException(status_code=400, detail="Training already in progress")
         
-    # Synchronously check for IO-VNBD data existence
+
     iovnbd_dir = Path(os.path.join(os.path.dirname(__file__), "..", "..", "data", "IO-VNBD"))
     sync_dir = iovnbd_dir / "Synchronised V abd S datasets"
     if not sync_dir.exists():
         raise HTTPException(status_code=400, detail="IO-VNBD dataset not found. Please download it first.")
         
-    # Run in background thread to avoid blocking the event loop
+
     thread = threading.Thread(
         target=run_training,
         args=(req.epochs, req.batch_size, req.learning_rate, req.window_size)

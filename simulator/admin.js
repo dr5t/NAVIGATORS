@@ -1,8 +1,8 @@
-/**
- * Navigators Admin Portal Client Engine (Phase 18)
- * Manages RBAC section gating, dynamic data loading across all 11 admin sections,
- * and quick role simulation for engineering verification.
- */
+
+
+
+
+
 
 class AdminApp {
     constructor() {
@@ -17,7 +17,7 @@ class AdminApp {
     }
 
     async init() {
-        // Resolve authentication session
+        
         if (window.NavigatorsAuth) {
             try {
                 this.session = await window.NavigatorsAuth.initSession();
@@ -81,7 +81,7 @@ class AdminApp {
     navigateTo(sectionId) {
         this.currentSection = sectionId;
 
-        // Update nav item buttons
+        
         document.querySelectorAll('.admin-sidebar .nav-item').forEach(btn => {
             if (btn.dataset.section === sectionId) {
                 btn.classList.add('active');
@@ -90,10 +90,10 @@ class AdminApp {
             }
         });
 
-        // Hide all panels
+        
         document.querySelectorAll('.section-panel').forEach(p => p.classList.add('hidden'));
 
-        // Check permissions
+        
         const adminRoles = new Set(['moderator', 'team_admin', 'super_admin']);
         if (!adminRoles.has(this.activeRole)) {
             const deniedView = document.getElementById('access-denied-view');
@@ -146,7 +146,7 @@ class AdminApp {
         }
     }
 
-    // 1. Overview
+    
     async loadOverview() {
         try {
             const res = await fetch('/api/v1/admin/overview');
@@ -185,7 +185,7 @@ class AdminApp {
         }
     }
 
-    // 2. Users
+    
     async loadUsers() {
         const tbody = document.getElementById('users-table-body');
         try {
@@ -256,7 +256,7 @@ class AdminApp {
         this.renderUsersTable(filtered);
     }
 
-    // 3. Roles
+    
     async loadRoles() {
         const container = document.getElementById('roles-cards-container');
         try {
@@ -279,7 +279,7 @@ class AdminApp {
         }
     }
 
-    // 4. Contributions
+    
     async loadContributions(statusFilter = '') {
         const tbody = document.getElementById('contrib-table-body');
         try {
@@ -334,7 +334,7 @@ class AdminApp {
         }
     }
 
-    // 5. Map Data
+    
     async loadMapData() {
         const tbody = document.getElementById('places-table-body');
         try {
@@ -407,7 +407,7 @@ class AdminApp {
             });
     }
 
-    // 6. Datasets
+    
     async loadDatasets() {
         const tbody = document.getElementById('datasets-table-body');
         try {
@@ -450,16 +450,16 @@ class AdminApp {
         }
     }
 
-    // 7. Training
+    
     loadTraining() {
-        // Render training status
+        
     }
 
     dispatchMockTraining() {
         alert("Mock training run dispatched successfully! Evaluated loss: 0.0042, MAE: 4.2039 m/s.");
     }
 
-    // 8. Models
+    
     async loadModels() {
         const tbody = document.getElementById('models-table-body');
         try {
@@ -504,7 +504,7 @@ class AdminApp {
         }
     }
 
-    // 9. Reports
+    
     async loadReports() {
         const tbody = document.getElementById('reports-table-body');
         try {
@@ -539,7 +539,7 @@ class AdminApp {
         alert(`Report '${reportId}' resolved.`);
     }
 
-    // 10. Audit Logs
+    
     async loadAuditLogs() {
         const tbody = document.getElementById('audit-table-body');
         try {
@@ -567,7 +567,7 @@ class AdminApp {
         }
     }
 
-    // 11. System Health
+    
     async loadSystemHealth() {
         try {
             const res = await fetch('/api/v1/admin/health');

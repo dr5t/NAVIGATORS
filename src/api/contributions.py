@@ -25,9 +25,9 @@ auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class CreateContributionRequest(BaseModel):
     resource_type: str = "place"
@@ -42,7 +42,7 @@ class UpdateContributionRequest(BaseModel):
 
 
 class ReviewContributionRequest(BaseModel):
-    decision: str  # 'approved' or 'rejected'
+    decision: str
     notes: Optional[str] = None
 
 
@@ -62,9 +62,9 @@ def handle_transition_error(err: Exception) -> HTTPException:
     return HTTPException(status_code=400, detail=str(err))
 
 
-# =============================================================================
-# Helper to resolve optional caller session
-# =============================================================================
+
+
+
 
 def get_optional_session(authorization: Optional[str] = Header(None)) -> Optional[SessionContext]:
     """Resolve session context if bearer token is provided, otherwise return None."""
@@ -77,9 +77,9 @@ def get_optional_session(authorization: Optional[str] = Header(None)) -> Optiona
         return None
 
 
-# =============================================================================
-# Contribution Endpoints
-# =============================================================================
+
+
+
 
 @router.post("", status_code=201)
 def create_contribution(
@@ -167,7 +167,7 @@ def get_user_contributions_endpoint(
 
     visible = []
     for it in items:
-        # Hide private drafts of other users
+
         if it.status == "draft" and it.owner_id != caller_id and not is_staff:
             continue
         visible.append(it.to_dict())
@@ -444,7 +444,7 @@ def list_contributions(
     """
     items = contrib_repo.list(owner_id=owner_id, status=status, limit=limit, offset=offset)
 
-    # Filter private drafts
+
     caller_id = context.user.id if (context and context.user) else None
     caller_roles = [r.id for r in context.roles] if (context and context.roles) else []
     is_staff = ("moderator" in caller_roles) or ("team_admin" in caller_roles) or ("super_admin" in caller_roles)

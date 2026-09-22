@@ -27,9 +27,9 @@ auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class SubmitSessionModel(BaseModel):
     activity_type: str = Field(
@@ -56,9 +56,9 @@ def _extract_query_val(val: Any, default: Any = None) -> Any:
     return val if val is not None else default
 
 
-# =============================================================================
-# Endpoints
-# =============================================================================
+
+
+
 
 @router.post("/sessions", status_code=201)
 def api_submit_session(
@@ -134,12 +134,12 @@ def api_list_sessions(
     if not decision.allowed:
         raise HTTPException(status_code=403, detail=f"Permission denied: {decision.reason}")
 
-    # Scope: non-admins can only see their own sessions
+
     can_validate = authz_service.can(user=user_context, action="dataset:validate", resource="dataset")
     effective_contributor_id = (
         _extract_query_val(contributor_id, None)
         if can_validate.allowed
-        else context.user.id       # restrict to own sessions
+        else context.user.id
     )
 
     stat = _extract_query_val(status, None)
@@ -180,7 +180,7 @@ def api_get_session(
     if not session:
         raise HTTPException(status_code=404, detail=f"Dataset session '{session_id}' not found")
 
-    # Access: owner always allowed; others need dataset:validate
+
     if session.contributor_id != context.user.id:
         user_context = context.to_dict()
         decision = authz_service.can(user=user_context, action="dataset:validate", resource="dataset")

@@ -21,14 +21,14 @@ repo = ModelRegistryRepository()
 auth_service = AuthService()
 authz_service = AuthorizationService()
 
-# Seed baseline model if not already present
+
 try:
     repo.seed_production_model()
 except Exception:
     pass
 
 
-# ─── Pydantic Schemas ─────────────────────────────────────────────────────────
+
 
 class ApproveModelRequest(BaseModel):
     notes: Optional[str] = Field(None, description="Optional approval notes or review summary")
@@ -38,7 +38,7 @@ class RejectModelRequest(BaseModel):
     rejection_reason: str = Field(..., min_length=3, description="Mandatory reason for model candidate rejection")
 
 
-# ─── Helper Functions ─────────────────────────────────────────────────────────
+
 
 def _require_permission(context: Optional[SessionContext], permission: str) -> str:
     """Helper to enforce authentication and authorization."""
@@ -56,7 +56,7 @@ def _require_permission(context: Optional[SessionContext], permission: str) -> s
     return context.user.id
 
 
-# ─── Endpoints ────────────────────────────────────────────────────────────────
+
 
 @router.get("", response_model=Dict[str, Any])
 @router.get("/", response_model=Dict[str, Any])

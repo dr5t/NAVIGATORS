@@ -41,7 +41,7 @@ def main():
     openssl('x509', '-req', '-in', request, '-CA', ca_cert, '-CAkey', ca_key, '-CAcreateserial',
             '-out', certificate, '-days', '30', '-extfile', extensions)
     os.environ['NAVIGATORS_SYNC_TOKEN'] = secrets.token_urlsafe(24)
-    # Only the public certificate is served here; private keys stay outside this directory.
+
     bootstrap = ThreadingHTTPServer(('0.0.0.0', 8001), partial(SimpleHTTPRequestHandler, directory=str(public)))
     Thread(target=bootstrap.serve_forever, daemon=True).start()
     print(f'Android certificate: http://{args.ip}:8001/navigators-ca.crt', flush=True)

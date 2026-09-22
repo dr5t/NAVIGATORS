@@ -58,9 +58,9 @@ class RBACRepository:
         with get_db(self.db_path) as conn:
             return conn.execute(query, params)
 
-    # -------------------------------------------------------------------------
-    # User Management
-    # -------------------------------------------------------------------------
+
+
+
 
     def create_user(
         self,
@@ -159,9 +159,9 @@ class RBACRepository:
             )
             return [User(**dict(row)) for row in cur.fetchall()]
 
-    # -------------------------------------------------------------------------
-    # Role Management
-    # -------------------------------------------------------------------------
+
+
+
 
     def create_role(self, role_id: str, name: str, description: str) -> Role:
         """Create a new role definition."""
@@ -191,9 +191,9 @@ class RBACRepository:
             cur = conn.execute("DELETE FROM roles WHERE id = ?", (role_id,))
             return cur.rowcount > 0
 
-    # -------------------------------------------------------------------------
-    # Permission Management
-    # -------------------------------------------------------------------------
+
+
+
 
     def create_permission(
         self, permission_id: str, resource: str, action: str, description: Optional[str] = None
@@ -229,9 +229,9 @@ class RBACRepository:
                 cur = conn.execute("SELECT * FROM permissions ORDER BY resource, action ASC")
             return [Permission(**dict(row)) for row in cur.fetchall()]
 
-    # -------------------------------------------------------------------------
-    # Role-Permission Mappings
-    # -------------------------------------------------------------------------
+
+
+
 
     def assign_permission_to_role(self, role_id: str, permission_id: str) -> None:
         """Grant a permission to a role."""
@@ -267,9 +267,9 @@ class RBACRepository:
             )
             return [Permission(**dict(row)) for row in cur.fetchall()]
 
-    # -------------------------------------------------------------------------
-    # User-Role Mappings
-    # -------------------------------------------------------------------------
+
+
+
 
     def assign_role_to_user(self, user_id: str, role_id: str) -> None:
         """Assign a role to a user."""
@@ -305,9 +305,9 @@ class RBACRepository:
             )
             return [Role(**dict(row)) for row in cur.fetchall()]
 
-    # -------------------------------------------------------------------------
-    # Dynamic Permission Resolution (Core RBAC Logic)
-    # -------------------------------------------------------------------------
+
+
+
 
     def get_user_permissions(self, user_id: str) -> Set[str]:
         """

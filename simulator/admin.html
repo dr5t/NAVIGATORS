@@ -12,7 +12,7 @@
 </head>
 <body class="admin-body">
     <div class="admin-wrapper">
-        <!-- Top Navbar -->
+        
         <header class="admin-header">
             <div class="header-left">
                 <div class="brand-logo">
@@ -36,7 +36,7 @@
             </div>
 
             <div class="header-right">
-                <!-- Role Switcher for RBAC Validation -->
+                
                 <div class="role-switcher-container">
                     <span class="switcher-label">Simulate Role:</span>
                     <select id="role-switcher-select" class="role-switcher-select" onchange="window.adminApp.switchRole(this.value)">
@@ -50,7 +50,7 @@
                     </select>
                 </div>
 
-                <!-- User Profile & Navigation Link -->
+                
                 <div class="user-profile-badge">
                     <div class="user-avatar" id="admin-user-avatar">A</div>
                     <div class="user-info">
@@ -70,9 +70,9 @@
             </div>
         </header>
 
-        <!-- Main Layout -->
+        
         <div class="admin-container">
-            <!-- Sidebar Navigation -->
+            
             <nav class="admin-sidebar">
                 <div class="sidebar-category">GOVERNANCE & OPS</div>
                 
@@ -138,10 +138,10 @@
                 </button>
             </nav>
 
-            <!-- Main Content Viewport -->
+            
             <main class="admin-viewport">
 
-                <!-- Access Denied Banner -->
+                
                 <div id="access-denied-view" class="section-panel hidden">
                     <div class="denied-card">
                         <div class="denied-icon">
@@ -153,7 +153,7 @@
                     </div>
                 </div>
 
-                <!-- 1. OVERVIEW SECTION -->
+                
                 <section id="sec-overview" class="section-panel">
                     <div class="panel-header">
                         <h1>Executive Overview</h1>
@@ -205,7 +205,7 @@
                     </div>
                 </section>
 
-                <!-- 2. USERS SECTION -->
+                
                 <section id="sec-users" class="section-panel hidden">
                     <div class="panel-header flex-between">
                         <div>
@@ -236,7 +236,7 @@
                     </div>
                 </section>
 
-                <!-- 3. ROLES SECTION -->
+                
                 <section id="sec-roles" class="section-panel hidden">
                     <div class="panel-header">
                         <h1>Role & Permission Catalog</h1>
@@ -244,11 +244,11 @@
                     </div>
 
                     <div class="roles-grid" id="roles-cards-container">
-                        <!-- Dynamically loaded -->
+                        
                     </div>
                 </section>
 
-                <!-- 4. CONTRIBUTIONS SECTION -->
+                
                 <section id="sec-contributions" class="section-panel hidden">
                     <div class="panel-header flex-between">
                         <div>
@@ -283,7 +283,7 @@
                     </div>
                 </section>
 
-                <!-- 5. MAP DATA SECTION -->
+                
                 <section id="sec-map-data" class="section-panel hidden">
                     <div class="panel-header flex-between">
                         <div>
@@ -315,7 +315,7 @@
                     </div>
                 </section>
 
-                <!-- 6. DATASETS SECTION -->
+                
                 <section id="sec-datasets" class="section-panel hidden">
                     <div class="panel-header flex-between">
                         <div>
@@ -345,7 +345,7 @@
                     </div>
                 </section>
 
-                <!-- 7. TRAINING SECTION -->
+                
                 <section id="sec-training" class="section-panel hidden">
                     <div class="panel-header flex-between">
                         <div>
@@ -375,7 +375,7 @@
                     </div>
                 </section>
 
-                <!-- 8. MODELS SECTION -->
+                
                 <section id="sec-models" class="section-panel hidden">
                     <div class="panel-header">
                         <h1>Model Registry & Governance</h1>
@@ -401,7 +401,7 @@
                     </div>
                 </section>
 
-                <!-- 9. REPORTS SECTION -->
+                
                 <section id="sec-reports" class="section-panel hidden">
                     <div class="panel-header">
                         <h1>Community Flag Reports</h1>
@@ -428,7 +428,7 @@
                     </div>
                 </section>
 
-                <!-- 10. AUDIT LOGS SECTION -->
+                
                 <section id="sec-audit-logs" class="section-panel hidden">
                     <div class="panel-header">
                         <h1>Platform Audit Logs</h1>
@@ -454,7 +454,7 @@
                     </div>
                 </section>
 
-                <!-- 11. SYSTEM HEALTH SECTION -->
+                
                 <section id="sec-system-health" class="section-panel hidden">
                     <div class="panel-header">
                         <h1>System Health Diagnostics</h1>

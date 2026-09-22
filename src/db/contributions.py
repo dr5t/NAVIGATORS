@@ -196,7 +196,7 @@ class ContributionRepository:
         if not item:
             raise ValueError(f"Contribution '{contribution_id}' not found.")
 
-        # Validate with formal state machine
+
         allowed, reason, code = ContributionStateMachine.can_transition(
             current_state=item.status,
             target_state=target_state,
@@ -251,7 +251,7 @@ class ContributionRepository:
         if not updated:
             raise RuntimeError(f"State transition to '{target_state}' failed.")
 
-        # Record immutable audit log
+
         try:
             from src.db.audit import AuditRepository
             audit_repo = AuditRepository(self.db_path)
@@ -284,9 +284,9 @@ class ContributionRepository:
 
         return updated
 
-    # -------------------------------------------------------------------------
-    # High-level state transition helpers
-    # -------------------------------------------------------------------------
+
+
+
 
     def submit(self, contribution_id: str, user: Optional[Any] = None) -> Contribution:
         """Author submits draft for moderation review."""
@@ -458,13 +458,13 @@ class ContributionRepository:
             elif st == ContributionState.CHANGES_REQUESTED:
                 changes_requested_count += cnt
 
-        # Real Points Calculation:
-        # +50 points per approved POI addition
-        # +25 points per approved POI update/suggestion
-        # +10 points per pending submission under review
+
+
+
+
         points = (creates_approved * 50) + (updates_approved * 25) + (pending_count * 10)
 
-        # Level Calculation based on points thresholds
+
         if points >= 500:
             level = 4
             level_name = "Master Cartographer"
@@ -478,7 +478,7 @@ class ContributionRepository:
             level = 1
             level_name = "Novice Explorer"
 
-        # Real Badges (unlocked strictly when real thresholds are satisfied)
+
         badges = []
         if approved_count >= 1:
             badges.append({"id": "first_contribution", "name": "First Step", "description": "1 approved map contribution"})

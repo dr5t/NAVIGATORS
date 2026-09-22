@@ -22,9 +22,9 @@ recent_repo = RecentSearchesRepository()
 auth_service = AuthService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class SavePlaceRequest(BaseModel):
     name: str = Field(..., min_length=1)
@@ -54,9 +54,9 @@ def _extract_query_val(val: Any, default: Any = None) -> Any:
     return default if val is None else val
 
 
-# =============================================================================
-# Unified Search Endpoint
-# =============================================================================
+
+
+
 
 @router.get("")
 def execute_search(
@@ -93,9 +93,9 @@ def execute_search(
     return res
 
 
-# =============================================================================
-# Saved Places Endpoints
-# =============================================================================
+
+
+
 
 @router.get("/saved")
 def list_saved_places(
@@ -152,9 +152,9 @@ def delete_saved_place(
     return {"message": "Saved place deleted successfully."}
 
 
-# =============================================================================
-# Recent Search History Endpoints
-# =============================================================================
+
+
+
 
 @router.get("/recent")
 def list_recent_searches(

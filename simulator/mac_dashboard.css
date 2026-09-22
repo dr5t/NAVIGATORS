@@ -295,7 +295,7 @@ th {
 .log-entry.error { color: var(--accent-red); }
 .log-time { color: var(--text-tertiary); margin-right: 8px; }
 
-/* User Profile & RBAC Card */
+
 .user-profile-card {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--line);

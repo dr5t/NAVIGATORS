@@ -1,5 +1,5 @@
-// UI smoke checks over Chrome DevTools Protocol; no npm dependencies.
-// Imported error values below are explicit test fixtures, not navigation accuracy.
+
+
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
@@ -72,7 +72,7 @@ try {
             send('Fetch.fulfillRequest', { requestId: message.params.requestId, responseCode: 200,
                 responseHeaders: [{ name: 'Content-Type', value: osm ? 'application/json' : 'image/png' },
                     { name: 'Access-Control-Allow-Origin', value: '*' }], body }).catch(error => {
-                // Removing the online layer can cancel a tile before its mock response arrives.
+                
                 if (!error.message.includes('Invalid InterceptionId')) exceptions.push(error.message);
             });
         }
@@ -275,7 +275,7 @@ try {
     await click('#btnStartLive');
     console.log('Walking browser flow: GPS initializes immediately; sensor steps move the estimate during outage without loading AI.');
 
-    // Controlled provider responses exercise requests and caching without using public servers.
+    
     await send('Fetch.enable', { patterns: [{ urlPattern: 'https://tile.openstreetmap.org/*' }, { urlPattern: 'https://overpass-api.de/*' }] });
     await evaluate("document.getElementById('mapSource').value = 'online'; window.updateMapSource()");
     await until(() => evaluate('state.map.hasLayer(state.onlineTiles) && !!document.querySelector(".leaflet-tile-loaded")'), 'Online map tiles did not render');

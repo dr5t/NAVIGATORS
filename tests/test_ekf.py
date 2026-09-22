@@ -32,11 +32,11 @@ class TestEKFInitialization:
             velocity=np.array([5.0, 10.0]),
             heading=0.5,
         )
-        assert ekf.x[0] == 100.0  # East
-        assert ekf.x[1] == 200.0  # North
-        assert ekf.x[3] == 5.0    # v_east
-        assert ekf.x[4] == 10.0   # v_north
-        assert ekf.x[8] == 0.5    # yaw
+        assert ekf.x[0] == 100.0
+        assert ekf.x[1] == 200.0
+        assert ekf.x[3] == 5.0
+        assert ekf.x[4] == 10.0
+        assert ekf.x[8] == 0.5
 
 
 class TestEKFPrediction:
@@ -66,14 +66,14 @@ class TestEKFPrediction:
 
     def test_stationary_vehicle_stays_near_origin(self):
         ekf = ExtendedKalmanFilter(dt=0.1)
-        accel = np.array([0.0, 0.0, 9.81])  # Only gravity
+        accel = np.array([0.0, 0.0, 9.81])
         gyro = np.array([0.0, 0.0, 0.0])
 
         for _ in range(10):
             ekf.predict(accel, gyro)
 
         pos = ekf.get_position()
-        # Position should stay close to zero for a stationary vehicle
+
         assert np.linalg.norm(pos[:2]) < 5.0
 
 
@@ -81,13 +81,13 @@ class TestEKFUpdate:
     def test_gnss_update_reduces_uncertainty(self):
         ekf = ExtendedKalmanFilter(dt=0.1)
 
-        # Predict for a while to grow uncertainty
+
         for _ in range(20):
             ekf.predict(np.array([0.0, 0.0, 9.81]), np.zeros(3))
 
         unc_before = ekf.get_position_uncertainty()
 
-        # GNSS update
+
         ekf.update_gnss(np.array([0.0, 0.0, 0.0]))
         unc_after = ekf.get_position_uncertainty()
 
@@ -97,20 +97,20 @@ class TestEKFUpdate:
         ekf = ExtendedKalmanFilter(dt=0.1)
         ekf.initialize_from_gnss(np.array([0.0, 0.0]))
 
-        # Predict away from origin
+
         for _ in range(30):
             ekf.predict(np.array([1.0, 0.0, 9.81]), np.zeros(3))
 
-        # GNSS says we're at (10, 20)
+
         ekf.update_gnss(np.array([10.0, 20.0, 0.0]))
         pos = ekf.get_position()
 
-        # Position should move toward GNSS measurement
-        assert abs(pos[0] - 10.0) < abs(pos[0])  # Closer to 10 than before
+
+        assert abs(pos[0] - 10.0) < abs(pos[0])
 
     def test_zupt_resets_velocity(self):
         ekf = ExtendedKalmanFilter(dt=0.1)
-        ekf.x[3:6] = np.array([5.0, 3.0, 0.1])  # Non-zero velocity
+        ekf.x[3:6] = np.array([5.0, 3.0, 0.1])
 
         ekf.update_zupt(velocity_sigma=0.01)
         vel = ekf.get_velocity()
@@ -147,34 +147,34 @@ class TestNavigationMode:
         ekf.initialize_from_gnss(np.array([0.0, 0.0, 0.0]))
         ekf.set_gnss_denied(timestamp=0.0)
 
-        # Simulate DR drifting 50 meters away
+
         for i in range(100):
             ekf.predict(np.array([1.0, 0.0, 9.81]), np.zeros(3))
 
         dr_pos = ekf.get_position()
-        # True GNSS arrives at (0, 0, 0)
+
         gnss_pos = np.array([0.0, 0.0, 0.0])
 
-        # Apply first reacquisition update
+
         ekf.update_gnss(gnss_pos, timestamp=10.0)
         reacq_pos = ekf.get_position()
 
         step_jump = np.linalg.norm(reacq_pos - dr_pos)
-        # Verify single-step correction is capped / damped and doesn't teleport
+
         assert step_jump <= 10.0, f"Reacquisition caused instant jump of {step_jump:.2f}m > 10m"
         assert ekf.mode == NavigationMode.REACQUISITION
 
     def test_ekf_nhc_constrains_lateral_velocity(self):
         """NHC must suppress lateral velocity during EKF prediction."""
         ekf = ExtendedKalmanFilter(dt=0.1)
-        # Facing North: heading = 0 rad
+
         ekf.initialize_from_gnss(np.array([0.0, 0.0, 0.0]), velocity=np.array([5.0, 10.0, 0.0]), heading=0.0)
 
-        # Predict with NHC applied
+
         for _ in range(10):
             ekf.predict(np.array([0.0, 0.0, 9.81]), np.zeros(3), apply_nhc=True)
 
         vel = ekf.get_velocity()
-        # In North heading, East velocity (index 0) is lateral velocity
+
         assert abs(vel[0]) < 1.0, f"Expected suppressed lateral velocity, got {vel[0]:.2f} m/s"
 

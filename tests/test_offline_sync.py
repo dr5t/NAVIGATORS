@@ -52,10 +52,10 @@ def test_incremental_delta_sync_pull():
         role_id="user",
     )
 
-    # Initial sequence
+
     initial_seq = canonical_repo.get_latest_sequence()
 
-    # Create two places to generate changelog deltas
+
     p1 = place_repo.create_place(
         name=f"Delta Cafe {tag}",
         category="cafe",
@@ -69,7 +69,7 @@ def test_incremental_delta_sync_pull():
         longitude=77.2095,
     )
 
-    # Pull deltas since initial_seq
+
     pull_res = api_sync_pull(
         since_sequence=initial_seq,
         limit=50,
@@ -83,7 +83,7 @@ def test_incremental_delta_sync_pull():
     assert p1.id in resource_ids
     assert p2.id in resource_ids
 
-    # Sequence numbers must be strictly increasing
+
     sequences = [c["sequence_id"] for c in changes]
     assert sequences == sorted(sequences)
 
@@ -137,7 +137,7 @@ def test_offline_device_push_and_idempotency():
         items=items,
     )
 
-    # 1. First push
+
     push_res = api_sync_push(body=req, context=user_session)
     assert push_res["total_items"] == 2
     assert push_res["synced_count"] == 2
@@ -151,14 +151,14 @@ def test_offline_device_push_and_idempotency():
     assert receipts[1]["client_id"] == client_uuid_2
     assert receipts[1]["status"] == "synced"
 
-    # 2. Duplicate push (idempotency verification)
+
     dup_res = api_sync_push(body=req, context=user_session)
     assert dup_res["synced_count"] == 2
     dup_receipts = dup_res["receipts"]
     assert "Idempotent duplicate" in dup_receipts[0]["message"]
     assert dup_receipts[0]["server_resource_id"] == receipts[0]["server_resource_id"]
 
-    # 3. Check device queue endpoint
+
     queue_res = api_get_device_queue(device_id=device_id, limit=50, context=user_session)
     assert queue_res["count"] == 2
 
@@ -181,7 +181,7 @@ def test_version_conflict_detection_on_stale_edit(tmp_path, monkeypatch):
         role_id="user",
     )
 
-    # 1. Place created at version 1
+
     place = place_repo.create_place(
         name=f"Conflict Bakery {tag}",
         category="bakery",
@@ -190,7 +190,7 @@ def test_version_conflict_detection_on_stale_edit(tmp_path, monkeypatch):
     )
     assert place.version == 1
 
-    # 2. Staff updates place to version 2
+
     updated_place = place_repo.update_place(
         place_id=place.id,
         phone="+91-11-98765432",
@@ -198,7 +198,7 @@ def test_version_conflict_detection_on_stale_edit(tmp_path, monkeypatch):
     )
     assert updated_place.version == 2
 
-    # 3. Offline device attempts suggest_edit with stale base_version=1
+
     client_uuid = f"sync_stale_{tag}"
     stale_item = SyncItemModel(
         client_id=client_uuid,
@@ -209,7 +209,7 @@ def test_version_conflict_detection_on_stale_edit(tmp_path, monkeypatch):
             "name": f"Conflict Bakery {tag}",
             "phone": "+91-11-00000000",
         },
-        base_version=1,  # Stale! Canonical is now 2
+        base_version=1,
     )
 
     req = PushSyncRequest(
@@ -238,7 +238,7 @@ def test_network_status_independence_and_navigation_integrity():
     dr_engine.start(position=np.array([0.0, 0.0]), heading=0.0, speed=5.0)
     ekf = ExtendedKalmanFilter()
 
-    # Step 1: Online state - sensor updates processed
+
     is_network_online = True
     pos1 = dr_engine.update(ai_speed=5.0, gyro_yaw_rate=0.01)
     assert pos1 is not None
@@ -249,10 +249,10 @@ def test_network_status_independence_and_navigation_integrity():
     )
     assert ekf.x is not None
 
-    # Step 2: Network goes OFFLINE
+
     is_network_online = False
 
-    # Sensor loop MUST continue computing uninterrupted
+
     for _ in range(25):
         dr_pos = dr_engine.update(ai_speed=5.5, gyro_yaw_rate=0.01)
         ekf.predict(
@@ -262,7 +262,7 @@ def test_network_status_independence_and_navigation_integrity():
         assert dr_engine.speed > 0.0
         assert ekf.x is not None
 
-    # Step 3: Offline edits queued in device queue
+
     offline_queue = []
     offline_queue.append({
         "client_id": "offline_edit_1",
@@ -271,9 +271,9 @@ def test_network_status_independence_and_navigation_integrity():
     })
     assert len(offline_queue) == 1
 
-    # Step 4: Network restored to ONLINE
+
     is_network_online = True
 
-    # Sync engine triggers without restarting or disturbing navigation state
+
     assert dr_engine.speed > 0.0
     assert ekf.x is not None

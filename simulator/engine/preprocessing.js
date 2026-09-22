@@ -1,4 +1,4 @@
-/** Matches evaluation/preprocessing.py after calibration. Input: aligned gravity-included IMU. */
+
 class CausalIMUFilter {
     constructor(removeGravity = true) {
         this.history = [];

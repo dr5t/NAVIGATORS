@@ -92,9 +92,9 @@ def auth_setup(temp_db):
     }
 
 
-# =============================================================================
-# Unit Tests: ModelRegistryRepository State Machine & Operations
-# =============================================================================
+
+
+
 
 def test_seed_production_model(repo):
     """Verify idempotent seeding of the verified production baseline model."""
@@ -104,7 +104,7 @@ def test_seed_production_model(repo):
     assert prod.name == "TCN v1.0 - Verified Production (4.2039 m/s)"
     assert prod.test_mae == 4.2039
 
-    # Second call should be idempotent and return identical entry
+
     prod2 = repo.seed_production_model()
     assert prod2.id == prod.id
 
@@ -124,12 +124,12 @@ def test_register_candidate(repo, test_users):
 
 def test_state_machine_happy_path(repo, test_users, tmp_path):
     """Verify full state machine progression: candidate_training -> evaluating -> review -> approved/production_candidate -> production."""
-    # 1. Register candidate
+
     cand = repo.register_candidate(name="TCN Candidate Happy", registered_by="usr_admin")
     model_id = cand.id
     assert cand.status == "candidate_training"
 
-    # 2. Record evaluation
+
     metrics = {
         "candidate_test_mae": 3.85,
         "candidate_test_rmse": 5.21,
@@ -145,16 +145,16 @@ def test_state_machine_happy_path(repo, test_users, tmp_path):
     assert eval_entry.status == "evaluating"
     assert eval_entry.test_mae == 3.85
 
-    # 3. Open for review
+
     rev_entry = repo.open_for_review(model_id, reviewer_id="usr_admin")
     assert rev_entry.status == "review"
     assert rev_entry.reviewed_by == "usr_admin"
 
-    # 4. Approve model (moves to production_candidate)
+
     appr_entry = repo.approve_model(model_id, reviewer_id="usr_admin", notes="Looks great!")
     assert appr_entry.status == "production_candidate"
 
-    # 5. Deploy model
+
     pt_file = tmp_path / "best_model.pt"
     onnx_file = tmp_path / "model.onnx"
     stats_file = tmp_path / "norm_stats.json"
@@ -162,14 +162,14 @@ def test_state_machine_happy_path(repo, test_users, tmp_path):
     onnx_file.write_text("dummy_onnx_content")
     stats_file.write_text("{}")
 
-    # Set checkpoint paths in DB
+
     with get_db(repo.db_path) as conn:
         conn.execute(
             "UPDATE model_registry SET checkpoint_path=?, onnx_path=?, norm_stats_path=? WHERE id=?",
             (str(pt_file), str(onnx_file), str(stats_file), model_id)
         )
 
-    # Destination paths for testing deploy
+
     dest_pt = tmp_path / "prod" / "best_model.pt"
     dest_onnx = tmp_path / "prod" / "model.onnx"
     dest_stats = tmp_path / "prod" / "norm_stats.json"
@@ -193,14 +193,14 @@ def test_illegal_state_transitions(repo, test_users):
     cand = repo.register_candidate(name="TCN Candidate Invalid")
     model_id = cand.id
 
-    # Trying to jump candidate_training -> approved should fail
+
     with pytest.raises(ValueError, match="Invalid state transition"):
         repo.approve_model(model_id, reviewer_id="usr_admin")
 
-    # Move to evaluating
+
     repo.record_evaluation(model_id, {"candidate_test_mae": 4.0})
 
-    # Trying to jump evaluating -> production should fail
+
     with pytest.raises(ValueError, match="Invalid state transition"):
         repo.deploy(model_id, deployer_id="usr_admin")
 
@@ -212,23 +212,23 @@ def test_rejection_flow(repo, test_users):
     repo.record_evaluation(model_id, {"candidate_test_mae": 15.0})
     repo.open_for_review(model_id, reviewer_id="usr_admin")
 
-    # Empty rejection reason must fail
+
     with pytest.raises(ValueError, match="Rejection reason cannot be empty"):
         repo.reject_model(model_id, reviewer_id="usr_admin", reason="   ")
 
-    # Valid rejection
+
     rej_entry = repo.reject_model(model_id, reviewer_id="usr_admin", reason="High MAE degradation")
     assert rej_entry.status == "rejected"
     assert rej_entry.rejection_reason == "High MAE degradation"
 
-    # Terminal state check: cannot transition from rejected
+
     with pytest.raises(ValueError, match="terminal state"):
         repo.open_for_review(model_id, reviewer_id="usr_admin")
 
 
-# =============================================================================
-# API Endpoint Function Tests
-# =============================================================================
+
+
+
 
 def test_api_list_and_get_models(temp_db, monkeypatch):
     """Test API list and get functions with default DB path."""
@@ -256,32 +256,32 @@ def test_api_rbac_governance(temp_db, auth_setup, monkeypatch):
     admin_ctx = auth_setup["admin_ctx"]
     user_ctx = auth_setup["user_ctx"]
 
-    # Register candidate
+
     cand = repo.register_candidate(name="TCN API Test Candidate")
     model_id = cand.id
     repo.record_evaluation(model_id, {"candidate_test_mae": 3.9})
 
-    # 1. Open review as unauthenticated (401)
+
     with pytest.raises(HTTPException) as exc_info:
         api_open_model_review(model_id, context=None)
     assert exc_info.value.status_code == 401
 
-    # Open review as regular user (403)
+
     with pytest.raises(HTTPException) as exc_info:
         api_open_model_review(model_id, context=user_ctx)
     assert exc_info.value.status_code == 403
 
-    # Open review as team_admin (200 OK)
+
     res_open = api_open_model_review(model_id, context=admin_ctx)
     assert res_open["status"] == "success"
     assert res_open["model"]["status"] == "review"
 
-    # 2. Approve as regular user (403)
+
     with pytest.raises(HTTPException) as exc_info:
         api_approve_model(model_id, body=ApproveModelRequest(notes="fine"), context=user_ctx)
     assert exc_info.value.status_code == 403
 
-    # Approve as team_admin (200 OK -> production_candidate)
+
     res_appr = api_approve_model(model_id, body=ApproveModelRequest(notes="Approved by admin"), context=admin_ctx)
     assert res_appr["status"] == "success"
     assert res_appr["model"]["status"] == "production_candidate"

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Generator
 from contextlib import contextmanager
 
-# Default database location within the project repository
+
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "navigators.db"
 SCHEMA_SQL_PATH = Path(__file__).resolve().parent / "schema.sql"
 
@@ -61,7 +61,7 @@ def init_db(db_path: str | Path | None = None) -> None:
         schema_sql = f.read()
 
     with get_db(db_path) as conn:
-        # Migrate existing contributions table if check constraints or columns are outdated
+
         table_check = conn.execute(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name='contributions'"
         ).fetchone()

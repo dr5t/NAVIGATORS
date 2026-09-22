@@ -16,15 +16,15 @@ def test_routing_engine_compute_route():
     """Verify RoutingEngine calculates recommended, alternative, and offline routes."""
     engine = RoutingEngine()
 
-    origin = (28.6139, 77.2090)       # New Delhi
-    destination = (28.7041, 77.1025)  # North Delhi
+    origin = (28.6139, 77.2090)
+    destination = (28.7041, 77.1025)
 
     res = engine.compute_route(origin, destination, is_offline=False)
 
     assert res["status"] == "success"
     assert res["is_offline"] is False
 
-    # Recommended Route
+
     rec = res["recommended"]
     assert rec is not None
     assert rec["type"] == "recommended"
@@ -32,13 +32,13 @@ def test_routing_engine_compute_route():
     assert len(rec["waypoints"]) >= 2
     assert len(rec["steps"]) >= 1
 
-    # Alternative Route
+
     alt = res["alternative"]
     assert alt is not None
     assert alt["type"] == "alternative"
     assert alt["total_distance_meters"] > rec["total_distance_meters"]
 
-    # Offline Route
+
     off = res["offline"]
     assert off is not None
     assert off["type"] == "offline"
@@ -47,7 +47,7 @@ def test_routing_engine_compute_route():
 def test_routing_engine_offline_mode():
     """In offline mode, alternative online options are omitted."""
     engine = RoutingEngine()
-    origin = (30.3165, 78.0322)       # Dehradun
+    origin = (30.3165, 78.0322)
     destination = (30.3250, 78.0410)
 
     res = engine.compute_route(origin, destination, is_offline=True)

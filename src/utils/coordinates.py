@@ -11,11 +11,11 @@ import numpy as np
 from typing import Tuple
 
 
-# --- WGS84 Ellipsoid Constants ---
-WGS84_A = 6378137.0               # Semi-major axis (meters)
-WGS84_F = 1.0 / 298.257223563     # Flattening
-WGS84_B = WGS84_A * (1 - WGS84_F) # Semi-minor axis
-WGS84_E2 = 2 * WGS84_F - WGS84_F ** 2  # First eccentricity squared
+
+WGS84_A = 6378137.0
+WGS84_F = 1.0 / 298.257223563
+WGS84_B = WGS84_A * (1 - WGS84_F)
+WGS84_E2 = 2 * WGS84_F - WGS84_F ** 2
 
 
 def deg2rad(deg: float) -> float:
@@ -78,10 +78,10 @@ def ecef_to_lla(x: float, y: float, z: float) -> Tuple[float, float, float]:
     lon = np.arctan2(y, x)
     p = np.sqrt(x ** 2 + y ** 2)
 
-    # Initial estimate
+
     lat = np.arctan2(z, p * (1 - WGS84_E2))
 
-    for _ in range(10):  # Converges in ~3 iterations
+    for _ in range(10):
         N = _prime_vertical_radius(lat)
         lat_new = np.arctan2(z + WGS84_E2 * N * np.sin(lat), p)
         if abs(lat_new - lat) < 1e-12:
@@ -108,12 +108,12 @@ def lla_to_enu(
     Returns:
         np.ndarray: [East, North, Up] in meters relative to reference.
     """
-    # Convert both to ECEF
+
     target_ecef = lla_to_ecef(lat, lon, alt)
     ref_ecef = lla_to_ecef(ref_lat, ref_lon, ref_alt)
     delta = target_ecef - ref_ecef
 
-    # Rotation matrix from ECEF to ENU
+
     ref_lat_r = deg2rad(ref_lat)
     ref_lon_r = deg2rad(ref_lon)
 
@@ -153,7 +153,7 @@ def enu_to_lla(
     sin_lon = np.sin(ref_lon_r)
     cos_lon = np.cos(ref_lon_r)
 
-    # Inverse rotation (transpose of ENU→ECEF rotation)
+
     R_inv = np.array([
         [-sin_lon, -sin_lat * cos_lon,  cos_lat * cos_lon],
         [ cos_lon, -sin_lat * sin_lon,  cos_lat * sin_lon],

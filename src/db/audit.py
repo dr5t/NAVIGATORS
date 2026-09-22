@@ -86,7 +86,7 @@ class AuditRepository:
         meta_str = json.dumps(metadata or {})
 
         with get_db(self.db_path) as conn:
-            # Check if actor_id exists in users table to respect FK constraint safely
+
             valid_actor_id = None
             if actor_id:
                 cur = conn.execute("SELECT id FROM users WHERE id = ?", (actor_id,))

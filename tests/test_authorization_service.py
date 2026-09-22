@@ -51,16 +51,16 @@ def authz_service(temp_db: Path, rbac_repo: RBACRepository):
     return AuthorizationService(temp_db, rbac_repo)
 
 
-# =============================================================================
-# 1. Authentication Stage
-# =============================================================================
+
+
+
 
 def test_unauthenticated_and_guest_capabilities(authz_service: AuthorizationService):
     """
     Guests (unauthenticated visitors) can read places,
     but cannot create places or submit contributions.
     """
-    # None user (anonymous)
+
     res_read = authz_service.can(user=None, action="place:read")
     assert res_read.allowed is True
     assert res_read.code == "AUTHORIZED"
@@ -69,7 +69,7 @@ def test_unauthenticated_and_guest_capabilities(authz_service: AuthorizationServ
     assert res_create.allowed is False
     assert res_create.code == "UNAUTHENTICATED"
 
-    # Guest dict representation
+
     guest_dict = {"is_guest": True, "status": "active", "permissions": ["place:read"]}
     res_contrib = authz_service.can(user=guest_dict, action="contribution:create")
     assert res_contrib.allowed is False
@@ -87,7 +87,7 @@ def test_inactive_account_rejection(
         password="ValidPassword123!",
         name="Inactive Account",
     )
-    # Suspend user
+
     rbac_repo.update_user(user.id, status="suspended")
     suspended_user = rbac_repo.get_user(user.id)
 
@@ -96,9 +96,9 @@ def test_inactive_account_rejection(
     assert res.code == "ACCOUNT_INACTIVE"
 
 
-# =============================================================================
-# 2. Role & Permission Stage
-# =============================================================================
+
+
+
 
 def test_permission_enforcement(
     auth_service: AuthService,
@@ -112,11 +112,11 @@ def test_permission_enforcement(
         name="Standard User",
     )
 
-    # Standard registered user has place:read and contribution:create
+
     assert authz_service.can(user=session, action="place:read").allowed is True
     assert authz_service.can(user=session, action="contribution:create").allowed is True
 
-    # Standard registered user lacks model:deploy or contribution:approve
+
     res_deploy = authz_service.can(user=session, action="model:deploy")
     assert res_deploy.allowed is False
     assert res_deploy.code == "PERMISSION_DENIED"
@@ -125,19 +125,19 @@ def test_permission_enforcement(
     assert res_approve.allowed is False
     assert res_approve.code == "PERMISSION_DENIED"
 
-    # Elevate user to moderator in database
+
     rbac_repo.assign_role_to_user(user.id, "moderator")
     user_mod = rbac_repo.get_user(user.id)
 
-    # Now authorized to approve contributions
+
     res_mod = authz_service.can(user=user_mod, action="contribution:approve")
     assert res_mod.allowed is True
     assert res_mod.code == "AUTHORIZED"
 
 
-# =============================================================================
-# 3. Ownership Stage
-# =============================================================================
+
+
+
 
 def test_ownership_enforcement_for_contributions(
     auth_service: AuthService,
@@ -159,7 +159,7 @@ def test_ownership_enforcement_for_contributions(
         name="Author Bob",
     )
 
-    # Contribution created by Alice
+
     contribution_a = {
         "id": "contrib_101",
         "user_id": user_a.id,
@@ -167,7 +167,7 @@ def test_ownership_enforcement_for_contributions(
         "status": "pending",
     }
 
-    # Alice withdrawing her own contribution -> Allowed
+
     res_alice_withdraw = authz_service.can(
         user=session_a,
         action="contribution:withdraw",
@@ -176,7 +176,7 @@ def test_ownership_enforcement_for_contributions(
     assert res_alice_withdraw.allowed is True
     assert res_alice_withdraw.code == "AUTHORIZED"
 
-    # Bob attempting to withdraw Alice's contribution -> Denied (NOT_OWNER)
+
     res_bob_withdraw = authz_service.can(
         user=session_b,
         action="contribution:withdraw",
@@ -185,7 +185,7 @@ def test_ownership_enforcement_for_contributions(
     assert res_bob_withdraw.allowed is False
     assert res_bob_withdraw.code == "NOT_OWNER"
 
-    # Bob attempting to update Alice's contribution -> Denied (NOT_OWNER)
+
     res_bob_update = authz_service.can(
         user=session_b,
         action="contribution:update",
@@ -219,7 +219,7 @@ def test_moderation_override_does_not_require_ownership(
         "status": "pending",
     }
 
-    # Moderator approving Alice's submission -> Allowed
+
     res_approve = authz_service.can(
         user=session_mod,
         action="contribution:approve",
@@ -229,9 +229,9 @@ def test_moderation_override_does_not_require_ownership(
     assert res_approve.code == "AUTHORIZED"
 
 
-# =============================================================================
-# 4. Resource State Stage
-# =============================================================================
+
+
+
 
 def test_contribution_lifecycle_state_constraints(
     auth_service: AuthService,
@@ -247,12 +247,12 @@ def test_contribution_lifecycle_state_constraints(
         name="Contributor Dave",
     )
 
-    # 1. Pending state: allowed
+
     pending_contrib = {"id": "c_pending", "user_id": author.id, "status": "pending"}
     assert authz_service.can(user=session_author, action="contribution:update", resource=pending_contrib).allowed is True
     assert authz_service.can(user=session_author, action="contribution:withdraw", resource=pending_contrib).allowed is True
 
-    # 2. Approved state: blocked from update or withdraw
+
     approved_contrib = {"id": "c_approved", "user_id": author.id, "status": "approved"}
     res_edit_approved = authz_service.can(user=session_author, action="contribution:update", resource=approved_contrib)
     assert res_edit_approved.allowed is False
@@ -262,7 +262,7 @@ def test_contribution_lifecycle_state_constraints(
     assert res_withdraw_approved.allowed is False
     assert res_withdraw_approved.code == "INVALID_RESOURCE_STATE"
 
-    # 3. Rejected state: blocked from update or withdraw
+
     rejected_contrib = {"id": "c_rejected", "user_id": author.id, "status": "rejected"}
     res_edit_rejected = authz_service.can(user=session_author, action="contribution:update", resource=rejected_contrib)
     assert res_edit_rejected.allowed is False
@@ -313,9 +313,9 @@ def test_dataset_mutation_state_constraints(
     assert res.code == "INVALID_RESOURCE_STATE"
 
 
-# =============================================================================
-# 5. FastAPI Endpoints & Dependencies
-# =============================================================================
+
+
+
 
 def test_api_authorize_endpoint(monkeypatch, temp_db: Path, auth_service: AuthService):
     """Test POST /api/v1/auth/authorize endpoint with session token."""
@@ -324,7 +324,7 @@ def test_api_authorize_endpoint(monkeypatch, temp_db: Path, auth_service: AuthSe
     monkeypatch.setattr(api_mod, "auth_service", auth_service)
     monkeypatch.setattr(api_mod, "authz_service", test_authz)
 
-    # 1. Guest inquiry
+
     resp_guest = api_authorize_action(
         req=AuthorizeRequest(action="place:read"),
         authorization=None,
@@ -332,7 +332,7 @@ def test_api_authorize_endpoint(monkeypatch, temp_db: Path, auth_service: AuthSe
     assert resp_guest["allowed"] is True
     assert resp_guest["code"] == "AUTHORIZED"
 
-    # 2. Registered user inquiry
+
     user, _, token = auth_service.register(
         email="query_user@navigators.dev",
         password="QueryPass123!",
@@ -350,7 +350,7 @@ def test_api_authorize_endpoint(monkeypatch, temp_db: Path, auth_service: AuthSe
     assert resp_auth["allowed"] is True
     assert resp_auth["code"] == "AUTHORIZED"
 
-    # 3. Not owner inquiry via API
+
     resp_not_owner = api_authorize_action(
         req=AuthorizeRequest(
             action="contribution:update",
@@ -375,11 +375,11 @@ def test_fastapi_require_authz_dependency(monkeypatch, temp_db: Path, auth_servi
         name="Dep User",
     )
 
-    # Authorized dependency
+
     checker = require_authz("place:read")
     assert checker(session) is session
 
-    # Unauthorized dependency (missing permission)
+
     deploy_checker = require_authz("model:deploy")
     with pytest.raises(HTTPException) as exc_info:
         deploy_checker(session)

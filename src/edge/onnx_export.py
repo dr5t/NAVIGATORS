@@ -53,10 +53,10 @@ def export_to_onnx(
     model.eval()
     device = next(model.parameters()).device
 
-    # Create dummy input
+
     dummy_input = torch.randn(batch_size, window_size, input_channels).to(device)
 
-    # Export
+
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
     torch.onnx.export(
@@ -78,14 +78,14 @@ def export_to_onnx(
 
     import onnx
     import onnx.checker
-    # Validate
+
     onnx_model = onnx.load(output_path)
     onnx.checker.check_model(onnx_model)
     print("[ONNX] Model validation passed ✓")
 
-    # Optimize
+
     if optimize:
-        from onnx import optimizer  # type: ignore
+        from onnx import optimizer
         try:
             passes = ["eliminate_identity", "fuse_bn_into_conv", "fuse_consecutive_transposes"]
             optimized = optimizer.optimize(onnx_model, passes)
@@ -94,7 +94,7 @@ def export_to_onnx(
         except Exception:
             print("[ONNX] Optimization skipped (optional passes unavailable)")
 
-    # Report size
+
     file_size = os.path.getsize(output_path)
     print(f"[ONNX] Model size: {file_size / 1024:.1f} KB")
 
@@ -126,20 +126,20 @@ def verify_onnx_model(
 
     pytorch_model.eval()
 
-    # Generate test input
+
     test_input = np.random.randn(1, window_size, input_channels).astype(np.float32)
 
-    # PyTorch inference
+
     with torch.no_grad():
         pt_input = torch.from_numpy(test_input)
         pt_output = pytorch_model(pt_input).numpy()
 
     import onnxruntime as ort
-    # ONNX Runtime inference
+
     session = ort.InferenceSession(onnx_path)
     ort_output = session.run(None, {"imu_window": test_input})[0]
 
-    # Compare
+
     max_diff = np.max(np.abs(pt_output - ort_output))
     match = max_diff < tolerance
 
@@ -186,8 +186,8 @@ class ONNXInferenceEngine:
             (2,) predicted velocity [v_north, v_east].
         """
         if imu_window.ndim == 2:
-            imu_window = imu_window[np.newaxis, ...]  # Add batch dim
+            imu_window = imu_window[np.newaxis, ...]
 
         imu_window = imu_window.astype(np.float32)
-        result = self.session.run(None, {self.input_name: imu_window})  # type: ignore
-        return result[0][0]  # type: ignore
+        result = self.session.run(None, {self.input_name: imu_window})
+        return result[0][0]

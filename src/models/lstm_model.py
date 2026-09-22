@@ -39,15 +39,15 @@ class TemporalAttention(nn.Module):
                 - context: (batch, hidden_size) weighted sum of hidden states
                 - weights: (batch, seq_len) attention weights
         """
-        # Compute attention scores
-        scores = self.attention_weights(lstm_output).squeeze(-1)  # (batch, seq_len)
-        weights = F.softmax(scores, dim=1)  # (batch, seq_len)
 
-        # Weighted sum of hidden states
+        scores = self.attention_weights(lstm_output).squeeze(-1)
+        weights = F.softmax(scores, dim=1)
+
+
         context = torch.bmm(
-            weights.unsqueeze(1),  # (batch, 1, seq_len)
-            lstm_output             # (batch, seq_len, hidden_size)
-        ).squeeze(1)              # (batch, hidden_size)
+            weights.unsqueeze(1),
+            lstm_output
+        ).squeeze(1)
 
         return context, weights
 
@@ -92,17 +92,17 @@ class LSTMVelocityEstimator(nn.Module):
         self.use_attention = use_attention
         self.num_directions = 2 if bidirectional else 1
 
-        # Input normalization
+
         self.input_norm = nn.LayerNorm(input_channels)
 
-        # Input projection (optional - helps with very noisy IMU data)
+
         self.input_proj = nn.Sequential(
             nn.Linear(input_channels, hidden_size // 2),
             nn.ReLU(),
             nn.Dropout(dropout * 0.5),
         )
 
-        # LSTM
+
         self.lstm = nn.LSTM(
             input_size=hidden_size // 2,
             hidden_size=hidden_size,
@@ -114,11 +114,11 @@ class LSTMVelocityEstimator(nn.Module):
 
         lstm_output_size = hidden_size * self.num_directions
 
-        # Attention
+
         if use_attention:
             self.attention = TemporalAttention(lstm_output_size)
 
-        # Regression head
+
         self.head = nn.Sequential(
             nn.Linear(lstm_output_size, hidden_size),
             nn.ReLU(),
@@ -140,7 +140,7 @@ class LSTMVelocityEstimator(nn.Module):
                 nn.init.orthogonal_(param)
             elif 'bias' in name:
                 nn.init.zeros_(param)
-                # Set forget gate bias to 1 (helps with learning long sequences)
+
                 n = param.size(0)
                 param.data[n // 4:n // 2].fill_(1.0)
 
@@ -166,31 +166,31 @@ class LSTMVelocityEstimator(nn.Module):
         """
         batch_size = x.size(0)
 
-        # Input normalization
+
         x = self.input_norm(x)
 
-        # Input projection
-        x = self.input_proj(x)  # (batch, seq_len, hidden//2)
 
-        # LSTM
+        x = self.input_proj(x)
+
+
         lstm_out, (h_n, c_n) = self.lstm(x)
-        # lstm_out: (batch, seq_len, hidden * num_directions)
 
-        # Aggregate sequence
+
+
         if self.use_attention:
             context, attn_weights = self.attention(lstm_out)
         else:
-            # Use last hidden state (concatenated forward and backward)
+
             if self.bidirectional:
-                # h_n shape: (num_layers * num_directions, batch, hidden)
-                h_forward = h_n[-2]  # Last layer, forward
-                h_backward = h_n[-1]  # Last layer, backward
+
+                h_forward = h_n[-2]
+                h_backward = h_n[-1]
                 context = torch.cat([h_forward, h_backward], dim=1)
             else:
                 context = h_n[-1]
             attn_weights = None
 
-        # Regression
+
         output = self.head(context)
 
         if return_attention and attn_weights is not None:

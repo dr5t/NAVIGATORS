@@ -1,8 +1,8 @@
-/**
- * Navigators IDR - Local Offline OpenStreetMap & POI Database
- * Manages downloaded OSM street vector networks and community points of interest.
- * Handles equirectangular coordinate transforms, spatial bounds, and map layer rendering.
- */
+
+
+
+
+
 
 class LocalMap {
     static async load() {
@@ -23,7 +23,7 @@ class LocalMap {
         const timeout = setTimeout(() => controller.abort(), 35000);
 
         try {
-            // Query both street ways and amenity / POI nodes
+            
             const query = `[out:json][timeout:25];(way["highway"]["area"!="yes"](${bounds.join(',')});node["amenity"~"fuel|hospital|pharmacy|atm|parking|restaurant|cafe"](${bounds.join(',')});node["charging_station"](${bounds.join(',')}););out geom;`;
             const response = await fetch('https://overpass-api.de/api/interpreter', {
                 method: 'POST',
@@ -84,10 +84,10 @@ class LocalMap {
         this.data = data;
         this.data.pois = Array.isArray(data.pois) ? data.pois : [];
 
-        // Synchronize approved community contributions into the local POI database
+        
         this.syncApprovedCommunityPlaces();
 
-        // Equirectangular projection constants
+        
         this.metersPerDegree = 6371000 * Math.PI / 180;
         this.lonScale = this.metersPerDegree * Math.cos(data.origin.lat * Math.PI / 180);
         this.bounds = [Infinity, Infinity, -Infinity, -Infinity];
@@ -117,7 +117,7 @@ class LocalMap {
             for (const item of approved) {
                 const parts = item.location.split(',').map(s => parseFloat(s.trim()));
                 if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                    // Check if already in pois
+                    
                     if (!this.data.pois.some(p => p.id === item.id)) {
                         this.data.pois.push({
                             id: item.id,
@@ -187,7 +187,7 @@ class LocalMap {
     draw(map) {
         if (!this.data || !this.data.roads || !map) return;
 
-        // 1. Render road vector geometries
+        
         const renderer = L.canvas({ padding: 0.5 });
         const roadLayers = this.data.roads.map(road => {
             const line = L.polyline(road.points.map(p => this.toLatLon(p)), {
@@ -205,7 +205,7 @@ class LocalMap {
         if (this.layer) map.removeLayer(this.layer);
         this.layer = L.featureGroup(roadLayers).addTo(map).bringToBack();
 
-        // 2. Render POI markers
+        
         if (this.poiLayer) map.removeLayer(this.poiLayer);
         const poiMarkers = (this.data.pois || []).map(poi => {
             const iconHtml = `<div class="poi-pin-inner poi-${poi.category}"></div>`;

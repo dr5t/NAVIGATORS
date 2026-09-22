@@ -1,22 +1,22 @@
-/**
- * Navigators IDR - Extended Kalman Filter (JavaScript Edge Port)
- * 15-state EKF for vehicle navigation with GNSS, INS, AI-velocity, NHC, and ZUPT fusion.
- */
+
+
+
+
 
 class ExtendedKalmanFilter {
     constructor(dt = 0.1) {
         this.dt = dt;
         this.STATE_DIM = 15;
 
-        // State vector (15x1)
-        // [0:3] Position (E, N, U)
-        // [3:6] Velocity (vE, vN, vU)
-        // [6:9] Orientation (roll, pitch, yaw)
-        // [9:12] Accel Bias
-        // [12:15] Gyro Bias
+        
+        
+        
+        
+        
+        
         this.x = Matrix.zeros(this.STATE_DIM, 1);
 
-        // Covariance Matrix (15x15)
+        
         this.P = Matrix.eye(this.STATE_DIM);
         for(let i=0; i<3; i++) this.P[i][i] = 10.0;
         for(let i=3; i<6; i++) this.P[i][i] = 5.0;
@@ -24,14 +24,14 @@ class ExtendedKalmanFilter {
         for(let i=9; i<12; i++) this.P[i][i] = 0.5;
         for(let i=12; i<15; i++) this.P[i][i] = 0.01;
 
-        // Process Noise parameters
+        
         this.q_pos = 0.5;
         this.q_vel = 2.0;
         this.q_ori = 0.05;
         this.q_abias = 0.001;
         this.q_gbias = 0.0001;
 
-        // Measurement Noise parameters
+        
         this.r_gnss_pos = 2.5;
         this.r_gnss_vel = 0.5;
         this.r_ai_vel = 0.3;
@@ -79,7 +79,7 @@ class ExtendedKalmanFilter {
     predict(accel_body, gyro_body, ai_velocity = null, apply_nhc = true) {
         let roll = this.x[6][0], pitch = this.x[7][0], yaw = this.x[8][0];
         
-        // Corrected IMU
+        
         let ax = accel_body[0] - this.x[9][0];
         let ay = accel_body[1] - this.x[10][0];
         let az = accel_body[2] - this.x[11][0];
@@ -90,14 +90,14 @@ class ExtendedKalmanFilter {
 
         let R_b2n = this._rotationMatrix(roll, pitch, yaw);
         
-        // Navigation frame specific force
+        
         let an_x = R_b2n[0][0]*ax + R_b2n[0][1]*ay + R_b2n[0][2]*az;
         let an_y = R_b2n[1][0]*ax + R_b2n[1][1]*ay + R_b2n[1][2]*az;
-        let an_z = (R_b2n[2][0]*ax + R_b2n[2][1]*ay + R_b2n[2][2]*az) + 9.81; // Gravity removal in ENU Z=Up is -9.81 for gravity, so we add 9.81? Wait, in python: accel_nav = R_b2n @ accel_corrected - [0,0,-9.81] which means +9.81.
+        let an_z = (R_b2n[2][0]*ax + R_b2n[2][1]*ay + R_b2n[2][2]*az) + 9.81; 
         
         let accel_nav = [an_x, an_y, an_z];
 
-        // State update
+        
         this.x[0][0] += this.x[3][0]*this.dt + 0.5*accel_nav[0]*(this.dt*this.dt);
         this.x[1][0] += this.x[4][0]*this.dt + 0.5*accel_nav[1]*(this.dt*this.dt);
         this.x[2][0] += this.x[5][0]*this.dt + 0.5*accel_nav[2]*(this.dt*this.dt);
@@ -110,12 +110,12 @@ class ExtendedKalmanFilter {
         this.x[7][0] += gy*this.dt;
         this.x[8][0] += gz*this.dt;
         
-        // Normalize yaw
+        
         this.x[8][0] = (this.x[8][0] + Math.PI) % (2.0 * Math.PI);
         if (this.x[8][0] < 0) this.x[8][0] += 2*Math.PI;
         this.x[8][0] -= Math.PI;
 
-        // Jacobian F
+        
         let F = Matrix.eye(this.STATE_DIM);
         for(let i=0; i<3; i++) F[i][i+3] = this.dt;
 
@@ -217,7 +217,7 @@ class ExtendedKalmanFilter {
 
         this.x = Matrix.add(this.x, Matrix.mul(K, y));
         
-        // Normalize heading state
+        
         this.x[8][0] = (this.x[8][0] + Math.PI) % (2.0*Math.PI);
         if (this.x[8][0] < 0) this.x[8][0] += 2*Math.PI;
         this.x[8][0] -= Math.PI;
@@ -410,7 +410,7 @@ class ExtendedKalmanFilter {
     }
 }
 
-// Export
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ExtendedKalmanFilter;
 } else {

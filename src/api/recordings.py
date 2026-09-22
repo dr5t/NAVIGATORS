@@ -98,7 +98,7 @@ async def receive(trip_id: UUID, sequence: int, request: Request):
             raise ValueError()
         res = await run_in_threadpool(store_chunk, trip_id, sequence, payload)
         
-        # Broadcast sync event
+
         if res.get("complete"):
             import asyncio
             from .server import ws_manager

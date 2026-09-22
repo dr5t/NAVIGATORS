@@ -36,11 +36,11 @@ class ZUPTDetector:
         self.gravity = gravity
         self.min_stationary_samples = min_stationary_samples
 
-        # Buffers
+
         self.accel_buffer = deque(maxlen=detection_window)
         self.gyro_buffer = deque(maxlen=detection_window)
 
-        # State
+
         self.is_stationary = False
         self.consecutive_stationary = 0
         self.stationary_duration = 0.0
@@ -66,24 +66,24 @@ class ZUPTDetector:
         accel_array = np.array(list(self.accel_buffer))
         gyro_array = np.array(list(self.gyro_buffer))
 
-        # 1. Variance of accelerometer magnitude
+
         accel_magnitudes = np.linalg.norm(accel_array, axis=1)
         accel_var = float(np.var(accel_magnitudes))
         accel_mean_mag = float(np.mean(accel_magnitudes))
 
-        # 2. Gravity magnitude check (reaction force close to 9.81 m/s²)
+
         gravity_consistent = abs(accel_mean_mag - self.gravity) < 1.0
 
-        # 3. Gyroscope variance and maximum rate
+
         gyro_var = float(np.max(np.var(gyro_array, axis=0)))
         max_gyro_rate = float(np.max(np.linalg.norm(gyro_array, axis=1)))
 
-        # 4. Optional speed check
+
         speed_ok = True
         if estimated_speed is not None:
             speed_ok = estimated_speed < 0.5
 
-        # Decision
+
         condition_met = (
             accel_var < self.accel_threshold
             and gyro_var < self.gyro_threshold

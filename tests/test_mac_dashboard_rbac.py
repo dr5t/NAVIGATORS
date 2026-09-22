@@ -30,27 +30,27 @@ def auth_roles(temp_db):
     """Fixture providing test users and resolved SessionContext for each role."""
     auth_service = AuthService(temp_db)
 
-    # 1. Registered User
+
     user, user_session, _ = auth_service.register(
         email="user@navigators.test", password="Password123!", name="User", role_id="user"
     )
 
-    # 2. Local Contributor
+
     lc_user, lc_session, _ = auth_service.register(
         email="lc@navigators.test", password="Password123!", name="Local Contributor", role_id="local_contributor"
     )
 
-    # 3. Internal Contributor
+
     ic_user, ic_session, _ = auth_service.register(
         email="ic@navigators.test", password="Password123!", name="Internal Contributor", role_id="internal_contributor"
     )
 
-    # 4. Moderator
+
     mod_user, mod_session, _ = auth_service.register(
         email="mod@navigators.test", password="Password123!", name="Moderator", role_id="moderator"
     )
 
-    # 5. Team Admin
+
     admin_user, admin_session, _ = auth_service.register(
         email="admin@navigators.test", password="Password123!", name="Team Admin", role_id="team_admin"
     )
@@ -80,16 +80,16 @@ def test_user_and_local_contributor_have_no_engineering_permissions(temp_db, aut
     authz = AuthorizationService(temp_db)
 
     for session in (auth_roles["user_session"], auth_roles["lc_session"]):
-        # Training create -> Denied
+
         assert not authz.can(user=session, action="training:create", resource="training").allowed
 
-        # Model deploy -> Denied
+
         assert not authz.can(user=session, action="model:deploy", resource="model").allowed
 
-        # Dataset validate -> Denied
+
         assert not authz.can(user=session, action="dataset:validate", resource="dataset").allowed
 
-        # Internal contributor review -> Denied
+
         assert not authz.can(user=session, action="internal_contributor:review", resource="contributor").allowed
 
 
@@ -98,18 +98,18 @@ def test_internal_contributor_permissions(temp_db, auth_roles):
     authz = AuthorizationService(temp_db)
     session = auth_roles["ic_session"]
 
-    # Datasets create & read -> Allowed
+
     assert authz.can(user=session, action="dataset:create", resource="dataset").allowed
     assert authz.can(user=session, action="dataset:read", resource="dataset").allowed
 
-    # Training create & read -> Allowed
+
     assert authz.can(user=session, action="training:create", resource="training").allowed
     assert authz.can(user=session, action="training:read", resource="training").allowed
 
-    # Model read -> Allowed
+
     assert authz.can(user=session, action="model:read", resource="model").allowed
 
-    # Admin actions (deploy, validate, role assign) -> Denied
+
     assert not authz.can(user=session, action="model:deploy", resource="model").allowed
     assert not authz.can(user=session, action="dataset:validate", resource="dataset").allowed
     assert not authz.can(user=session, action="internal_contributor:approve", resource="contributor").allowed
@@ -120,11 +120,11 @@ def test_moderator_permissions(temp_db, auth_roles):
     authz = AuthorizationService(temp_db)
     session = auth_roles["mod_session"]
 
-    # Contribution approve & reject -> Allowed
+
     assert authz.can(user=session, action="contribution:approve", resource="contribution").allowed
     assert authz.can(user=session, action="contribution:reject", resource="contribution").allowed
 
-    # ML Training & Deployment -> Denied
+
     assert not authz.can(user=session, action="training:create", resource="training").allowed
     assert not authz.can(user=session, action="model:deploy", resource="model").allowed
 
@@ -134,7 +134,7 @@ def test_team_admin_permissions(temp_db, auth_roles):
     authz = AuthorizationService(temp_db)
     session = auth_roles["admin_session"]
 
-    # All engineering & governance controls -> Allowed
+
     assert authz.can(user=session, action="dataset:create", resource="dataset").allowed
     assert authz.can(user=session, action="dataset:validate", resource="dataset").allowed
     assert authz.can(user=session, action="training:create", resource="training").allowed

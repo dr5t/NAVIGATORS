@@ -67,9 +67,9 @@ def contrib_repo(temp_db: Path):
     return ContributionRepository(temp_db)
 
 
-# =============================================================================
-# 1. State Machine Engine Unit Tests
-# =============================================================================
+
+
+
 
 def test_state_machine_happy_path(auth_service: AuthService, contrib_repo: ContributionRepository):
     """
@@ -88,7 +88,7 @@ def test_state_machine_happy_path(auth_service: AuthService, contrib_repo: Contr
         role_id="moderator",
     )
 
-    # 1. Author creates draft
+
     item = contrib_repo.create(
         contribution_id="contrib_happy_1",
         owner_id=author.id,
@@ -99,7 +99,7 @@ def test_state_machine_happy_path(auth_service: AuthService, contrib_repo: Contr
     assert item.status == ContributionState.DRAFT
     assert item.published_at is None
 
-    # 2. Author transitions DRAFT -> SUBMITTED
+
     submitted = contrib_repo.transition_state(
         contribution_id=item.id,
         target_state=ContributionState.SUBMITTED,
@@ -107,7 +107,7 @@ def test_state_machine_happy_path(auth_service: AuthService, contrib_repo: Contr
     )
     assert submitted.status == ContributionState.SUBMITTED
 
-    # 3. Ingestion/triage queues SUBMITTED -> PENDING_REVIEW
+
     pending = contrib_repo.transition_state(
         contribution_id=item.id,
         target_state=ContributionState.PENDING_REVIEW,
@@ -115,7 +115,7 @@ def test_state_machine_happy_path(auth_service: AuthService, contrib_repo: Contr
     )
     assert pending.status == ContributionState.PENDING_REVIEW
 
-    # 4. Reviewer approves PENDING_REVIEW -> APPROVED
+
     approved = contrib_repo.approve(
         contribution_id=item.id,
         reviewer=session_mod,
@@ -126,7 +126,7 @@ def test_state_machine_happy_path(auth_service: AuthService, contrib_repo: Contr
     assert approved.review_notes == "Verified bicycle racks coordinates on site."
     assert approved.reviewed_at is not None
 
-    # 5. Staff publishes APPROVED -> PUBLISHED
+
     published = contrib_repo.publish(
         contribution_id=item.id,
         staff=session_mod,
@@ -200,27 +200,27 @@ def test_state_machine_withdrawal_paths(auth_service: AuthService, contrib_repo:
         name="Withdraw Tester",
     )
 
-    # From DRAFT -> WITHDRAWN
+
     c1 = contrib_repo.create("contrib_w1", author.id, "place", "Draft to Cancel")
     w1 = contrib_repo.withdraw(c1.id, user=session_author)
     assert w1.status == ContributionState.WITHDRAWN
 
-    # From SUBMITTED -> WITHDRAWN
+
     c2 = contrib_repo.create("contrib_w2", author.id, "place", "Submitted to Cancel")
     contrib_repo.transition_state(c2.id, ContributionState.SUBMITTED, user=session_author)
     w2 = contrib_repo.withdraw(c2.id, user=session_author)
     assert w2.status == ContributionState.WITHDRAWN
 
-    # From PENDING_REVIEW -> WITHDRAWN
+
     c3 = contrib_repo.create("contrib_w3", author.id, "place", "Pending to Cancel")
     contrib_repo.submit(c3.id, user=session_author)
     w3 = contrib_repo.withdraw(c3.id, user=session_author)
     assert w3.status == ContributionState.WITHDRAWN
 
 
-# =============================================================================
-# 2. Arbitrary State Jump Prevention
-# =============================================================================
+
+
+
 
 def test_arbitrary_state_jumps_are_strictly_prevented(
     auth_service: AuthService,
@@ -243,42 +243,42 @@ def test_arbitrary_state_jumps_are_strictly_prevented(
 
     item = contrib_repo.create("contrib_sec_1", author.id, "place", "Security Test Item")
 
-    # 1. Cannot jump DRAFT -> APPROVED
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.transition_state(item.id, ContributionState.APPROVED, user=session_mod)
     assert exc_info.value.code == "INVALID_STATE_TRANSITION"
     assert "Illegal state transition" in exc_info.value.message
 
-    # 2. Cannot jump DRAFT -> PUBLISHED
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.transition_state(item.id, ContributionState.PUBLISHED, user=session_mod)
     assert exc_info.value.code == "INVALID_STATE_TRANSITION"
 
-    # Move to pending
+
     contrib_repo.submit(item.id, user=session_author)
 
-    # 3. Cannot jump PENDING_REVIEW -> PUBLISHED directly (must be approved first)
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.transition_state(item.id, ContributionState.PUBLISHED, user=session_mod)
     assert exc_info.value.code == "INVALID_STATE_TRANSITION"
 
-    # Reject item
+
     contrib_repo.reject(item.id, reviewer=session_mod, notes="Rejected for testing")
 
-    # 4. Cannot transition REJECTED -> PUBLISHED
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.transition_state(item.id, ContributionState.PUBLISHED, user=session_mod)
     assert exc_info.value.code == "INVALID_STATE_TRANSITION"
 
-    # 5. Cannot transition REJECTED -> APPROVED
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.transition_state(item.id, ContributionState.APPROVED, user=session_mod)
     assert exc_info.value.code == "INVALID_STATE_TRANSITION"
 
 
-# =============================================================================
-# 3. Role & Permission Guards
-# =============================================================================
+
+
+
 
 def test_standard_user_cannot_self_approve(
     auth_service: AuthService,
@@ -296,7 +296,7 @@ def test_standard_user_cannot_self_approve(
     item = contrib_repo.create("contrib_self_app_1", user.id, "place", "Self-Promotion POI")
     contrib_repo.submit(item.id, user=session_user)
 
-    # Standard user attempting approve
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.approve(item.id, reviewer=session_user)
     assert exc_info.value.code == "PERMISSION_DENIED"
@@ -326,7 +326,7 @@ def test_standard_user_cannot_publish(
     contrib_repo.submit(item.id, user=session_author)
     contrib_repo.approve(item.id, reviewer=session_mod)
 
-    # Author attempts publish
+
     with pytest.raises(StateTransitionError) as exc_info:
         contrib_repo.publish(item.id, staff=session_author)
     assert exc_info.value.code == "PERMISSION_DENIED"
@@ -349,12 +349,12 @@ def test_non_owner_cannot_submit_or_withdraw(
 
     item = contrib_repo.create("contrib_owner_guard_1", user_a.id, "place", "User A Draft")
 
-    # User B attempts submit
+
     with pytest.raises(StateTransitionError) as exc_submit:
         contrib_repo.submit(item.id, user=session_b)
     assert exc_submit.value.code == "NOT_OWNER"
 
-    # User B attempts withdraw
+
     with pytest.raises(StateTransitionError) as exc_withdraw:
         contrib_repo.withdraw(item.id, user=session_b)
     assert exc_withdraw.value.code == "NOT_OWNER"
@@ -372,7 +372,7 @@ def test_unauthenticated_actor_cannot_trigger_transitions(
     )
     item = contrib_repo.create("contrib_unauth_1", author.id, "place", "Draft Place")
 
-    # Anonymous guest context
+
     guest_session = auth_service.create_guest_session()
 
     with pytest.raises(StateTransitionError) as exc_guest:
@@ -380,9 +380,9 @@ def test_unauthenticated_actor_cannot_trigger_transitions(
     assert exc_guest.value.code == "UNAUTHENTICATED"
 
 
-# =============================================================================
-# 4. REST API Transition Endpoints
-# =============================================================================
+
+
+
 
 def test_api_state_transition_endpoints_flow(
     monkeypatch,
@@ -415,7 +415,7 @@ def test_api_state_transition_endpoints_flow(
         email="api_mod@navigators.dev", password="Password123!", name="API Mod", role_id="moderator"
     )
 
-    # 1. Author creates draft via API
+
     create_resp = api_create_contribution(
         req=CreateContributionRequest(
             resource_type="place",
@@ -427,12 +427,12 @@ def test_api_state_transition_endpoints_flow(
     contrib_id = create_resp["contribution"]["id"]
     assert create_resp["contribution"]["status"] == ContributionState.DRAFT
 
-    # 2. Other user cannot submit User A's draft (HTTP 403 NOT_OWNER)
+
     with pytest.raises(HTTPException) as exc_other_submit:
         api_submit_contribution(contrib_id=contrib_id, context=session_other)
     assert exc_other_submit.value.status_code == 403
 
-    # 3. Moderator cannot approve draft before it is submitted (HTTP 403/400)
+
     with pytest.raises(HTTPException) as exc_early_approve:
         api_approve_contribution(
             contrib_id=contrib_id,
@@ -441,11 +441,11 @@ def test_api_state_transition_endpoints_flow(
         )
     assert exc_early_approve.value.status_code in (400, 403)
 
-    # 4. Author submits draft for review
+
     submit_resp = api_submit_contribution(contrib_id=contrib_id, context=session_author)
     assert submit_resp["contribution"]["status"] == ContributionState.PENDING_REVIEW
 
-    # 5. Author cannot self-approve (HTTP 403)
+
     with pytest.raises(HTTPException) as exc_self_app:
         api_approve_contribution(
             contrib_id=contrib_id,
@@ -454,7 +454,7 @@ def test_api_state_transition_endpoints_flow(
         )
     assert exc_self_app.value.status_code == 403
 
-    # 6. Moderator approves contribution
+
     approve_resp = api_approve_contribution(
         contrib_id=contrib_id,
         req=ReviewNotesRequest(notes="Approved by urban mobility staff"),
@@ -463,12 +463,12 @@ def test_api_state_transition_endpoints_flow(
     assert approve_resp["contribution"]["status"] == ContributionState.APPROVED
     assert approve_resp["contribution"]["reviewed_by"] == moderator.id
 
-    # 7. Author cannot withdraw already approved contribution (HTTP 403)
+
     with pytest.raises(HTTPException) as exc_post_app_withdraw:
         api_withdraw_contribution(contrib_id=contrib_id, context=session_author)
     assert exc_post_app_withdraw.value.status_code == 403
 
-    # 8. Staff publishes approved contribution to canonical live map data
+
     pub_resp = api_publish_contribution(contrib_id=contrib_id, context=session_mod)
     assert pub_resp["contribution"]["status"] == ContributionState.PUBLISHED
     assert pub_resp["contribution"]["published_at"] is not None

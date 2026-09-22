@@ -1,8 +1,8 @@
-/**
- * Navigators IDR - 100% Offline Edge Inference Engine
- * Captures mobile IMU & GNSS data and runs PyTorch ONNX model via WebAssembly.
- * Performs Dead Reckoning locally on the mobile processor without any network connection.
- */
+
+
+
+
+
 
 class GnssStateMachine {
     constructor() {
@@ -11,7 +11,7 @@ class GnssStateMachine {
     }
 
     update(gnssData, dt) {
-        // gnssData might be null if disconnected
+        
         let acc = gnssData ? gnssData.accuracy : 999.0;
         if (gnssData === null) acc = 999.0;
 
@@ -23,7 +23,7 @@ class GnssStateMachine {
                     this.state = 'DEGRADED';
                     this.timeInCurrentState = 0;
                 } else if (acc <= 20.0) {
-                    this.timeInCurrentState = 0; // reset timer
+                    this.timeInCurrentState = 0; 
                 }
                 break;
             case 'DEGRADED':
@@ -34,11 +34,11 @@ class GnssStateMachine {
                     this.state = 'NORMAL';
                     this.timeInCurrentState = 0;
                 } else if (acc > 20.0 && acc <= 50.0) {
-                    // stays in degraded
+                    
                 } else if (acc <= 20.0) {
-                    // slowly transitioning back to normal
+                    
                 } else {
-                    // > 50 but hasn't been 3 seconds yet
+                    
                 }
                 break;
             case 'DEAD_RECKONING':
@@ -64,17 +64,17 @@ class GnssStateMachine {
 
 class VehicleMotionDetector {
     constructor() {
-        this.accelThreshold = 0.035;   // m2/s4 stationary variance threshold
-        this.gyroThreshold = 0.008;    // rad2/s2 stationary gyro variance threshold
-        this.maxGyroThreshold = 0.08;  // rad/s stationary max gyro rate
-        this.windowSize = 15;          // 1.5s at 10Hz
+        this.accelThreshold = 0.035;   
+        this.gyroThreshold = 0.008;    
+        this.maxGyroThreshold = 0.08;  
+        this.windowSize = 15;          
         this.gravity = 9.81;
 
         this.accelBuffer = [];
         this.gyroBuffer = [];
 
         this.isStationary = false;
-        this.motionState = 'UNKNOWN'; // 'STATIONARY' | 'MOVING' | 'UNKNOWN'
+        this.motionState = 'UNKNOWN'; 
         this.motionReason = 'insufficient data';
         this.stationaryDwell = 0.0;
         this.movingDwell = 0.0;
@@ -120,14 +120,14 @@ class VehicleMotionDetector {
             return this.isStationary;
         }
 
-        // 1. Accelerometer variance and mean magnitude
+        
         const accelMags = this.accelBuffer.map(a => Math.hypot(a[0], a[1], a[2]));
         const accelMean = accelMags.reduce((a, b) => a + b, 0) / accelMags.length;
         const accelVar = accelMags.reduce((acc, val) => acc + Math.pow(val - accelMean, 2), 0) / accelMags.length;
         const latestAccelMag = accelMags[accelMags.length - 1];
         const dynamicAccel = Math.abs(latestAccelMag - this.gravity);
 
-        // 2. Gyroscope variance and max rate
+        
         const gyroMags = this.gyroBuffer.map(g => Math.hypot(g[0], g[1], g[2]));
         const gyroMean = gyroMags.reduce((a, b) => a + b, 0) / gyroMags.length;
         const gyroVar = gyroMags.reduce((acc, val) => acc + Math.pow(val - gyroMean, 2), 0) / gyroMags.length;
@@ -146,9 +146,9 @@ class VehicleMotionDetector {
         const hasGnssSpeed = (speed !== null && speed !== undefined && Number.isFinite(speed));
 
         if (hasGnssSpeed) {
-            // Real GNSS speed available as supporting evidence (NOT fed into AI model)
+            
             if (speed >= 0.8) {
-                // Vehicle moving (speed >= 0.8 m/s ~ 2.9 km/h)
+                
                 this.motionState = 'MOVING';
                 this.motionReason = `GNSS speed (${speed.toFixed(1)} m/s)`;
                 this.stationaryDwell = 0.0;
@@ -156,7 +156,7 @@ class VehicleMotionDetector {
                 this.lastMovingTime = currentTime || Date.now() / 1000;
                 this.consecutiveStationary = 0;
             } else if (speed < 0.4) {
-                // Vehicle speed near zero: check if IMU is also quiet or has idle vibrations
+                
                 const imuStationary = (accelVar < this.accelThreshold && maxGyro < this.maxGyroThreshold && dynamicAccel < 0.35);
                 this.stationaryDwell += dt;
                 if (imuStationary && this.stationaryDwell >= 1.0) {
@@ -169,31 +169,31 @@ class VehicleMotionDetector {
                     this.movingDwell = 0.0;
                 }
             } else {
-                // Low speed crawling (0.4 - 0.8 m/s)
+                
                 this.motionState = 'MOVING';
                 this.motionReason = `GNSS crawl (${speed.toFixed(1)} m/s)`;
                 this.stationaryDwell = 0.0;
                 this.lastMovingTime = currentTime || Date.now() / 1000;
             }
         } else {
-            // GNSS Denied / Outage / Tunnel / Offline
-            // Rely purely on IMU dynamics without GNSS speed
+            
+            
             if (this.motionState === 'MOVING' || this.motionState === 'UNKNOWN') {
-                // Check if vehicle has come to a complete stop
+                
                 const isVeryQuiet = (accelVar < 0.025 && maxGyro < 0.06 && dynamicAccel < 0.25);
                 if (isVeryQuiet) {
                     this.stationaryDwell += dt;
-                    if (this.stationaryDwell >= 1.5) { // 1.5s quiet dwell required to stop
+                    if (this.stationaryDwell >= 1.5) { 
                         this.motionState = 'STATIONARY';
                         this.motionReason = `IMU stationary dwell (${this.stationaryDwell.toFixed(1)}s)`;
                         this.movingDwell = 0.0;
                     } else {
-                        // Still in MOVING state during deceleration/settling
+                        
                         this.motionState = 'MOVING';
                         this.motionReason = `IMU settling (${this.stationaryDwell.toFixed(1)}s)`;
                     }
                 } else {
-                    // Road vibrations, steering, or acceleration active
+                    
                     this.stationaryDwell = 0.0;
                     this.movingDwell += dt;
                     this.motionState = 'MOVING';
@@ -201,11 +201,11 @@ class VehicleMotionDetector {
                     this.lastMovingTime = currentTime || Date.now() / 1000;
                 }
             } else {
-                // Currently STATIONARY: check for start of vehicle movement
+                
                 const motionDetected = (accelVar > 0.040 || maxGyro > 0.10 || dynamicAccel > 0.40);
                 if (motionDetected) {
                     this.consecutiveMoving++;
-                    if (this.consecutiveMoving >= 3) { // 0.3s of motion triggers moving
+                    if (this.consecutiveMoving >= 3) { 
                         this.motionState = 'MOVING';
                         this.motionReason = `IMU motion detected (accel var: ${accelVar.toFixed(3)})`;
                         this.stationaryDwell = 0.0;
@@ -232,40 +232,40 @@ class OfflineEngine {
         this.navigationMode = 'vehicle';
         this.stepLength = 0.7;
 
-        // Sensor Data Buffer
+        
         this.currentAccel = [0, 0, 0];
         this.currentGyro = [0, 0, 0];
-        this.currentGnss = null;        // Buffer for ONNX model (window_size = 200, features = 6)
+        this.currentGnss = null;        
         this.windowSize = 200;
-        this.sensorBuffer = []; // stores [ax, ay, az, gx, gy, gz] arrays
+        this.sensorBuffer = []; 
 
-        // ONNX Runtime Session
+        
         this.session = null;
         this.modelLoading = false;
         this.profiler = new DeviceProfiler();
         this.modelContract = null;
-        this.imuFilter = new CausalIMUFilter(false); // removeGravity = false (model trained on raw IMU)
+        this.imuFilter = new CausalIMUFilter(false); 
         this.sensorTimes = [];
 
-        // Raw Android sensor event rate tracking (50-100Hz from hardware) vs 10Hz model rate
+        
         this.rawEventTimes = [];
         this.observedRawSensorRate = 10;
         this.observedEffectiveRate = 10;
         this.lastDiagnosticLogTime = 0;
         this.lastLoggedMotionState = null;
 
-        // Navigation State
+        
         this.initialized = false;
         this.refLat = 0;
         this.refLon = 0;
 
-        // Edge EKF Engine
+        
         this.ekf = new ExtendedKalmanFilter();
 
-        // Coordinate Aligner
+        
         this.aligner = new PhoneVehicleAligner();
 
-        // Real downloaded roads share one projection with the map and EKF.
+        
         this.roadNetwork = new RoadNetwork();
         this.localMap = null;
         this.gpsOutage = false;
@@ -275,18 +275,18 @@ class OfflineEngine {
         this.lastMotionTime = -Infinity;
         this.mapMatcher = new GeometricMapMatcher(this.roadNetwork, 30.0);
 
-        // GNSS State Machine & Vehicle Motion Detector
+        
         this.gnssStateMachine = new GnssStateMachine();
         this.motionDetector = new VehicleMotionDetector();
         this.zuptDetector = this.motionDetector;
         this.gnssAvailable = false;
         this.zuptActive = false;
 
-        // Loop controls
+        
         this.lastTime = performance.now() / 1000.0;
         this.loopInterval = null;
 
-        // Ensure ONNX Runtime is available
+        
         if (typeof ort !== 'undefined') {
             ort.env.wasm.wasmPaths = new URL('./vendor/onnxruntime/', document.baseURI).href;
             ort.env.wasm.numThreads = 1;
@@ -372,7 +372,7 @@ class OfflineEngine {
             if (!response.ok) throw new Error('Failed to fetch model.onnx');
             
             const contentLength = response.headers.get('content-length');
-            // Provide a fallback total if content-length is missing
+            
             const totalBytes = contentLength ? parseInt(contentLength, 10) : 5000000;
             let loadedBytes = 0;
             
@@ -407,8 +407,8 @@ class OfflineEngine {
 
             if (window.setLoadingState) window.setLoadingState(80, "COMPILING WEBASSEMBLY ENGINE");
             console.log("[Edge AI] Loading ONNX Model into WebAssembly...");
-            // Load the model exported to the simulator folder
-            // Small delay to allow the UI to render the 60% state before blocking synchronous compilation
+            
+            
             await new Promise(r => setTimeout(r, 50));
             this.session = await ort.InferenceSession.create(modelBytes, {
                 executionProviders: ['wasm'],
@@ -440,7 +440,7 @@ class OfflineEngine {
             if (window.setLoadingState) window.setLoadingState(0, "ERROR: INVALID STEP LENGTH");
             return false;
         }
-        // Request both permissions in the original button gesture on iOS.
+        
         try {
             const requests = [];
             if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') requests.push(DeviceMotionEvent.requestPermission());
@@ -487,7 +487,7 @@ class OfflineEngine {
         this.walker = this.navigationMode === 'walking' ? new PedestrianTracker(this.stepLength) : null;
         document.getElementById('btnGpsOutage').textContent = 'Simulate GNSS outage';
 
-        // Reset buffers and timers
+        
         this.sensorBuffer = [];
         this.sensorTimes = [];
         this.rawEventTimes = [];
@@ -499,7 +499,7 @@ class OfflineEngine {
         this.profiler.reset();
         this.lastTime = performance.now() / 1000.0;
 
-        // IMU Listeners
+        
         this.handleMotion = (event) => {
             if (this.walker) {
                 this.walker.motion(event.accelerationIncludingGravity, performance.now() / 1000);
@@ -510,7 +510,7 @@ class OfflineEngine {
             const motionTime = performance.now() / 1000;
             this.lastMotionTime = motionTime;
 
-            // Track raw Android hardware sensor event rate (typically 50-100 Hz)
+            
             this.rawEventTimes.push(motionTime);
             if (this.rawEventTimes.length > 50) this.rawEventTimes.shift();
             if (this.rawEventTimes.length > 1) {
@@ -540,14 +540,14 @@ class OfflineEngine {
             document.getElementById('modelValidation').textContent = 'Walking prototype · step length + absolute compass · no trained walking AI';
         }
 
-        // Global compass listener for all modes
+        
         this.handleOrientation = (event) => {
             if (event.webkitCompassHeading !== undefined) {
-                // iOS
+                
                 this.currentCompassHeading = event.webkitCompassHeading * Math.PI / 180;
             } else if (event.absolute && event.alpha !== null) {
-                // Android standard: alpha is CCW from East? Actually, absolute alpha is CCW from North.
-                // 360 - alpha gives clockwise from North (standard navigation heading)
+                
+                
                 this.currentCompassHeading = (360 - event.alpha) * Math.PI / 180;
             }
         };
@@ -556,7 +556,7 @@ class OfflineEngine {
 
         this.startGnssWatch();
 
-        // Run Edge Inference Loop at ~10 Hz
+        
         this.aligner.reset();
         this.loopInterval = setInterval(() => this.runInferenceLoop(), 100);
     }
@@ -612,7 +612,7 @@ class OfflineEngine {
             this.updateUI({ status: 'waiting_for_imu' });
             return;
         }
-        // Snapshot fixes across asynchronous inference; never reuse stale GPS during an outage.
+        
         const gnssGeneration = this.gnssGeneration;
         const gnss = !this.gpsOutage && currentTime - this.lastGnssTime <= 3 ? this.currentGnss : null;
         const currentGnssState = this.gnssStateMachine.update(gnss, dt);
@@ -620,23 +620,23 @@ class OfflineEngine {
         let hasGoodGNSS = false;
         let speed = 0;
 
-        // In NORMAL or REACQUISITION, we strictly use GNSS
-        // In DEGRADED, we use it but it might be jumping
-        // In DEAD_RECKONING, we completely ignore it.
+        
+        
+        
         if ((currentGnssState === 'NORMAL' || currentGnssState === 'DEGRADED' || currentGnssState === 'REACQUISITION') && gnss && gnss.accuracy <= 2000) {
             hasGoodGNSS = true;
             speed = gnss.speed;
         }
 
-        // 1. Phone-to-Vehicle Alignment (runs in background; does NOT block buffering or navigation)
+        
         this.aligner.feed(this.currentAccel, hasGoodGNSS ? speed : -1, currentTime);
 
-        // 2. Rotate and Filter IMU into vehicle frame
+        
         const alignedAccel = this.aligner.rotate(this.currentAccel);
         const alignedGyro = this.aligner.rotate(this.currentGyro);
         const filteredIMU = this.imuFilter.step([...alignedAccel, ...alignedGyro], dt);
 
-        // 3. Resample into 10 Hz sensor buffer (decoupling Android raw 50-100Hz hardware rate from 10Hz model)
+        
         this.sensorBuffer.push(filteredIMU);
         this.sensorTimes.push(currentTime);
         if (this.sensorBuffer.length > this.windowSize) {
@@ -654,7 +654,7 @@ class OfflineEngine {
         this.observedImuRate = this.observedEffectiveRate;
 
         if (hasGoodGNSS && gnss.accuracy <= 2000 && !this.initialized) {
-            // The fix initializes position within the downloaded map's reference frame.
+            
             const initial = this.localMap.toENU(gnss.lat, gnss.lon);
             this.ekf.x[0][0] = initial[0];
             this.ekf.x[1][0] = initial[1];
@@ -665,20 +665,20 @@ class OfflineEngine {
         }
 
         if (!this.initialized) {
-            // Can't navigate until we know where we are
+            
             document.getElementById('edgeStatus').textContent = 'Waiting for initial GPS fix';
             this.updateUI({ status: 'waiting_for_gnss' });
             return;
         }
 
-        // 4. EKF Predict (High frequency, 10Hz)
+        
         let ekfStart = performance.now();
         let ekfMs = 0;
         this.ekf.dt = dt;
-        this.ekf.predict(alignedAccel, alignedGyro, null, true); // apply NHC
+        this.ekf.predict(alignedAccel, alignedGyro, null, true); 
 
-        // 5. Robust Vehicle Motion Detection (ZUPT)
-        // Multi-signal: accelerometer variance, dynamic accel, gyro variance, dwell time, GNSS speed
+        
+        
         let estSpeed = hasGoodGNSS ? speed : null;
         this.zuptActive = this.motionDetector.update(this.currentAccel, this.currentGyro, estSpeed, dt, currentTime);
         const motionState = this.motionDetector.motionState;
@@ -690,7 +690,7 @@ class OfflineEngine {
 
         ekfMs += performance.now() - ekfStart;
 
-        // 6. Run Edge AI Model if buffer is full and vehicle is moving
+        
         let aiVelocity = null;
         let aiError = null;
         let aiStatus = 'INACTIVE';
@@ -720,7 +720,7 @@ class OfflineEngine {
             try {
                 aiStatus = 'RUNNING';
                 const aiStart = performance.now();
-                // Flatten the 2D buffer into a 1D Float32Array
+                
                 const flatData = new Float32Array(this.windowSize * 6);
                 for (let i = 0; i < this.windowSize; i++) {
                     for (let j = 0; j < 6; j++) {
@@ -742,7 +742,7 @@ class OfflineEngine {
                     throw new Error('Invalid AI velocity: non-finite or dimension mismatch');
                 }
 
-                // Map according to contract output order
+                
                 let vNorth, vEast;
                 if (this.modelContract?.output_order?.[0] === 'north') {
                     vNorth = v[0];
@@ -752,12 +752,12 @@ class OfflineEngine {
                     vNorth = v[1];
                 }
                 const predSpeed = Math.hypot(vNorth, vEast);
-                aiVelocity = [vEast, vNorth]; // EKF state vector maps index 3 -> vEast, index 4 -> vNorth
+                aiVelocity = [vEast, vNorth]; 
                 aiStatus = 'ACTIVE';
 
                 if (!this.isCapturing) return;
                 if (this.gpsOutage || gnssGeneration !== this.gnssGeneration) hasGoodGNSS = false;
-                // If GNSS is denied / outage, feed AI velocity into EKF
+                
                 if (!hasGoodGNSS) {
                     ekfStart = performance.now();
                     this.ekf._updateAiVelocity(aiVelocity);
@@ -771,7 +771,7 @@ class OfflineEngine {
             }
         }
 
-        // 7. Rate-limited Vehicle Motion & Inference Diagnostics (Requirement 9)
+        
         const nowMs = performance.now();
         const stateChanged = (motionState !== this.lastLoggedMotionState);
         if (stateChanged || (nowMs - this.lastDiagnosticLogTime >= 1000)) {
@@ -794,7 +794,7 @@ class OfflineEngine {
         }
 
         ekfStart = performance.now();
-        // 8. Navigation Update (GNSS Update)
+        
         const metersPerDegLat = this.localMap.metersPerDegree;
         const metersPerDegLon = this.localMap.lonScale;
 
@@ -823,10 +823,10 @@ class OfflineEngine {
             const stepDist = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]) * dt;
             this.drDistanceTraveled = (this.drDistanceTraveled || 0) + stepDist;
 
-            // Use the compass to ensure heading does not hallucinate
+            
             if (this.currentCompassHeading !== undefined) {
-                // sigma grows slightly with time since we trust absolute compass less than GNSS,
-                // but we trust it much more than integrated drifting gyro!
+                
+                
                 const compassSigma = Math.min(1.0, 0.3 + this.drDuration * 0.01);
                 this.ekf.updateCompass(this.currentCompassHeading, compassSigma);
             }
@@ -834,29 +834,29 @@ class OfflineEngine {
 
         ekfMs += performance.now() - ekfStart;
         this.profiler.record('ekf', ekfMs);
-        // 9. Map Matching
+        
         const mapStart = performance.now();
         let pos = this.ekf.getPosition();
         let heading = this.ekf.getHeading();
         let match = this.mapMatcher.match(pos, heading);
 
-        // Optionally feedback map matching if highly confident (soft map matching)
+        
         if (match.confidence > 0.8 && this.ekf.mode === 'dr') {
-            // Apply a small snap to EKF state to bound drift
+            
             this.ekf.x[0][0] = 0.9 * this.ekf.x[0][0] + 0.1 * match.snapped_position[0];
             this.ekf.x[1][0] = 0.9 * this.ekf.x[1][0] + 0.1 * match.snapped_position[1];
         }
 
         this.profiler.record('map_matching', performance.now() - mapStart);
-        // 10. Extract Final State for UI
+        
         pos = this.ekf.getPosition();
         const vel = this.ekf.getVelocity();
         const estLat = this.refLat + (pos[1] / metersPerDegLat);
         const estLon = this.refLon + (pos[0] / metersPerDegLon);
         const estimatedSpeed = Math.sqrt(vel[0]*vel[0] + vel[1]*vel[1]);
 
-        // Compute physical uncertainty
-        const posUncertainty = this.ekf.P[0][0] + this.ekf.P[1][1]; // trace of pos covariance
+        
+        const posUncertainty = this.ekf.P[0][0] + this.ekf.P[1][1]; 
         const driftPct = (this.ekf.mode === 'dr' && (this.drDistanceTraveled || 0) > 2.0)
             ? (Math.sqrt(posUncertainty) / this.drDistanceTraveled) * 100.0
             : 0.0;
@@ -994,5 +994,5 @@ class OfflineEngine {
     }
 }
 
-// Global instance
+
 window.offlineEngine = new OfflineEngine();

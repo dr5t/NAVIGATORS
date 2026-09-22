@@ -1,4 +1,4 @@
-/** Workspace UI. Reports are read locally; no uploads or generated accuracy figures. */
+
 const workspaceViews = {
     console: ['Navigation', 'Navigation console', 'SENSOR FUSION / OFFLINE NAVIGATION', 'A continuous position. Even without a signal.'],
     replay: ['Saved playback', 'Replay the journey', 'SAVED EXAMPLE / TRAJECTORY PLAYBACK', 'Inspect a saved trajectory, one moment at a time.'],
@@ -229,30 +229,30 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
     const overlay = document.getElementById('compassLoadingOverlay');
     if (!overlay) return;
     
-    // Show overlay if not active
+    
     if (!overlay.classList.contains('active')) {
         overlay.classList.remove('fade-out');
         overlay.classList.add('active');
         document.getElementById('compassContainer')?.classList.remove('compass-locked');
 
-        // Enforce max 3s loading time to detect failure
+        
         if (window._loadingTimeout) clearTimeout(window._loadingTimeout);
         window._loadingTimeout = setTimeout(() => {
             const currentProgress = document.getElementById('loadingProgressText').textContent;
             if (currentProgress !== '100%') {
-                // If not complete in 3 seconds, show failure
+                
                 const statusText = document.getElementById('loadingStatusText');
                 statusText.textContent = 'FAILED TO START';
                 statusText.style.color = 'red';
                 
-                // Stop any further progression of the bar
+                
                 document.getElementById('compassLoadingBar').style.width = currentProgress;
                 
-                // Reset loading state timeout
+                
                 setTimeout(() => {
                     overlay.classList.remove('active');
                     overlay.classList.add('fade-out');
-                    statusText.style.color = ''; // reset color
+                    statusText.style.color = ''; 
                 }, 2000);
             }
         }, 3000);
@@ -260,11 +260,11 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
 
     percent = Math.min(100, Math.max(0, percent));
     
-    // Update text and bar (only if not failed)
+    
     const statusText = document.getElementById('loadingStatusText');
-    if (statusText.textContent === 'FAILED TO START') return; // Do not update if failed
+    if (statusText.textContent === 'FAILED TO START') return; 
 
-    // Reset color in case it was previously failed
+    
     statusText.style.color = '';
     
     document.getElementById('loadingProgressText').textContent = Math.round(percent) + '%';
@@ -272,18 +272,18 @@ window.setLoadingState = (percent, message, finalMessage = 'NAVIGATION READY') =
     const bar = document.getElementById('compassLoadingBar');
     if (bar) bar.style.width = percent + '%';
     const arc = document.getElementById('compassProgressArc');
-    const circumference = 597; // 2 * PI * 95
+    const circumference = 597; 
     const offset = circumference - (percent / 100) * circumference;
     if (arc) arc.style.strokeDashoffset = offset;
 
-    // Lock and hide at 100%
+    
     if (percent >= 100) {
         document.getElementById('loadingStatusText').textContent = finalMessage;
         document.getElementById('compassContainer')?.classList.add('compass-locked');
         setTimeout(() => {
             overlay.classList.remove('active');
             overlay.classList.add('fade-out');
-        }, 800); // Wait for lock animation to settle before fading out
+        }, 800); 
     }
 };
 
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (state.estimatedCoords.length) {
                 state.map.panTo(state.estimatedCoords.at(-1));
             } else if ('geolocation' in navigator) {
-                // Request real-time location via browser API if no engine path exists
+                
                 navigator.geolocation.getCurrentPosition(
                     pos => {
                         const currentZoom = state.map.getZoom();
@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.refreshDeviceTimings();
     setInterval(() => { if (state.view === 'performance') window.refreshDeviceTimings(); }, 1000);
     
-    // Handle consent modal
+    
     const startupModal = byId('startupModal');
     if (startupModal) {
         const chkAgree = byId('acceptTerms');
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await window.refreshOfflineMapsUI?.();
             window.setLoadingState(100, "WORKSPACE READY", "WORKSPACE READY");
 
-            // Wait for the overlay to fade out before showing the modal
+            
             setTimeout(() => {
                 startupModal.showModal();
             }, 1000);
@@ -533,13 +533,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btnSkip.addEventListener('click', () => {
             btnSkip.classList.remove('btn-shake-anim');
-            // Trigger reflow to restart animation if clicked multiple times
+            
             void btnSkip.offsetWidth;
             btnSkip.classList.add('btn-shake-anim');
             
             const originalText = btnSkip.textContent;
             btnSkip.textContent = 'Please accept T&C';
-            btnSkip.style.color = '#b45230'; // Highlight the text in orange/red
+            btnSkip.style.color = '#b45230'; 
             
             setTimeout(() => {
                 btnSkip.textContent = 'Reject All';

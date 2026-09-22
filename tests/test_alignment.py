@@ -18,7 +18,7 @@ from navigation.alignment import (
 
 class TestAlignmentMath:
     def test_quaternion_rotation_matrix_roundtrip(self):
-        # Test across various orientations
+
         angles = [
             (0.0, 0.0, 0.0),
             (0.2, -0.3, 0.5),
@@ -44,14 +44,14 @@ class TestPhoneVehicleAligner:
     def test_flat_phone_alignment(self):
         """Phone flat on dashboard, facing vehicle front: phone frame = vehicle frame."""
         aligner = PhoneVehicleAligner()
-        # Flat: accelerometer measures +9.81 on Z (reaction force upwards in phone frame)
+
         static_accel = np.array([[0.0, 0.0, 9.81]])
         forward_hint = np.array([1.0, 0.0, 0.0])
 
         R = aligner.compute_alignment_matrix(static_accel, forward_hint=forward_hint)
         assert np.allclose(R, np.eye(3), atol=1e-3)
 
-        # Test vector transformation
+
         a_phone = np.array([2.0, 0.0, 9.81])
         a_veh = aligner.transform_accel(a_phone)
         assert np.allclose(a_veh, a_phone, atol=1e-3)
@@ -59,19 +59,19 @@ class TestPhoneVehicleAligner:
     def test_tilted_phone_alignment(self):
         """Phone mounted in landscape or tilted at 45 degrees pitch."""
         aligner = PhoneVehicleAligner()
-        pitch_angle = np.pi / 4  # 45 deg tilt
+        pitch_angle = np.pi / 4
 
-        # In vehicle frame, gravity is down [0, 0, 9.81].
-        # If phone is pitched up by 45°, gravity in phone frame has components in X and Z
+
+
         R_true = euler_to_rotation_matrix(0.0, pitch_angle, 0.0)
-        # a_phone = R_true.T @ [0, 0, 9.81]
+
         g_veh = np.array([0.0, 0.0, 9.81])
         g_phone = R_true.T @ g_veh
 
         aligner.compute_alignment_matrix(g_phone, forward_hint=R_true.T @ np.array([1.0, 0.0, 0.0]))
         R_est = aligner.get_rotation_matrix()
 
-        # Check transformed gravity points along vehicle Z down
+
         g_transformed = aligner.transform_accel(g_phone)
         assert np.allclose(g_transformed / np.linalg.norm(g_transformed), np.array([0.0, 0.0, 1.0]), atol=1e-3)
 
@@ -83,7 +83,7 @@ class TestPhoneVehicleAligner:
         accel_veh = aligner.transform_accel(accel_data)
         assert accel_veh.shape == (N, 3)
 
-        # Check each row matches individual transformation
+
         for i in range(5):
             single = aligner.transform_accel(accel_data[i])
             assert np.allclose(single, accel_veh[i])

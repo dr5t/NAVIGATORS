@@ -1,4 +1,4 @@
-/** Timings are collected on the browser/device actually running this code. */
+
 class DeviceProfiler {
     constructor() {
         this.reset();

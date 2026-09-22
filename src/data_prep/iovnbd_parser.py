@@ -15,18 +15,18 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
         Y: np.ndarray of shape (N, 2) -> [V_N, V_E] (m/s)
     """
     try:
-        # Some IO-VNBD files might have encoding issues, using latin1 or ISO-8859-1 is safer
+
         s_df = pd.read_csv(s_csv_path, encoding='latin1')
         v_df = pd.read_csv(v_csv_path, encoding='latin1')
     except Exception as e:
         print(f"Error loading {s_csv_path} or {v_csv_path}: {e}")
         return np.empty((0, 6)), np.empty((0, 2))
         
-    # Strip whitespace from column names
+
     s_df.columns = [c.strip() for c in s_df.columns]
     v_df.columns = [c.strip() for c in v_df.columns]
     
-    # Check if we have the required columns
+
     accel_cols = [c for c in s_df.columns if 'ACCELEROMETER X' in c or 'ACCELEROMETER Y' in c or 'ACCELEROMETER Z' in c]
     gyro_cols = [c for c in s_df.columns if 'GYROSCOPE Yaw' in c or 'GYROSCOPE Pitch' in c or 'GYROSCOPE Roll' in c or 'GYROSCOPE X' in c or 'GYROSCOPE Y' in c or 'GYROSCOPE Z' in c]
     
@@ -43,7 +43,7 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
     
     imu_features = s_df[[acc_x, acc_y, acc_z, gyr_y, gyr_p, gyr_r]].values
     
-    # Target columns
+
     if 'Velocity (km/hr)' not in v_df.columns or 'Heading (degrees)' not in v_df.columns:
         print(f"Missing Velocity or Heading in {v_csv_path}")
         return np.empty((0, 6)), np.empty((0, 2))
@@ -51,19 +51,19 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
     vel_kmh = v_df['Velocity (km/hr)'].values
     heading_deg = v_df['Heading (degrees)'].values
     
-    # Handle min length
+
     min_len = min(len(imu_features), len(vel_kmh))
     imu_features = imu_features[:min_len]
     vel_kmh = vel_kmh[:min_len]
     heading_deg = heading_deg[:min_len]
     
-    # Clean NaN values
+
     mask = ~np.isnan(imu_features).any(axis=1) & ~np.isnan(vel_kmh) & ~np.isnan(heading_deg)
     imu_features = imu_features[mask]
     vel_kmh = vel_kmh[mask]
     heading_deg = heading_deg[mask]
     
-    # Calculate Velocity N and E (m/s)
+
     vel_ms = vel_kmh / 3.6
     heading_rad = np.radians(heading_deg)
     
@@ -90,10 +90,10 @@ def discover_synchronized_sessions(base_dir: str) -> List[Tuple[str, str]]:
     for v_file in sync_dir.rglob("V-*.csv"):
         session_id = v_file.stem.replace("V-", "")
         
-        # Check in the same directory first (Categorised)
+
         s_file = v_file.parent / f"S-{session_id}.csv"
         
-        # Check in S-Dataset sibling directory (Uncategorised)
+
         if not s_file.exists():
             s_file = v_file.parent.parent / "S-Dataset" / f"S-{session_id}.csv"
             
@@ -103,7 +103,7 @@ def discover_synchronized_sessions(base_dir: str) -> List[Tuple[str, str]]:
     return sorted(pairs)
 
 if __name__ == "__main__":
-    # Quick test
+
     pairs = discover_synchronized_sessions("data/IO-VNBD")
     print(f"Found {len(pairs)} synchronized sessions.")
     for s, v in pairs:

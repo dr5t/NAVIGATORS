@@ -110,7 +110,7 @@ def normalize_category(cat: Optional[str]) -> str:
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate great-circle distance between two coordinates in kilometers."""
-    R = 6371.0  # Earth radius in kilometers
+    R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = (
@@ -185,7 +185,7 @@ class PlaceRepository:
         if not place:
             raise RuntimeError(f"Failed to create place {pid}")
 
-        # Record version 1 snapshot in place_history
+
         self._record_history(
             place=place,
             action="created",
@@ -193,7 +193,7 @@ class PlaceRepository:
             summary="Initial canonical place publication",
         )
 
-        # Log platform audit record
+
         try:
             self.audit.log(
                 action="CREATE",
@@ -299,7 +299,7 @@ class PlaceRepository:
             summary=change_summary or "Place details updated",
         )
 
-        # Log platform audit record
+
         try:
             self.audit.log(
                 action="UPDATE",
@@ -353,7 +353,7 @@ class PlaceRepository:
             summary=reason or "Place archived / soft deleted",
         )
 
-        # Log platform audit record
+
         try:
             self.audit.log(
                 action="SOFT_DELETE",
@@ -414,7 +414,7 @@ class PlaceRepository:
             summary="Place restored to canonical published status",
         )
 
-        # Log platform audit record
+
         try:
             self.audit.log(
                 action="RESTORE",
@@ -462,7 +462,7 @@ class PlaceRepository:
             term = f"%{search.strip()}%"
             params.extend([term, term])
 
-        # Bounding box filter calculation if lat, lon, radius_km specified
+
         if lat is not None and lon is not None and radius_km is not None and radius_km > 0:
             lat_delta = radius_km / 111.0
             lon_delta = radius_km / (111.0 * max(0.01, math.cos(math.radians(lat))))
@@ -556,7 +556,7 @@ class PlaceRepository:
                 (hid, place.id, place.version, action, changed_by, snapshot, summary, now),
             )
 
-        # Stream modification into canonical changelog for delta sync
+
         try:
             from src.db.canonical import CanonicalRepository
             action_map = {

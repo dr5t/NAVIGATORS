@@ -23,9 +23,9 @@ from src.db.database import get_db
 from src.db.rbac import RBACRepository, User, Role, Permission
 
 
-# =============================================================================
-# Password Security & Cryptographic Hashing
-# =============================================================================
+
+
+
 
 def hash_password(password: str, iterations: int = 600_000) -> str:
     """
@@ -87,9 +87,9 @@ def compute_token_hash(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
-# =============================================================================
-# Data Models
-# =============================================================================
+
+
+
 
 @dataclass
 class AuthIdentity:
@@ -155,9 +155,9 @@ class SessionContext:
         return d
 
 
-# =============================================================================
-# Authentication & Session Management Service
-# =============================================================================
+
+
+
 
 class AuthService:
     """
@@ -173,9 +173,9 @@ class AuthService:
         self.db_path = db_path
         self.rbac = rbac_repo or RBACRepository(db_path)
 
-    # -------------------------------------------------------------------------
-    # Identity Management
-    # -------------------------------------------------------------------------
+
+
+
 
     def create_identity(
         self,
@@ -219,9 +219,9 @@ class AuthService:
                 return None
             return AuthIdentity(**dict(row))
 
-    # -------------------------------------------------------------------------
-    # User Registration Flow
-    # -------------------------------------------------------------------------
+
+
+
 
     def register(
         self,
@@ -245,7 +245,7 @@ class AuthService:
         if not clean_name:
             raise ValueError("A display name is required.")
 
-        # Check existing user
+
         if self.rbac.get_user_by_email(clean_email):
             raise ValueError(f"User with email '{clean_email}' already exists.")
         if self.get_identity("local_password", clean_email):
@@ -254,7 +254,7 @@ class AuthService:
         user_id = f"usr_{secrets.token_hex(8)}"
         pwd_hash = hash_password(password)
 
-        # Create user and assign role
+
         user = self.rbac.create_user(
             user_id=user_id,
             email=clean_email,
@@ -264,7 +264,7 @@ class AuthService:
             initial_role_ids=[role_id],
         )
 
-        # Create authentication identity
+
         self.create_identity(
             user_id=user.id,
             provider="local_password",
@@ -272,7 +272,7 @@ class AuthService:
             credential_hash=pwd_hash,
         )
 
-        # Issue session token (30-day session)
+
         session_context, raw_token = self.create_session(
             user_id=user.id,
             is_guest=False,
@@ -283,10 +283,10 @@ class AuthService:
 
         return user, session_context, raw_token
 
-    # -------------------------------------------------------------------------
-    # Login Flow
-    # User -> Login -> Identity Verified -> Session/Token -> User Record -> Role Lookup -> Permissions Loaded
-    # -------------------------------------------------------------------------
+
+
+
+
 
     def login(
         self,
@@ -314,11 +314,11 @@ class AuthService:
         if user.status != "active":
             raise ValueError(f"User account status is '{user.status}'. Access denied.")
 
-        # Record login timestamp
+
         self.rbac.record_login(user.id)
         user = self.rbac.get_user(user.id) or user
 
-        # Create authenticated session
+
         session_context, raw_token = self.create_session(
             user_id=user.id,
             is_guest=False,
@@ -329,9 +329,9 @@ class AuthService:
 
         return user, session_context, raw_token
 
-    # -------------------------------------------------------------------------
-    # Guest Session Flow (No account required)
-    # -------------------------------------------------------------------------
+
+
+
 
     def create_guest_session(
         self,
@@ -350,9 +350,9 @@ class AuthService:
             ip_address=ip_address,
         )
 
-    # -------------------------------------------------------------------------
-    # Session Management
-    # -------------------------------------------------------------------------
+
+
+
 
     def create_session(
         self,
@@ -421,11 +421,11 @@ class AuthService:
 
             session = SessionRecord(**dict(row))
 
-            # Validate revocation
+
             if session.revoked_at is not None:
                 return None
 
-            # Validate expiration
+
             try:
                 expires_dt = datetime.fromisoformat(session.expires_at)
                 if expires_dt <= now_dt:
@@ -433,13 +433,13 @@ class AuthService:
             except ValueError:
                 return None
 
-            # Update last_seen_at
+
             conn.execute(
                 "UPDATE sessions SET last_seen_at = ? WHERE id = ?",
                 (now_str, session.id),
             )
 
-        # Flow for Guest Session (No account)
+
         if session.is_guest == 1 or session.user_id is None:
             guest_role = self.rbac.get_role("guest") or Role(
                 id="guest",
@@ -472,8 +472,8 @@ class AuthService:
                 db_path=str(self.db_path) if self.db_path else None,
             )
 
-        # Flow for Registered User
-        # authenticated_user -> database -> role -> permissions
+
+
         user = self.rbac.get_user(session.user_id)
         if not user or user.status != "active":
             return None

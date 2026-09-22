@@ -28,9 +28,9 @@ from src.db.authorization import AuthorizationService
 from fastapi import HTTPException
 
 
-# =============================================================================
-# Fixtures & Helpers
-# =============================================================================
+
+
+
 
 @pytest.fixture()
 def tmp_db(tmp_path):
@@ -64,9 +64,9 @@ def _submit(repo: DatasetRepository, contributor_id: str, activity: str = "walki
     )
 
 
-# =============================================================================
-# Phase 13 - Repository (State Machine) Tests
-# =============================================================================
+
+
+
 
 def test_internal_contributor_can_submit_session(tmp_db):
     """internal_contributor submits a session; status starts as 'uploaded'."""
@@ -203,7 +203,7 @@ def test_invalid_transition_raises_value_error(tmp_db):
     admin, _ = _register(tmp_db, "team_admin", "admin")
     repo = DatasetRepository(tmp_db)
 
-    # uploaded → validated (must go through validating first)
+
     session = _submit(repo, contributor.id)
     with pytest.raises(ValueError, match="Invalid state transition"):
         repo.validate_session(session_id=session.id, validator_id=admin.id)
@@ -219,7 +219,7 @@ def test_terminal_validated_state_cannot_transition(tmp_db):
     repo.start_validation(session_id=session.id, validator_id=admin.id)
     repo.validate_session(session_id=session.id, validator_id=admin.id)
 
-    # Cannot reject after validating
+
     with pytest.raises(ValueError, match="Invalid state transition"):
         repo.reject_session(
             session_id=session.id,
@@ -227,7 +227,7 @@ def test_terminal_validated_state_cannot_transition(tmp_db):
             rejection_reason="Attempting to reject an already validated session",
         )
 
-    # Cannot start validation again
+
     with pytest.raises(ValueError, match="Invalid state transition"):
         repo.start_validation(session_id=session.id, validator_id=admin.id)
 
@@ -245,9 +245,9 @@ def test_terminal_rejected_state_cannot_transition(tmp_db):
         repo.start_validation(session_id=session.id, validator_id=admin.id)
 
 
-# =============================================================================
-# Phase 13 - List & Stats Tests
-# =============================================================================
+
+
+
 
 def test_list_sessions_filtered_by_status(tmp_db):
     """list_sessions correctly filters by status."""
@@ -255,7 +255,7 @@ def test_list_sessions_filtered_by_status(tmp_db):
     admin, _ = _register(tmp_db, "team_admin", "admin")
     repo = DatasetRepository(tmp_db)
 
-    # Create 3 uploaded, validate 1
+
     s1 = _submit(repo, contributor.id, "walking")
     s2 = _submit(repo, contributor.id, "driving")
     s3 = _submit(repo, contributor.id, "gnss_imu")
@@ -298,27 +298,27 @@ def test_stats_returns_correct_counts(tmp_db):
     d = _submit(repo, contributor.id, "driving")
     g = _submit(repo, contributor.id, "gnss_outage")
 
-    # Validate walking session
+
     repo.start_validation(w.id, admin.id)
     repo.validate_session(w.id, admin.id)
 
-    # Reject driving session
+
     repo.reject_session(d.id, admin.id, "Poor GNSS coverage")
 
     stats = repo.get_stats()
 
     assert stats["total"] == 3
-    assert stats["by_status"]["uploaded"] == 1     # gnss_outage
-    assert stats["by_status"]["validated"] == 1    # walking
-    assert stats["by_status"]["rejected"] == 1     # driving
+    assert stats["by_status"]["uploaded"] == 1
+    assert stats["by_status"]["validated"] == 1
+    assert stats["by_status"]["rejected"] == 1
     assert stats["validated_for_training"] == 1
     assert stats["by_activity"]["walking"] == 1
     assert stats["by_activity"]["driving"] == 1
 
 
-# =============================================================================
-# Phase 13 - API-Level Tests
-# =============================================================================
+
+
+
 
 def test_api_normal_user_denied_dataset_submit(tmp_db, monkeypatch):
     """Normal 'user' role lacks dataset:create permission → 403."""
@@ -383,11 +383,11 @@ def test_api_team_admin_can_validate_session(tmp_db, monkeypatch):
 
     session = _submit(repo, contributor.id, "driving")
 
-    # Start validation
+
     r1 = api_start_validation(session_id=session.id, context=admin_session)
     assert r1["session"]["status"] == "validating"
 
-    # Validate
+
     r2 = api_validate_session(session_id=session.id, context=admin_session)
     assert r2["session"]["status"] == "validated"
     assert "message" in r2
@@ -441,9 +441,9 @@ def test_api_normal_user_denied_validate_endpoints(tmp_db, monkeypatch):
     assert exc.value.status_code == 403
 
 
-# =============================================================================
-# Phase 14 - Training ≠ Deployment (RBAC Enforced)
-# =============================================================================
+
+
+
 
 def test_training_does_not_equal_deployment(tmp_db):
     """
@@ -460,19 +460,19 @@ def test_training_does_not_equal_deployment(tmp_db):
     contrib_ctx = contrib_session.to_dict()
     admin_ctx   = admin_session.to_dict()
 
-    # internal_contributor CAN start training
+
     assert authz.can(contrib_ctx, "training:create", "training").allowed is True
 
-    # internal_contributor CANNOT deploy
+
     assert authz.can(contrib_ctx, "model:deploy", "model").allowed is False
 
-    # internal_contributor CANNOT validate datasets
+
     assert authz.can(contrib_ctx, "dataset:validate", "dataset").allowed is False
 
-    # team_admin CAN deploy
+
     assert authz.can(admin_ctx, "model:deploy", "model").allowed is True
 
-    # team_admin CAN validate datasets
+
     assert authz.can(admin_ctx, "dataset:validate", "dataset").allowed is True
 
 

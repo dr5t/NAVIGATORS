@@ -4,7 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from typing import List, Optional, Tuple
 import random
 
-# Import our new parser
+
 from src.data_prep.iovnbd_parser import discover_synchronized_sessions, parse_synchronized_iovnbd
 
 import json
@@ -33,19 +33,19 @@ class IOVNBDDataset(Dataset):
         self.targets_y = []
         
         for s_csv, v_csv in session_pairs:
-            # Parse the synchronized pair
+
             X, Y = parse_synchronized_iovnbd(s_csv, v_csv)
             n_samples = X.shape[0]
             
             if n_samples < window_size:
                 continue
                 
-            # Create sliding windows
+
             for start in range(0, n_samples - window_size, stride):
                 end = start + window_size
                 window_x = X[start:end]
                 
-                # The target is the velocity at the end of the window (simulating real-time estimation)
+
                 target_y = Y[end - 1]
                 
                 self.windows_x.append(window_x)
@@ -55,14 +55,14 @@ class IOVNBDDataset(Dataset):
             self.windows_x = np.array(self.windows_x, dtype=np.float32)
             self.targets_y = np.array(self.targets_y, dtype=np.float32)
             
-            # Calculate mean and std from this dataset if not provided (i.e. Training set)
+
             if self.mean is None or self.std is None:
-                # Shape is (N, window_size, 6), calculate per-channel across all samples and time steps
+
                 self.mean = np.mean(self.windows_x, axis=(0, 1), keepdims=True)
                 self.std = np.std(self.windows_x, axis=(0, 1), keepdims=True)
-                self.std[self.std == 0] = 1.0  # Prevent division by zero
+                self.std[self.std == 0] = 1.0
                 
-            # Apply Z-score normalization
+
             self.windows_x = (self.windows_x - self.mean) / self.std
             
         else:
@@ -90,7 +90,7 @@ def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int =
         print("ERROR: No IO-VNBD synchronized sessions found.")
         return None
         
-    # Sort for deterministic behavior, then shuffle with a fixed seed
+
     pairs = sorted(pairs)
     random.seed(42)
     random.shuffle(pairs)
@@ -105,14 +105,14 @@ def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int =
     
     print(f"Dataset split (Sessions): Train={len(train_pairs)}, Val={len(val_pairs)}, Test={len(test_pairs)}")
     
-    # Create Train dataset and compute normalization stats
+
     train_ds = IOVNBDDataset(train_pairs, window_size=window_size)
     
-    # Apply exactly the same stats to Val and Test
+
     val_ds = IOVNBDDataset(val_pairs, window_size=window_size, mean=train_ds.mean, std=train_ds.std)
     test_ds = IOVNBDDataset(test_pairs, window_size=window_size, mean=train_ds.mean, std=train_ds.std)
     
-    # Save normalization stats for Android inference
+
     os.makedirs(stats_dir, exist_ok=True)
     assert train_ds.mean is not None and train_ds.std is not None
     stats_dict = {

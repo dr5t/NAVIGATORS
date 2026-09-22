@@ -1,4 +1,4 @@
-// No npm dependencies: Chrome DevTools Protocol over Node's built-in WebSocket.
+
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, mkdtemp, rm } from 'node:fs/promises';
@@ -97,7 +97,7 @@ try {
     assert.equal(inference.length, 2);
     assert.ok(inference.every(Number.isFinite));
     console.log('Network disabled: page reloaded, map rendered, real ONNX/WASM inference passed.', inference);
-    // Feed controlled sensors into the actual engine, with its real model and EKF.
+    
     const outage = await evaluate(`(async () => {
         const engine = offlineEngine;
         engine.isCapturing = true;

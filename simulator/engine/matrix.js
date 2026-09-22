@@ -1,7 +1,7 @@
-/**
- * Lightweight Matrix Math Library for JavaScript EKF
- * Avoids the need for heavy external dependencies.
- */
+
+
+
+
 
 class Matrix {
     static zeros(rows, cols) {
@@ -96,7 +96,7 @@ class Matrix {
     }
 }
 
-// Export for ES modules or global window
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Matrix;
 } else {

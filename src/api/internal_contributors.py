@@ -22,9 +22,9 @@ auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request Models
-# =============================================================================
+
+
+
 
 class SubmitInternalRequestModel(BaseModel):
     reason: str = Field(..., min_length=5, description="Applicant motivation and project objectives")
@@ -44,9 +44,9 @@ def _extract_query_val(val: Any, default: Any = None) -> Any:
     return val if val is not None else default
 
 
-# =============================================================================
-# Endpoints
-# =============================================================================
+
+
+
 
 @router.post("/requests", status_code=201)
 def api_submit_internal_request(
@@ -144,7 +144,7 @@ def api_get_internal_request(
     if not req:
         raise HTTPException(status_code=404, detail=f"Application '{request_id}' not found")
 
-    # If not the owner, check internal_contributor:review
+
     if req.user_id != context.user.id:
         user_context = context.to_dict()
         decision = authz_service.can(user=user_context, action="internal_contributor:review", resource="contributor")

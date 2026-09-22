@@ -69,7 +69,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Optional: Load ML Model if available
+
 try:
     from models.trainer import Trainer
     checkpoint_path = os.path.join(os.path.dirname(__file__), "..", "..", "checkpoints", "best_model.pt")
@@ -103,7 +103,7 @@ except Exception as e:
 class NavigationSession:
     """Manages the state for a single connected client."""
     def __init__(self):
-        self.ekf = ExtendedKalmanFilter(dt=0.1) # Default dt, will adapt
+        self.ekf = ExtendedKalmanFilter(dt=0.1)
         self.dr = DeadReckoningEngine(dt=0.1)
         self.nhc = NonHolonomicConstraints()
         self.zupt = ZUPTDetector()
@@ -114,10 +114,10 @@ class NavigationSession:
         self.window_size = 200
         self.prev_gnss_available = False
         
-        # Trajectory history for the API
+
         self.trajectory = []
         
-        # Load real OSM data into RoadNetwork
+
         self.road_network = RoadNetwork()
         try:
             self.road_network.load_osm_network("data/road_network.json")
@@ -133,26 +133,26 @@ class NavigationSession:
         if dt <= 0: dt = 0.1
         self.last_time = current_time
 
-        # Update EKF and DR dt
+
         self.ekf.dt = dt
         self.dr.dt = dt
 
         accel = np.array(data.get("accel", [0, 0, 0]))
         gyro = np.array(data.get("gyro", [0, 0, 0]))
         
-        # GNSS processing
+
         gnss = data.get("gnss")
         gnss_available = False
         if gnss and gnss.get("lat") is not None and gnss.get("lon") is not None:
-            # We assume accuracy < 20m means good fix
+
             accuracy = gnss.get("accuracy", 100)
             if accuracy < 20.0:
                 gnss_available = True
         
-        # ZUPT
+
         is_stationary = self.zupt.update(accel, gyro, dt)
 
-        # AI Velocity Estimation
+
         ai_velocity = np.array([0.0, 0.0])
         self.window_buffer.append(np.concatenate([accel, gyro]))
         if len(self.window_buffer) > self.window_size:
@@ -166,14 +166,14 @@ class NavigationSession:
             with torch.no_grad():
                 ai_velocity = ml_model(window_tensor).numpy()[0]
         else:
-            # Fallback: assume zero or use previous if we have no model
+
             pass
 
-        # Handle Initialization
+
         if gnss_available and gnss is not None and not self.initialized:
-            # Simple init: assume origin is first GNSS, and speed is 0
-            # A real system would use a WGS84->ENU projection relative to a home point.
-            # We will use the lat/lon as a pseudo-ENU for visualization purposes, or setup a proper reference.
+
+
+
             self.ref_lat = gnss["lat"]
             self.ref_lon = gnss["lon"]
             self.ekf.initialize_from_gnss(position=np.array([0.0, 0.0]), velocity=np.array([0.0, 0.0]), heading=0.0)
@@ -186,7 +186,7 @@ class NavigationSession:
         meters_per_deg_lat = 111320.0
         meters_per_deg_lon = 111320.0 * np.cos(np.radians(self.ref_lat))
 
-        # State transitions based on GNSS
+
         if gnss_available and gnss is not None:
             if not self.prev_gnss_available and self.dr.is_active:
                 self.dr.stop()
@@ -208,17 +208,17 @@ class NavigationSession:
             
             self.dr.update(ai_speed=np.linalg.norm(ai_velocity), timestamp=current_time, gyro_yaw_rate=gyro[2])
         
-        # Prediction
+
         self.ekf.predict(accel, gyro, ai_velocity)
         
         if is_stationary:
             self.ekf.update_zupt()
 
-        # Output
+
         pos = self.ekf.get_position()
         vel = self.ekf.get_velocity()
         
-        # Map Matching
+
         map_match = self.map_matcher.match(position=pos[:2], heading=self.ekf.get_heading())
         est_lat = self.ref_lat + map_match.snapped_position[1] / meters_per_deg_lat
         est_lon = self.ref_lon + map_match.snapped_position[0] / meters_per_deg_lon
@@ -334,11 +334,11 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "dashboard"):
         await ws_manager.connect_dashboard(websocket)
         try:
             while True:
-                await websocket.receive_text() # Keep alive
+                await websocket.receive_text()
         except WebSocketDisconnect:
             ws_manager.disconnect_dashboard(websocket)
 
-# Global state for REST API
+
 active_sessions: Dict[str, NavigationSession] = {}
 
 class SessionStartResponse(BaseModel):
@@ -434,8 +434,8 @@ def get_metrics(session_id: str):
         "total_trajectory_points": len(session.trajectory)
     }
 
-# Serve the static simulator files
-# This must be mounted last so it doesn't override API routes
+
+
 from fastapi.responses import FileResponse
 
 @app.get("/dashboard")
@@ -548,6 +548,6 @@ if __name__ == "__main__":
     import uvicorn
     import sys
     import os
-    # Add root to pythonpath for internal imports
+
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
     uvicorn.run(app, host="0.0.0.0", port=8000)

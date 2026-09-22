@@ -36,9 +36,9 @@ def repo(temp_db: Path):
     return RBACRepository(temp_db)
 
 
-# =============================================================================
-# 1. Schema Initialization & Idempotency
-# =============================================================================
+
+
+
 
 def test_schema_tables_exist(temp_db: Path):
     """Verify all 5 core RBAC tables exist with primary keys and foreign keys."""
@@ -65,9 +65,9 @@ def test_schema_initialization_is_idempotent(temp_db: Path):
     assert perm_count >= 21
 
 
-# =============================================================================
-# 2. Initial Roles & Permissions Seeds
-# =============================================================================
+
+
+
 
 def test_initial_roles_catalog(repo: RBACRepository):
     """Ensure all 7 required initial roles are seeded correctly."""
@@ -149,9 +149,9 @@ def test_role_permissions_hierarchy(repo: RBACRepository):
     assert super_perms == all_perms
 
 
-# =============================================================================
-# 3. User Lifecycle & Constraints
-# =============================================================================
+
+
+
 
 def test_user_creation_and_query(repo: RBACRepository):
     """Create user and retrieve by ID and Email."""
@@ -202,9 +202,9 @@ def test_user_update_and_login_timestamp(repo: RBACRepository):
     assert user_after.last_login_at is not None
 
 
-# =============================================================================
-# 4. Dynamic Permission Evaluation (No Hardcoded Roles)
-# =============================================================================
+
+
+
 
 def test_dynamic_permission_evaluation(repo: RBACRepository):
     """
@@ -213,23 +213,23 @@ def test_dynamic_permission_evaluation(repo: RBACRepository):
     """
     user = repo.create_user("usr_eval", "eval@example.org", "Evaluator", initial_role_ids=["user"])
 
-    # Base user permissions
+
     assert repo.has_permission(user.id, "place:read") is True
     assert repo.has_permission(user.id, "contribution:create") is True
     assert repo.has_permission(user.id, "place:create") is False
     assert repo.has_permission(user.id, "model:deploy") is False
 
-    # Promote to local_contributor dynamically
+
     repo.assign_role_to_user(user.id, "local_contributor")
     assert repo.has_permission(user.id, "place:create") is True
     assert repo.has_permission(user.id, "model:deploy") is False
 
-    # Promote to team_admin dynamically
+
     repo.assign_role_to_user(user.id, "team_admin")
     assert repo.has_permission(user.id, "model:deploy") is True
     assert repo.has_permission(user.id, "role:assign") is True
 
-    # Revoke team_admin dynamically
+
     repo.remove_role_from_user(user.id, "team_admin")
     assert repo.has_permission(user.id, "model:deploy") is False
     assert repo.has_permission(user.id, "place:create") is True
@@ -240,10 +240,10 @@ def test_inactive_or_suspended_users_have_zero_permissions(repo: RBACRepository)
     user = repo.create_user(
         "usr_suspended", "suspend@example.org", "Suspended Admin", initial_role_ids=["super_admin"]
     )
-    # Active super admin has all permissions
+
     assert repo.has_permission(user.id, "model:deploy") is True
 
-    # Suspend user
+
     repo.update_user(user.id, status="suspended")
     assert repo.has_permission(user.id, "model:deploy") is False
     assert repo.has_permission(user.id, "place:read") is False
@@ -255,7 +255,7 @@ def test_foreign_key_cascades(repo: RBACRepository, temp_db: Path):
     user = repo.create_user("usr_cascade", "cascade@example.org", "Cascade", initial_role_ids=["user", "local_contributor"])
     assert len(repo.get_user_roles(user.id)) == 2
 
-    # Delete user directly
+
     conn = connect_db(temp_db)
     conn.execute("DELETE FROM users WHERE id = ?", (user.id,))
     conn.commit()
@@ -275,9 +275,9 @@ def test_export_rbac_matrix(repo: RBACRepository):
     assert "place:read" in matrix["role_permissions"]["guest"]
 
 
-# =============================================================================
-# 5. FastAPI RBAC Router Endpoints Direct Testing
-# =============================================================================
+
+
+
 
 def test_api_roles_and_permissions_endpoints():
     """Verify router functions get_roles and get_permissions."""
@@ -306,26 +306,26 @@ def test_api_user_creation_and_permission_check_endpoints():
     user_res = api_create_user(req)
     assert user_res["user"]["id"] == uid
 
-    # Check permission place:read -> True
+
     chk1 = api_check_permission(CheckPermissionRequest(user_id=uid, permission_id="place:read"))
     assert chk1["allowed"] is True
 
-    # Check permission model:deploy -> False
+
     chk2 = api_check_permission(CheckPermissionRequest(user_id=uid, permission_id="model:deploy"))
     assert chk2["allowed"] is False
 
-    # Promote user to team_admin
+
     promote_res = api_assign_user_role(uid, AssignRoleRequest(role_id="team_admin"))
     assert any(r["id"] == "team_admin" for r in promote_res["roles"])
 
-    # Check permission model:deploy -> Now True!
+
     chk3 = api_check_permission(CheckPermissionRequest(user_id=uid, permission_id="model:deploy"))
     assert chk3["allowed"] is True
 
-    # Revoke team_admin
+
     revoke_res = api_remove_user_role(uid, "team_admin")
     assert not any(r["id"] == "team_admin" for r in revoke_res["roles"])
 
-    # Check permission model:deploy -> False again!
+
     chk4 = api_check_permission(CheckPermissionRequest(user_id=uid, permission_id="model:deploy"))
     assert chk4["allowed"] is False

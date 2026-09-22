@@ -45,7 +45,7 @@ class RouteStep:
 @dataclass
 class Route:
     id: str
-    type: str  # "recommended", "alternative", "offline"
+    type: str
     total_distance_meters: float
     total_duration_seconds: float
     waypoints: List[Tuple[float, float]]
@@ -74,7 +74,7 @@ class RoutingEngine:
     @staticmethod
     def _haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate Great-Circle distance in meters."""
-        r = 6371000.0  # Earth radius in meters
+        r = 6371000.0
         phi1, phi2 = math.radians(lat1), math.radians(lat2)
         dphi = math.radians(lat2 - lat1)
         dlam = math.radians(lon2 - lon1)
@@ -97,7 +97,7 @@ class RoutingEngine:
 
         dist_direct = self._haversine_distance(orig_lat, orig_lon, dest_lat, dest_lon)
         if dist_direct < 1.0:
-            # Origin and destination are identical
+
             step = RouteStep(
                 instruction="You have arrived at your destination.",
                 street_name="Destination",
@@ -124,7 +124,7 @@ class RoutingEngine:
                 "offline": r.to_dict() if is_offline else None,
             }
 
-        # Synthesize waypoint Interpolation along geodesic path
+
         waypoints: List[Tuple[float, float]] = []
         num_points = max(5, int(dist_direct / 200.0))
         for i in range(num_points + 1):
@@ -133,7 +133,7 @@ class RoutingEngine:
             w_lon = orig_lon + (dest_lon - orig_lon) * t
             waypoints.append((round(w_lat, 6), round(w_lon, 6)))
 
-        # Average driving speed ~40 km/h = 11.11 m/s
+
         avg_speed_ms = 11.11
         total_duration = dist_direct / avg_speed_ms
 
@@ -165,7 +165,7 @@ class RoutingEngine:
             steps=steps,
         )
 
-        # Alternative route (slightly longer path, e.g. +15% distance)
+
         alt_dist = dist_direct * 1.15
         alt_dur = total_duration * 1.15
         alt_waypoints = [(w[0] + 0.0003, w[1] + 0.0003) for w in waypoints]
@@ -188,7 +188,7 @@ class RoutingEngine:
             steps=alt_steps,
         )
 
-        # Offline route (computed strictly from local topology)
+
         offline_route = Route(
             id="route_off_3",
             type="offline",

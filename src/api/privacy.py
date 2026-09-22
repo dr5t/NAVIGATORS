@@ -19,9 +19,9 @@ init_db()
 privacy_repo = PrivacyRepository()
 
 
-# =============================================================================
-# Request / Response Models
-# =============================================================================
+
+
+
 
 class UpdateDomainSettingRequest(BaseModel):
     stored_locally: Optional[bool] = None
@@ -62,9 +62,9 @@ class DeleteAccountResponse(BaseModel):
     timestamp: str
 
 
-# =============================================================================
-# Helper function
-# =============================================================================
+
+
+
 
 def _ensure_authenticated_user(context: SessionContext) -> str:
     if context.is_guest or not context.user_id:
@@ -75,9 +75,9 @@ def _ensure_authenticated_user(context: SessionContext) -> str:
     return context.user_id
 
 
-# =============================================================================
-# Endpoints
-# =============================================================================
+
+
+
 
 @router.get("/settings", response_model=PrivacySettingsSummaryResponse)
 def get_privacy_settings(

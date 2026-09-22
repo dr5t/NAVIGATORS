@@ -122,11 +122,11 @@ def test_full_role_action_authorization_matrix(temp_db):
     authz = AuthorizationService(db_path)
     sessions = temp_db["sessions"]
 
-    # Expected matrix mapping: role_id -> dict of action -> allowed boolean
+
     MATRIX_EXPECTATIONS = {
         "guest": {
             "place:read": True,
-            "sync:pull": False,  # Guest navigation uses public place:read; sync:pull requires auth account
+            "sync:pull": False,
             "contribution:create": False,
             "contribution:update": False,
             "contribution:approve": False,
@@ -219,9 +219,9 @@ def test_full_role_action_authorization_matrix(temp_db):
             )
 
 
-# =============================================================================
-# Direct API Endpoint Verification Across Every Role
-# =============================================================================
+
+
+
 
 def test_api_action_1_and_2_view_map_and_navigate(temp_db):
     """Action 1 & 2: View Map / Navigate is ALLOWED for all roles including Guest."""
@@ -236,13 +236,13 @@ def test_api_action_3_add_place(temp_db):
     sessions = temp_db["sessions"]
     req = CreatePlaceRequest(name="Audit Cafe", category="cafe", latitude=12.9, longitude=77.5)
 
-    # Guest -> DENY (401/403)
+
     _, guest_ctx = sessions["guest"]
     with pytest.raises(HTTPException) as exc:
         add_place(req, context=guest_ctx)
     assert exc.value.status_code in (401, 403)
 
-    # User, Local, Internal, Moderator, Admin -> ALLOW (200/201)
+
     for role_id in ["user", "local_contributor", "internal_contributor", "moderator", "team_admin"]:
         _, session_ctx = sessions[role_id]
         res = add_place(req, context=session_ctx)
@@ -256,21 +256,21 @@ def test_api_action_4_edit_own_draft_and_ownership(temp_db):
     _, user2_ctx = sessions["user2"]
     _, guest_ctx = sessions["guest"]
 
-    # 1. User 1 creates draft
+
     create_res = add_place(CreatePlaceRequest(name="User1 Draft", category="fuel", latitude=10.0, longitude=20.0), context=user_ctx)
     contrib_id = create_res["contribution"]["id"]
 
-    # 2. Owner (User 1) updates own draft -> ALLOWED
+
     upd_req = UpdateContributionRequest(title="User1 Draft Updated")
     upd_res = update_contribution(contrib_id, upd_req, context=user_ctx)
     assert upd_res["contribution"]["title"] == "User1 Draft Updated"
 
-    # 3. Non-owner (User 2) attempts to update User 1's draft -> DENIED (403)
+
     with pytest.raises(HTTPException) as exc:
         update_contribution(contrib_id, upd_req, context=user2_ctx)
     assert exc.value.status_code == 403
 
-    # 4. Guest attempts to update User 1's draft -> DENIED (401/403)
+
     with pytest.raises(HTTPException) as exc:
         update_contribution(contrib_id, upd_req, context=guest_ctx)
     assert exc.value.status_code in (401, 403)
@@ -281,25 +281,25 @@ def test_api_action_5_approve_contribution(temp_db):
     sessions = temp_db["sessions"]
     _, user_ctx = sessions["user"]
 
-    # Create pending contribution
+
     draft_res = add_place(CreatePlaceRequest(name="Approve Test Place", category="park", latitude=12.0, longitude=77.0, submit_now=True), context=user_ctx)
     contrib_id = draft_res["contribution"]["id"]
     rev_req = ReviewContributionRequest(decision="approve", notes="Moderation approval test")
 
-    # Guest -> 401/403
+
     _, guest_ctx = sessions["guest"]
     with pytest.raises(HTTPException) as exc:
         approve_contribution(contrib_id, rev_req, context=guest_ctx)
     assert exc.value.status_code in (401, 403)
 
-    # User, Local Contributor, Internal Contributor -> 403 DENY
+
     for role_id in ["user", "local_contributor", "internal_contributor"]:
         _, s_ctx = sessions[role_id]
         with pytest.raises(HTTPException) as exc:
             approve_contribution(contrib_id, rev_req, context=s_ctx)
         assert exc.value.status_code == 403
 
-    # Moderator -> ALLOWED (200)
+
     _, mod_ctx = sessions["moderator"]
     mod_res = approve_contribution(contrib_id, req=None, context=mod_ctx)
     assert mod_res["contribution"]["status"] == "approved"
@@ -310,20 +310,20 @@ def test_api_action_6_upload_dataset(temp_db):
     sessions = temp_db["sessions"]
     ds_req = SubmitSessionModel(activity_type="walking", device="Pixel 8", duration_seconds=100.0, consent=True)
 
-    # Guest -> 401/403
+
     _, guest_ctx = sessions["guest"]
     with pytest.raises(HTTPException) as exc:
         api_submit_session(ds_req, context=guest_ctx)
     assert exc.value.status_code in (401, 403)
 
-    # User, Local Contributor, Moderator -> 403 DENY
+
     for role_id in ["user", "local_contributor", "moderator"]:
         _, s_ctx = sessions[role_id]
         with pytest.raises(HTTPException) as exc:
             api_submit_session(ds_req, context=s_ctx)
         assert exc.value.status_code == 403
 
-    # Internal Contributor & Admin -> ALLOWED (201)
+
     for role_id in ["internal_contributor", "team_admin"]:
         _, s_ctx = sessions[role_id]
         res = api_submit_session(ds_req, context=s_ctx)
@@ -352,27 +352,27 @@ def test_api_action_8_approve_model(temp_db):
     repo = ModelRegistryRepository(db_path)
     admin_usr, admin_ctx = sessions["team_admin"]
 
-    # Register candidate model & move to review
+
     cand = repo.register_candidate(name="v2.0-eval", registered_by=admin_usr.id)
     repo.record_evaluation(cand.id, {"test_mae": 0.40})
     repo.open_for_review(cand.id, reviewer_id=admin_usr.id)
 
     appr_req = ApproveModelRequest(notes="Approved for benchmark")
 
-    # Guest -> 401/403
+
     _, guest_ctx = sessions["guest"]
     with pytest.raises(HTTPException) as exc:
         approve_model(cand.id, body=appr_req, context=guest_ctx)
     assert exc.value.status_code in (401, 403)
 
-    # User, Local, Internal, Moderator -> 403 DENY
+
     for role_id in ["user", "local_contributor", "internal_contributor", "moderator"]:
         _, s_ctx = sessions[role_id]
         with pytest.raises(HTTPException) as exc:
             approve_model(cand.id, body=appr_req, context=s_ctx)
         assert exc.value.status_code == 403
 
-    # Team Admin -> ALLOWED
+
     res = approve_model(cand.id, body=appr_req, context=admin_ctx)
     assert res["status"] == "success"
 
@@ -392,13 +392,13 @@ def test_api_action_9_deploy_model(temp_db, tmp_path):
     repo.open_for_review(cand.id, reviewer_id=admin_usr.id)
     repo.approve_model(cand.id, reviewer_id=admin_usr.id, notes="Qualified")
 
-    # Guest -> 401/403
+
     _, guest_ctx = sessions["guest"]
     with pytest.raises(HTTPException) as exc:
         deploy_model(cand.id, context=guest_ctx)
     assert exc.value.status_code in (401, 403)
 
-    # User, Local, Internal, Moderator -> 403 DENY
+
     for role_id in ["user", "local_contributor", "internal_contributor", "moderator"]:
         _, s_ctx = sessions[role_id]
         with pytest.raises(HTTPException) as exc:
@@ -416,20 +416,20 @@ def test_api_action_10_manage_roles(temp_db):
     """Action 10: Manage roles / User admin is DENIED for Guest (401), User/Local/Internal/Moderator (403), ALLOWED for Admin."""
     sessions = temp_db["sessions"]
 
-    # Guest -> 401
+
     _, guest_ctx = sessions["guest"]
     with pytest.raises(HTTPException) as exc:
         list_admin_users(session=guest_ctx)
     assert exc.value.status_code in (401, 403)
 
-    # User, Local, Internal -> 403 DENY
+
     for role_id in ["user", "local_contributor", "internal_contributor"]:
         _, s_ctx = sessions[role_id]
         with pytest.raises(HTTPException) as exc:
             list_admin_users(session=s_ctx)
         assert exc.value.status_code == 403
 
-    # Team Admin & Super Admin -> ALLOWED
+
     for role_id in ["team_admin", "super_admin"]:
         _, s_ctx = sessions[role_id]
         res = list_admin_users(session=s_ctx)

@@ -126,7 +126,7 @@ class ReportRepository:
         self,
         report_id: str,
         resolved_by: str,
-        decision: str,  # 'resolved' or 'dismissed'
+        decision: str,
         notes: Optional[str] = None,
     ) -> Optional[Report]:
         """Moderator action to resolve or dismiss a report."""

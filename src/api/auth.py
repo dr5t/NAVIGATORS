@@ -15,16 +15,16 @@ from src.db.authorization import AuthorizationService, AuthorizationResult
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-# Ensure DB is initialized on module load
+
 init_db()
 repo = RBACRepository()
 auth_service = AuthService()
 authz_service = AuthorizationService()
 
 
-# =============================================================================
-# Request & Response Models
-# =============================================================================
+
+
+
 
 class RegisterRequest(BaseModel):
     email: str
@@ -68,11 +68,11 @@ class AuthorizeRequest(BaseModel):
     resource: Optional[Dict[str, Any]] = None
 
 
-# =============================================================================
-# Security Dependencies
-# Server-side authentication and dynamic authorization gates.
-# Never trust client-supplied role or permission headers.
-# =============================================================================
+
+
+
+
+
 
 def extract_bearer_token(authorization: Optional[str] = Header(None)) -> str:
     """Extract raw bearer token string from Authorization header."""
@@ -149,9 +149,9 @@ def require_authz(action: str, resource_loader: Optional[Any] = None):
 
 
 
-# =============================================================================
-# Authentication Endpoints
-# =============================================================================
+
+
+
 
 @router.post("/register", status_code=201)
 def register(
@@ -266,9 +266,9 @@ def authorize_action(
 
 
 
-# =============================================================================
-# Roles, Permissions & RBAC Catalog Endpoints
-# =============================================================================
+
+
+
 
 @router.get("/roles")
 def get_roles():
@@ -300,9 +300,9 @@ def get_rbac_matrix():
     return repo.export_rbac_matrix()
 
 
-# =============================================================================
-# User Administration Endpoints
-# =============================================================================
+
+
+
 
 @router.post("/users", status_code=201)
 def create_user(req: CreateUserRequest):

@@ -25,7 +25,7 @@ class ContributionState:
     DRAFT = "draft"
     SUBMITTED = "submitted"
     PENDING_REVIEW = "pending_review"
-    PENDING = "pending"  # Recognized alias for pending_review
+    PENDING = "pending"
     APPROVED = "approved"
     PUBLISHED = "published"
     REJECTED = "rejected"
@@ -62,9 +62,9 @@ class ContributionStateMachine:
     Ensures that only authorized actors can trigger allowed state transitions.
     """
 
-    # Legal state transition rules table
+
     RULES: Dict[Tuple[str, str], TransitionRule] = {
-        # 1. Author submits draft for ingestion
+
         (ContributionState.DRAFT, ContributionState.SUBMITTED): TransitionRule(
             source=ContributionState.DRAFT,
             target=ContributionState.SUBMITTED,
@@ -72,7 +72,7 @@ class ContributionStateMachine:
             owner_only=True,
             description="Author submits drafted contribution for triage",
         ),
-        # Direct submission to review queue
+
         (ContributionState.DRAFT, ContributionState.PENDING_REVIEW): TransitionRule(
             source=ContributionState.DRAFT,
             target=ContributionState.PENDING_REVIEW,
@@ -80,14 +80,14 @@ class ContributionStateMachine:
             owner_only=True,
             description="Author submits drafted contribution directly to review queue",
         ),
-        # 2. Ingestion pipeline / triage queues submitted contribution for moderation
+
         (ContributionState.SUBMITTED, ContributionState.PENDING_REVIEW): TransitionRule(
             source=ContributionState.SUBMITTED,
             target=ContributionState.PENDING_REVIEW,
             required_permission="contribution:read",
             description="Queues submitted contribution for moderation review",
         ),
-        # 3. Reviewer approves submission (Moderator only)
+
         (ContributionState.PENDING_REVIEW, ContributionState.APPROVED): TransitionRule(
             source=ContributionState.PENDING_REVIEW,
             target=ContributionState.APPROVED,
@@ -95,7 +95,7 @@ class ContributionStateMachine:
             reviewer_only=True,
             description="Reviewer approves contribution for map inclusion",
         ),
-        # 4. Reviewer rejects submission (Moderator only)
+
         (ContributionState.PENDING_REVIEW, ContributionState.REJECTED): TransitionRule(
             source=ContributionState.PENDING_REVIEW,
             target=ContributionState.REJECTED,
@@ -103,7 +103,7 @@ class ContributionStateMachine:
             reviewer_only=True,
             description="Reviewer rejects contribution with rationale",
         ),
-        # 4b. Reviewer requests changes from author
+
         (ContributionState.PENDING_REVIEW, ContributionState.CHANGES_REQUESTED): TransitionRule(
             source=ContributionState.PENDING_REVIEW,
             target=ContributionState.CHANGES_REQUESTED,
@@ -111,7 +111,7 @@ class ContributionStateMachine:
             reviewer_only=True,
             description="Reviewer requests revisions on contribution from author",
         ),
-        # 4c. Author resubmits after making requested changes
+
         (ContributionState.CHANGES_REQUESTED, ContributionState.PENDING_REVIEW): TransitionRule(
             source=ContributionState.CHANGES_REQUESTED,
             target=ContributionState.PENDING_REVIEW,
@@ -119,7 +119,7 @@ class ContributionStateMachine:
             owner_only=True,
             description="Author resubmits revised contribution for moderation review",
         ),
-        # 4d. Author withdraws contribution in changes_requested status
+
         (ContributionState.CHANGES_REQUESTED, ContributionState.WITHDRAWN): TransitionRule(
             source=ContributionState.CHANGES_REQUESTED,
             target=ContributionState.WITHDRAWN,
@@ -127,7 +127,7 @@ class ContributionStateMachine:
             owner_only=True,
             description="Author withdraws contribution after revision request",
         ),
-        # 5. Canonical map publisher synchronizes approved data to live map
+
         (ContributionState.APPROVED, ContributionState.PUBLISHED): TransitionRule(
             source=ContributionState.APPROVED,
             target=ContributionState.PUBLISHED,
@@ -135,7 +135,7 @@ class ContributionStateMachine:
             staff_only=True,
             description="Synchronizes approved contribution into canonical map dataset",
         ),
-        # 6. Cancellation / withdrawal by author
+
         (ContributionState.DRAFT, ContributionState.WITHDRAWN): TransitionRule(
             source=ContributionState.DRAFT,
             target=ContributionState.WITHDRAWN,
@@ -178,23 +178,23 @@ class ContributionStateMachine:
         current_norm = current_state.lower()
         target_norm = target_state.lower()
 
-        # Normalize 'pending' alias to canonical 'pending_review'
+
         if current_norm == "pending":
             current_norm = ContributionState.PENDING_REVIEW
         if target_norm == "pending":
             target_norm = ContributionState.PENDING_REVIEW
 
-        # 1. State validity check
+
         if current_norm not in ContributionState.ALL:
             return False, f"Unknown current state '{current_state}'.", "INVALID_STATE"
         if target_norm not in ContributionState.ALL:
             return False, f"Unknown target state '{target_state}'.", "INVALID_STATE"
 
-        # 2. No-op transition
+
         if current_norm == target_norm:
             return True, f"Resource is already in state '{target_norm}'.", "NO_CHANGE"
 
-        # 3. Check legal transition rule in state machine
+
         transition_key = (current_norm, target_norm)
         rule = cls.RULES.get(transition_key)
 
@@ -206,7 +206,7 @@ class ContributionStateMachine:
                 "INVALID_STATE_TRANSITION",
             )
 
-        # 4. Extract actor context
+
         user_id = None
         user_perms: Set[str] = set()
         user_roles: Set[str] = set()
@@ -252,11 +252,11 @@ class ContributionStateMachine:
         is_super_admin = "super_admin" in user_roles
         is_moderator = "moderator" in user_roles or "team_admin" in user_roles or is_super_admin
 
-        # Guests cannot trigger state transitions
+
         if is_guest or not user_id:
             return False, "Authentication is required to trigger state transitions.", "UNAUTHENTICATED"
 
-        # 5. Extract resource owner
+
         resource_owner_id = None
         if hasattr(resource, "owner_id"):
             resource_owner_id = str(resource.owner_id)
@@ -267,7 +267,7 @@ class ContributionStateMachine:
 
         is_owner = bool(resource_owner_id and resource_owner_id == user_id)
 
-        # 6. Enforce Owner-Only constraint
+
         if rule.owner_only and not is_owner and not is_super_admin:
             return (
                 False,
@@ -275,8 +275,8 @@ class ContributionStateMachine:
                 "NOT_OWNER",
             )
 
-        # 7. Enforce Reviewer-Only constraint (Approve / Reject)
-        # Standard user CANNOT approve (User -> APPROVED is strictly impossible)
+
+
         if rule.reviewer_only:
             if rule.required_permission not in user_perms and not is_super_admin:
                 return (
@@ -292,7 +292,7 @@ class ContributionStateMachine:
                     "PERMISSION_DENIED",
                 )
 
-        # 8. Enforce Staff-Only constraint (Publishing to canonical map data)
+
         if rule.staff_only:
             if not is_moderator and not is_super_admin:
                 return (
@@ -301,7 +301,7 @@ class ContributionStateMachine:
                     "PERMISSION_DENIED",
                 )
 
-        # 9. Required permission check
+
         if rule.required_permission not in user_perms and not is_super_admin:
             return (
                 False,

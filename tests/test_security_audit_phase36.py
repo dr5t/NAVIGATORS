@@ -75,15 +75,15 @@ def _create_user_and_context(rbac_svc: RBACRepository, auth_svc: AuthService, em
     return user, ctx, raw_token
 
 
-# =============================================================================
-# 1. IDOR & Contribution Privacy: User A accessing /api/contributions/user/USER_B_ID
-# =============================================================================
+
+
+
 
 def test_idor_user_b_private_contributions_not_exposed(temp_db, rbac_repo, auth_service, contrib_repo):
     user_a, ctx_a, _ = _create_user_and_context(rbac_repo, auth_service, "user.a@example.com", "User A", "user")
     user_b, ctx_b, _ = _create_user_and_context(rbac_repo, auth_service, "user.b@example.com", "User B", "user")
 
-    # User B creates 1 draft contribution and 1 published contribution
+
     draft_id = f"contrib_{uuid.uuid4().hex[:8]}"
     contrib_repo.create(
         contribution_id=draft_id,
@@ -104,7 +104,7 @@ def test_idor_user_b_private_contributions_not_exposed(temp_db, rbac_repo, auth_
         status="published",
     )
 
-    # Filtering logic for GET /api/v1/contributions/user/USER_B_ID
+
     items = contrib_repo.list(owner_id=user_b.id)
     caller_id = ctx_a.user.id if (ctx_a and ctx_a.user) else user_a.id
     caller_roles = [r.id for r in ctx_a.roles] if ctx_a else []
@@ -113,7 +113,7 @@ def test_idor_user_b_private_contributions_not_exposed(temp_db, rbac_repo, auth_
     visible = [it for it in items if not (it.status == "draft" and it.owner_id != caller_id and not is_staff)]
     titles = [c.title for c in visible]
 
-    # MUST NOT expose User B's draft to User A!
+
     assert "User B Secret Home Draft" not in titles
     assert "User B Public Park" in titles
 
@@ -131,15 +131,15 @@ def test_idor_direct_get_draft_by_id_denied_for_non_owner(temp_db, rbac_repo, au
         status="draft",
     )
 
-    # AuthorizationService checks if User A can read User B's draft
+
     decision = authz_service.can(user=ctx_a, action="contribution:read", resource=item)
     assert decision.allowed is False
     assert decision.code == "NOT_OWNER"
 
 
-# =============================================================================
-# 2. Contribution Ownership Security (Update, Withdraw Locks)
-# =============================================================================
+
+
+
 
 def test_contribution_ownership_tamper_denied(temp_db, rbac_repo, auth_service, authz_service, contrib_repo):
     user_a, ctx_a, _ = _create_user_and_context(rbac_repo, auth_service, "user.tamper.a@example.com", "User Tamper A", "user")
@@ -154,25 +154,25 @@ def test_contribution_ownership_tamper_denied(temp_db, rbac_repo, auth_service, 
         status="draft",
     )
 
-    # User A attempts to update User B's contribution
+
     update_decision = authz_service.can(user=ctx_a, action="contribution:update", resource=item)
     assert update_decision.allowed is False
     assert update_decision.code == "NOT_OWNER"
 
-    # User A attempts to withdraw User B's contribution
+
     withdraw_decision = authz_service.can(user=ctx_a, action="contribution:withdraw", resource=item)
     assert withdraw_decision.allowed is False
     assert withdraw_decision.code == "NOT_OWNER"
 
 
-# =============================================================================
-# 3. Privilege Escalation & Unauthorized Model Deployment
-# =============================================================================
+
+
+
 
 def test_unauthorized_model_deployment_denied_for_standard_user(temp_db, rbac_repo, auth_service, authz_service):
     user, ctx_user, _ = _create_user_and_context(rbac_repo, auth_service, "standard.user@example.com", "Standard User", "user")
 
-    # Check permission model:deploy for standard user
+
     decision = authz_service.can(user=ctx_user, action="model:deploy", resource="model")
     assert decision.allowed is False
     assert decision.code == "PERMISSION_DENIED"
@@ -181,7 +181,7 @@ def test_unauthorized_model_deployment_denied_for_standard_user(temp_db, rbac_re
 def test_model_deployment_allowed_for_team_admin(temp_db, rbac_repo, auth_service, authz_service, model_repo):
     admin, ctx_admin, _ = _create_user_and_context(rbac_repo, auth_service, "team.admin@example.com", "Team Admin", "team_admin")
 
-    # Check permission model:deploy for team admin
+
     decision = authz_service.can(user=ctx_admin, action="model:deploy", resource="model")
     assert decision.allowed is True
     assert decision.code == "AUTHORIZED"
@@ -195,30 +195,30 @@ def test_model_deployment_allowed_for_team_admin(temp_db, rbac_repo, auth_servic
     assert deployed.status == "production"
 
 
-# =============================================================================
-# 4. Unauthorized Role Manipulation
-# =============================================================================
+
+
+
 
 def test_unauthorized_role_assignment_denied(temp_db, rbac_repo, auth_service, authz_service):
     user, ctx_user, _ = _create_user_and_context(rbac_repo, auth_service, "user.selfpromote@example.com", "Self Promote User", "user")
 
-    # Standard user attempts action 'role:assign'
+
     decision = authz_service.can(user=ctx_user, action="role:assign")
     assert decision.allowed is False
     assert decision.code == "PERMISSION_DENIED"
 
 
-# =============================================================================
-# 5. Token Invalidation (Revoked & Expired Sessions)
-# =============================================================================
+
+
+
 
 def test_revoked_session_token_rejected(temp_db, auth_service, rbac_repo):
     user, ctx_user, raw_token = _create_user_and_context(rbac_repo, auth_service, "revoke.user@example.com", "Revoke User", "user")
 
-    # Revoke session by raw token
+
     auth_service.revoke_session(raw_token)
 
-    # Resolving revoked session must return None
+
     resolved = auth_service.resolve_session(raw_token)
     assert resolved is None
 
@@ -239,14 +239,14 @@ def test_expired_session_token_rejected(temp_db, auth_service, rbac_repo):
             (str(uuid.uuid4()), token_hash, user.id, past_expiry, past_expiry, past_expiry),
         )
 
-    # Resolving expired token must return None
+
     resolved = auth_service.resolve_session(raw_token)
     assert resolved is None
 
 
-# =============================================================================
-# 6. Upload Path Traversal & Sanitization
-# =============================================================================
+
+
+
 
 def test_path_traversal_sanitization():
     unsafe_path = "../../etc/passwd"
@@ -256,9 +256,9 @@ def test_path_traversal_sanitization():
     assert safe_path == "data/datasets/passwd"
 
 
-# =============================================================================
-# 7. Audit-Log Integrity & Traceability
-# =============================================================================
+
+
+
 
 def test_audit_log_mutation_traceability(temp_db, audit_repo, rbac_repo):
     user = rbac_repo.create_user(user_id=str(uuid.uuid4()), email="audit.user@example.com", name="Audit User")
