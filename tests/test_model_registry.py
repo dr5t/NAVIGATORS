@@ -101,7 +101,7 @@ def test_seed_production_model(repo):
     prod = repo.seed_production_model()
     assert prod is not None
     assert prod.status == "production"
-    assert prod.name == "TCN v1.0 — Verified Production (4.2039 m/s)"
+    assert prod.name == "TCN v1.0 - Verified Production (4.2039 m/s)"
     assert prod.test_mae == 4.2039
 
     # Second call should be idempotent and return identical entry

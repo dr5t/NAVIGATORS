@@ -1,5 +1,5 @@
 """
-Navigators IDR — LSTM Velocity Estimator
+Navigators IDR - LSTM Velocity Estimator
 Bidirectional LSTM with attention for velocity estimation from IMU sequences.
 
 Compared to TCN:
@@ -8,8 +8,8 @@ Compared to TCN:
     - Heavier compute (not ideal for real-time edge deployment)
     - Sequential nature limits parallelism
 
-Input:  (batch, window_size, 6) — [acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z]
-Output: (batch, 2) — [v_north, v_east] predicted velocity
+Input:  (batch, window_size, 6) - [acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z]
+Output: (batch, 2) - [v_north, v_east] predicted velocity
 """
 
 import torch
@@ -95,7 +95,7 @@ class LSTMVelocityEstimator(nn.Module):
         # Input normalization
         self.input_norm = nn.LayerNorm(input_channels)
 
-        # Input projection (optional — helps with very noisy IMU data)
+        # Input projection (optional - helps with very noisy IMU data)
         self.input_proj = nn.Sequential(
             nn.Linear(input_channels, hidden_size // 2),
             nn.ReLU(),

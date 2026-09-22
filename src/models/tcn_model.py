@@ -1,5 +1,5 @@
 """
-Navigators IDR — Temporal Convolutional Network (TCN)
+Navigators IDR - Temporal Convolutional Network (TCN)
 Lightweight TCN for velocity estimation from windowed IMU data.
 
 Architecture:
@@ -7,8 +7,8 @@ Architecture:
     - Residual connections (skip connections) for gradient flow
     - Designed for edge deployment (~500K parameters)
 
-Input:  (batch, window_size, 6) — [acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z]
-Output: (batch, 2) — [v_north, v_east] predicted velocity
+Input:  (batch, window_size, 6) - [acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z]
+Output: (batch, 2) - [v_north, v_east] predicted velocity
 """
 
 import torch
@@ -189,7 +189,7 @@ class TCNVelocityEstimator(nn.Module):
 
         Args:
             x: (batch, window_size, input_channels) IMU window data.
-               Note: Input is (batch, seq_len, channels) — we transpose internally.
+               Note: Input is (batch, seq_len, channels) - we transpose internally.
 
         Returns:
             (batch, output_dim) predicted velocity.

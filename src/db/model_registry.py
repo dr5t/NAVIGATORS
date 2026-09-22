@@ -512,7 +512,7 @@ class ModelRegistryRepository:
 
     def seed_production_model(
         self,
-        name: str = "TCN v1.0 — Verified Production (4.2039 m/s)",
+        name: str = "TCN v1.0 - Verified Production (4.2039 m/s)",
         test_mae: float = 4.2039,
         test_rmse: float = 6.0735,
         checkpoint_path: str = "checkpoints/best_model.pt",

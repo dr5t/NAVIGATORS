@@ -1,5 +1,5 @@
 """
-Navigators IDR — Model Trainer
+Navigators IDR - Model Trainer
 Training loop with validation, early stopping, checkpointing, and logging.
 
 Supports:

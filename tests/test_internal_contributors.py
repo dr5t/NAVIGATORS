@@ -377,7 +377,7 @@ def test_api_submit_and_reject_full_flow(monkeypatch):
 def test_api_duplicate_submission_returns_409(monkeypatch):
     """
     Submitting a second internal contributor request while one is pending
-    must return HTTP 409 Conflict — not silently create a second record.
+    must return HTTP 409 Conflict - not silently create a second record.
     """
     import src.api.internal_contributors as ic_mod
     from fastapi import HTTPException as FHTTPException

@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — Local Offline OpenStreetMap & POI Database
+ * Navigators IDR - Local Offline OpenStreetMap & POI Database
  * Manages downloaded OSM street vector networks and community points of interest.
  * Handles equirectangular coordinate transforms, spatial bounds, and map layer rendering.
  */

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Navigators IDR — Model Evaluation
+Navigators IDR - Model Evaluation
 Evaluate trained models against performance targets.
 
 Usage:
@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     print("\n" + "=" * 60)
-    print("  Navigators IDR — Model Evaluation")
+    print("  Navigators IDR - Model Evaluation")
     print("=" * 60)
 
     # Load model if available

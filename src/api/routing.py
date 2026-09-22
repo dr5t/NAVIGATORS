@@ -1,5 +1,5 @@
 """
-Navigators IDR — Turn-by-Turn Routing API Router (Phase 31)
+Navigators IDR - Turn-by-Turn Routing API Router (Phase 31)
 Exposes the turn-by-turn routing engine calculating recommended,
 alternative, and offline routes.
 """

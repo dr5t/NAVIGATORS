@@ -57,7 +57,7 @@ body.admin-body {
 .brand-logo {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #0284c7, #2563eb);
+    background: #2563eb;
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -319,7 +319,7 @@ body.admin-body {
 
 .kpi-card.highlight {
     border-color: rgba(245, 158, 11, 0.4);
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), var(--bg-surface));
+    background: var(--bg-surface);
 }
 
 .kpi-title {

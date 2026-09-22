@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Navigators IDR — Preprocessing Visualization
+Navigators IDR - Preprocessing Visualization
 Generates a visual comparison of Raw vs Filtered IMU data to demonstrate
 outlier handling, median filtering, and Butterworth low-pass filtering.
 """

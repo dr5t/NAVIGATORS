@@ -279,11 +279,11 @@ async function pollTrainingStatus() {
                         if (data.total_epochs) byId('trainEpoch').textContent = `${data.total_epochs} / ${data.total_epochs}`;
                         if (data.metrics) {
                             if (byId('trainFinalMetrics')) byId('trainFinalMetrics').style.display = 'block';
-                            if (byId('metricTestMae')) byId('metricTestMae').textContent = data.metrics.candidate_test_mae?.toFixed(4) ?? '—';
-                            if (byId('metricTestRmse')) byId('metricTestRmse').textContent = data.metrics.candidate_test_rmse?.toFixed(4) ?? '—';
-                            if (byId('metricZeroBaselineMae')) byId('metricZeroBaselineMae').textContent = data.metrics.zero_velocity_mae?.toFixed(4) ?? '—';
-                            if (byId('metricBaselineMae')) byId('metricBaselineMae').textContent = data.metrics.mean_velocity_mae?.toFixed(4) ?? '—';
-                            if (byId('metricErrorReduction')) byId('metricErrorReduction').textContent = data.metrics.error_reduction_pct?.toFixed(2) ?? '—';
+                            if (byId('metricTestMae')) byId('metricTestMae').textContent = data.metrics.candidate_test_mae?.toFixed(4) ?? '-';
+                            if (byId('metricTestRmse')) byId('metricTestRmse').textContent = data.metrics.candidate_test_rmse?.toFixed(4) ?? '-';
+                            if (byId('metricZeroBaselineMae')) byId('metricZeroBaselineMae').textContent = data.metrics.zero_velocity_mae?.toFixed(4) ?? '-';
+                            if (byId('metricBaselineMae')) byId('metricBaselineMae').textContent = data.metrics.mean_velocity_mae?.toFixed(4) ?? '-';
+                            if (byId('metricErrorReduction')) byId('metricErrorReduction').textContent = data.metrics.error_reduction_pct?.toFixed(2) ?? '-';
                             if (byId('metricPromotionStatus')) {
                                 byId('metricPromotionStatus').textContent = data.metrics.promotion_status ?? 'Complete';
                                 byId('metricPromotionStatus').style.color = data.metrics.candidate_promoted ? '#10b981' : '#f59e0b';
@@ -343,7 +343,7 @@ refreshDataset();
 pollTrainingStatus();
 
 // =============================================================================
-// Phase 13 — Submitted Datasets
+// Phase 13 - Submitted Datasets
 // =============================================================================
 
 const DS_STATUS_COLORS = {
@@ -365,7 +365,7 @@ let dsCurrentOffset = 0;
 const DS_PAGE_SIZE = 20;
 
 function dsFmtDuration(secs) {
-    if (!secs) return '—';
+    if (!secs) return '-';
     const m = Math.floor(secs / 60), s = Math.round(secs % 60);
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
@@ -386,7 +386,7 @@ function dsActionButtons(session) {
         btns += `<button onclick="dsValidate('${session.id}')" style="background:#10b98122;color:#10b981;border:1px solid #10b98155;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:0.78rem;margin-right:4px;">✓ Validate</button>`;
         btns += `<button onclick="dsOpenRejectModal('${session.id}')" style="background:#ef444422;color:#ef4444;border:1px solid #ef444455;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:0.78rem;">Reject</button>`;
     } else {
-        btns = '<span style="color:#475569;font-size:0.78rem;">—</span>';
+        btns = '<span style="color:#475569;font-size:0.78rem;">-</span>';
     }
     return btns;
 }
@@ -416,7 +416,7 @@ async function refreshDatasets() {
     try {
         const r = await fetch(url);
         if (!r.ok) {
-            // 403 = not an internal contributor — hide the section gracefully
+            // 403 = not an internal contributor - hide the section gracefully
             byId('dsSessionTbody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b;">No access or no sessions.</td></tr>`;
             return;
         }
@@ -553,8 +553,8 @@ async function refreshModelRegistry() {
             const prod = data.model;
             if (prod) {
                 if (byId('prodModelName')) byId('prodModelName').textContent = prod.name;
-                if (byId('prodModelMae')) byId('prodModelMae').textContent = prod.test_mae != null ? `${prod.test_mae.toFixed(4)} m/s` : '—';
-                if (byId('prodModelRmse')) byId('prodModelRmse').textContent = prod.test_rmse != null ? `${prod.test_rmse.toFixed(4)} m/s` : '—';
+                if (byId('prodModelMae')) byId('prodModelMae').textContent = prod.test_mae != null ? `${prod.test_mae.toFixed(4)} m/s` : '-';
+                if (byId('prodModelRmse')) byId('prodModelRmse').textContent = prod.test_rmse != null ? `${prod.test_rmse.toFixed(4)} m/s` : '-';
                 if (byId('prodModelDeployedAt')) byId('prodModelDeployedAt').textContent = prod.deployed_at ? new Date(prod.deployed_at).toLocaleString() : 'Baseline';
             } else {
                 if (byId('prodModelName')) byId('prodModelName').textContent = 'None';
@@ -593,9 +593,9 @@ function renderMrTable(models) {
                 <div style="font-family:monospace;font-size:0.75rem;color:#64748b;">${m.id}</div>
             </td>
             <td style="font-size:0.82rem;color:#cbd5e1;">${m.architecture}</td>
-            <td style="font-weight:600;color:#e2e8f0;">${m.test_mae != null ? m.test_mae.toFixed(4) + ' m/s' : '—'}</td>
-            <td style="font-size:0.82rem;color:#94a3b8;">${m.test_rmse != null ? m.test_rmse.toFixed(4) + ' m/s' : '—'}</td>
-            <td style="font-size:0.82rem;color:#94a3b8;">${m.onnx_parity_max_diff != null ? m.onnx_parity_max_diff.toExponential(2) : '—'}</td>
+            <td style="font-weight:600;color:#e2e8f0;">${m.test_mae != null ? m.test_mae.toFixed(4) + ' m/s' : '-'}</td>
+            <td style="font-size:0.82rem;color:#94a3b8;">${m.test_rmse != null ? m.test_rmse.toFixed(4) + ' m/s' : '-'}</td>
+            <td style="font-size:0.82rem;color:#94a3b8;">${m.onnx_parity_max_diff != null ? m.onnx_parity_max_diff.toExponential(2) : '-'}</td>
             <td>${MR_STATUS_BADGES[m.status] || m.status}</td>
             <td>${mrActionButtons(m)}</td>
         </tr>

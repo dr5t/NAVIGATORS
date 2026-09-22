@@ -1,5 +1,5 @@
 """
-Navigators IDR — Map Matching
+Navigators IDR - Map Matching
 Snaps estimated positions to the road network to bound drift.
 
 Supports two methods:
@@ -203,7 +203,7 @@ class RoadNetwork:
 
 class GeometricMapMatcher:
     """
-    Simple geometric map matching — snaps to nearest road segment.
+    Simple geometric map matching - snaps to nearest road segment.
     """
 
     def __init__(
@@ -354,7 +354,7 @@ class HMMMapMatcher:
                 candidates.append((seg, nearest, dist))
 
         if not candidates:
-            # No candidates — return raw position
+            # No candidates - return raw position
             return MapMatchResult(
                 snapped_position=position.copy(),
                 matched_segment=None,

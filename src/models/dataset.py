@@ -1,5 +1,5 @@
 """
-Navigators IDR — Real-World Dataset Loading
+Navigators IDR - Real-World Dataset Loading
 Converts raw phone recordings into PyTorch DataLoaders.
 """
 import json

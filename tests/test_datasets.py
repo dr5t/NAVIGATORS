@@ -34,7 +34,7 @@ from fastapi import HTTPException
 
 @pytest.fixture()
 def tmp_db(tmp_path):
-    """Isolated DB per test — no shared state pollution."""
+    """Isolated DB per test - no shared state pollution."""
     db_file = tmp_path / "test_datasets.db"
     init_db(db_file)
     return db_file
@@ -65,7 +65,7 @@ def _submit(repo: DatasetRepository, contributor_id: str, activity: str = "walki
 
 
 # =============================================================================
-# Phase 13 — Repository (State Machine) Tests
+# Phase 13 - Repository (State Machine) Tests
 # =============================================================================
 
 def test_internal_contributor_can_submit_session(tmp_db):
@@ -210,7 +210,7 @@ def test_invalid_transition_raises_value_error(tmp_db):
 
 
 def test_terminal_validated_state_cannot_transition(tmp_db):
-    """'validated' is terminal — no further transitions allowed."""
+    """'validated' is terminal - no further transitions allowed."""
     contributor, _ = _register(tmp_db, "internal_contributor")
     admin, _ = _register(tmp_db, "team_admin", "admin")
     repo = DatasetRepository(tmp_db)
@@ -233,7 +233,7 @@ def test_terminal_validated_state_cannot_transition(tmp_db):
 
 
 def test_terminal_rejected_state_cannot_transition(tmp_db):
-    """'rejected' is terminal — cannot be re-opened."""
+    """'rejected' is terminal - cannot be re-opened."""
     contributor, _ = _register(tmp_db, "internal_contributor")
     admin, _ = _register(tmp_db, "team_admin", "admin")
     repo = DatasetRepository(tmp_db)
@@ -246,7 +246,7 @@ def test_terminal_rejected_state_cannot_transition(tmp_db):
 
 
 # =============================================================================
-# Phase 13 — List & Stats Tests
+# Phase 13 - List & Stats Tests
 # =============================================================================
 
 def test_list_sessions_filtered_by_status(tmp_db):
@@ -317,7 +317,7 @@ def test_stats_returns_correct_counts(tmp_db):
 
 
 # =============================================================================
-# Phase 13 — API-Level Tests
+# Phase 13 - API-Level Tests
 # =============================================================================
 
 def test_api_normal_user_denied_dataset_submit(tmp_db, monkeypatch):
@@ -442,7 +442,7 @@ def test_api_normal_user_denied_validate_endpoints(tmp_db, monkeypatch):
 
 
 # =============================================================================
-# Phase 14 — Training ≠ Deployment (RBAC Enforced)
+# Phase 14 - Training ≠ Deployment (RBAC Enforced)
 # =============================================================================
 
 def test_training_does_not_equal_deployment(tmp_db):

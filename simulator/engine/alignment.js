@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — Phone-to-Vehicle Alignment
+ * Navigators IDR - Phone-to-Vehicle Alignment
  * 
  * Estimates the orientation of the phone relative to the vehicle frame.
  * Assumes the vehicle travels mostly forward and flat.

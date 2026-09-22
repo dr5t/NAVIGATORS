@@ -1,5 +1,5 @@
 # =============================================================================
-# Navigators IDR — Default Configuration
+# Navigators IDR - Default Configuration
 # SIH26168: AI/ML Intelligent Dead Reckoning
 # =============================================================================
 
@@ -16,9 +16,9 @@ data:
 
 # --- Preprocessing ---
 preprocessing:
-  lowpass_cutoff: 3.0       # Hz — cutoff for Butterworth low-pass filter
+  lowpass_cutoff: 3.0       # Hz - cutoff for Butterworth low-pass filter
   lowpass_order: 4
-  gravity: 9.81             # m/s² — gravity magnitude for removal
+  gravity: 9.81             # m/s² - gravity magnitude for removal
   vibration_filter: true
   alignment_method: "pca"   # pca | static_gravity | manual
 
@@ -72,36 +72,36 @@ ekf:
   gnss_noise:
     position: 2.5           # meters (typical smartphone GPS accuracy)
     velocity: 0.5           # m/s
-  ai_velocity_noise: 0.3    # m/s — uncertainty of AI velocity prediction
+  ai_velocity_noise: 0.3    # m/s - uncertainty of AI velocity prediction
   update_rate: 10            # Hz
 
 # --- Dead Reckoning ---
 dead_reckoning:
-  max_outage_duration: 120   # seconds — max DR duration before warning
+  max_outage_duration: 120   # seconds - max DR duration before warning
   drift_warning_threshold: 0.1  # 10% of distance traveled
 
 # --- Non-Holonomic Constraints ---
 nhc:
   enabled: true
-  lateral_velocity_sigma: 0.1    # m/s — expected lateral velocity noise
-  vertical_velocity_sigma: 0.1   # m/s — expected vertical velocity noise
-  max_heading_rate: 0.5          # rad/s — max turning rate
+  lateral_velocity_sigma: 0.1    # m/s - expected lateral velocity noise
+  vertical_velocity_sigma: 0.1   # m/s - expected vertical velocity noise
+  max_heading_rate: 0.5          # rad/s - max turning rate
 
 # --- Zero Velocity Update ---
 zupt:
   enabled: true
-  accel_variance_threshold: 0.05  # m²/s⁴ — below this = stationary
-  gyro_variance_threshold: 0.01   # rad²/s² — below this = stationary
+  accel_variance_threshold: 0.05  # m²/s⁴ - below this = stationary
+  gyro_variance_threshold: 0.01   # rad²/s² - below this = stationary
   detection_window: 10            # samples to evaluate
-  velocity_reset_sigma: 0.01     # m/s — ZUPT measurement noise
+  velocity_reset_sigma: 0.01     # m/s - ZUPT measurement noise
 
 # --- Map Matching ---
 map_matching:
   enabled: true
   method: "geometric"       # geometric | hmm
-  search_radius: 50.0       # meters — max snap distance
-  hmm_sigma: 5.0            # meters — HMM emission probability std
-  hmm_beta: 3.0             # meters — HMM transition probability scale
+  search_radius: 50.0       # meters - max snap distance
+  hmm_sigma: 5.0            # meters - HMM emission probability std
+  hmm_beta: 3.0             # meters - HMM transition probability scale
 
 # --- Simulator ---
 simulator:

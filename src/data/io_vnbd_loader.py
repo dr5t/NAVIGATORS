@@ -1,5 +1,5 @@
 """
-Navigators IDR — IO-VNBD Dataset Loader
+Navigators IDR - IO-VNBD Dataset Loader
 PyTorch Dataset for the Inertial Odometry Vehicle Navigation Benchmark Dataset.
 
 The IO-VNBD dataset contains smartphone IMU recordings collected across

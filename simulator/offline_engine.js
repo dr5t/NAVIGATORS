@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — 100% Offline Edge Inference Engine
+ * Navigators IDR - 100% Offline Edge Inference Engine
  * Captures mobile IMU & GNSS data and runs PyTorch ONNX model via WebAssembly.
  * Performs Dead Reckoning locally on the mobile processor without any network connection.
  */

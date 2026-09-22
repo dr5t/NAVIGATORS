@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — Data Recorder
+ * Navigators IDR - Data Recorder
  * Captures raw smartphone sensor data for dataset generation.
  */
 

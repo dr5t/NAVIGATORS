@@ -1,13 +1,13 @@
 """
-Navigators IDR — Extended Kalman Filter
+Navigators IDR - Extended Kalman Filter
 15-state EKF for vehicle navigation with GNSS, INS, AI-velocity, NHC, and ZUPT fusion.
 
 State vector (15 elements):
-    [0:3]   — Position (East, North, Up) in meters [ENU frame]
-    [3:6]   — Velocity (v_E, v_N, v_U) in m/s
-    [6:9]   — Orientation (roll, pitch, yaw) in radians
-    [9:12]  — Accelerometer bias (b_ax, b_ay, b_az) in m/s²
-    [12:15] — Gyroscope bias (b_gx, b_gy, b_gz) in rad/s
+    [0:3]   - Position (East, North, Up) in meters [ENU frame]
+    [3:6]   - Velocity (v_E, v_N, v_U) in m/s
+    [6:9]   - Orientation (roll, pitch, yaw) in radians
+    [9:12]  - Accelerometer bias (b_ax, b_ay, b_az) in m/s²
+    [12:15] - Gyroscope bias (b_gx, b_gy, b_gz) in rad/s
 
 Operating modes:
     1. GNSS_AIDED (normal high-accuracy fusion)
@@ -26,8 +26,8 @@ class NavigationMode(Enum):
     GNSS_AIDED = "gnss_aided"          # Standard GNSS + INS fusion
     GNSS_INS = "gnss_ins"              # Alias for backward compatibility
     GNSS_DEGRADED = "gnss_degraded"    # Degraded GNSS signal quality
-    DEAD_RECKONING = "dr"              # GNSS denied — AI + DR
-    REACQUISITION = "reacq"            # GNSS restored — smooth re-convergence
+    DEAD_RECKONING = "dr"              # GNSS denied - AI + DR
+    REACQUISITION = "reacq"            # GNSS restored - smooth re-convergence
 
 
 class ExtendedKalmanFilter:

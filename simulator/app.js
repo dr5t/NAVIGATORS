@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — Simulator Application
+ * Navigators IDR - Simulator Application
  * Interactive map visualization with real-time telemetry playback.
  *
  * Loads simulation JSON data and animates:
@@ -667,7 +667,7 @@ function onDataLoaded() {
     // Update metrics display
     for (const [id, value] of Object.entries({ ateRmse: meta.metrics?.ate_rmse, cep50: meta.metrics?.cep50,
         cep95: meta.metrics?.cep95, totalDistance: meta.total_distance })) {
-        document.getElementById(id).textContent = Number.isFinite(value) && value >= 0 ? `${value.toFixed(1)}m` : '—';
+        document.getElementById(id).textContent = Number.isFinite(value) && value >= 0 ? `${value.toFixed(1)}m` : '-';
     }
 
     // Saved examples are paused until the user starts playback.
@@ -964,7 +964,7 @@ function updateSpeed(speedKmh, headingRad) {
 function updatePositionError(error) {
     const errorEl = document.getElementById('posErrorValue');
     if (!Number.isFinite(error)) {
-        errorEl.textContent = '—';
+        errorEl.textContent = '-';
         errorEl.style.color = '';
         document.getElementById('posErrorBar').style.width = '0%';
         return;
@@ -990,7 +990,7 @@ function updateDrift(driftPct) {
     const ringEl = document.getElementById('driftRingFill');
     const badge = document.getElementById('driftBadge');
     if (!Number.isFinite(driftPct)) {
-        valueEl.textContent = badge.textContent = '—';
+        valueEl.textContent = badge.textContent = '-';
         valueEl.style.color = badge.style.color = '';
         ringEl.style.strokeDashoffset = 326.73;
         return;
@@ -1026,7 +1026,7 @@ function updateConfidence(confidence) {
     const bar = document.getElementById('confidenceBar');
     const value = document.getElementById('confidenceValue');
     if (!Number.isFinite(confidence)) {
-        value.textContent = '—';
+        value.textContent = '-';
         value.style.color = '';
         bar.style.width = '0%';
         return;

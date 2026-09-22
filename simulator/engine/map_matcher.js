@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — Map Matching (JavaScript Edge Port)
+ * Navigators IDR - Map Matching (JavaScript Edge Port)
  * Snaps estimated positions to the road network to bound drift.
  */
 

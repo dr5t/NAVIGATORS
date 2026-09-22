@@ -172,7 +172,7 @@ class AdminApp {
                     document.getElementById('ov-model-mae').textContent = `MAE: ${pm.test_mae || 4.2039} m/s`;
                     document.getElementById('ov-model-status').textContent = `Status: ${pm.status || 'production'}`;
                 } else {
-                    document.getElementById('ov-model-name').textContent = 'TCN v1.0 — Verified Production (4.2039 m/s)';
+                    document.getElementById('ov-model-name').textContent = 'TCN v1.0 - Verified Production (4.2039 m/s)';
                     document.getElementById('ov-model-mae').textContent = 'MAE: 4.2039 m/s';
                     document.getElementById('ov-model-status').textContent = 'Status: production';
                 }

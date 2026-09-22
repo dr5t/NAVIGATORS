@@ -1,4 +1,4 @@
 """
-Navigators IDR — Edge Deployment
+Navigators IDR - Edge Deployment
 ONNX export and optimization for smartphone/edge inference.
 """

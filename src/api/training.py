@@ -37,7 +37,7 @@ training_state = {
     "train_loss": 0.0,
     "val_loss": 0.0,
     "current_lr": 0.001,
-    "eta": "—",
+    "eta": "-",
     "train_samples": 0,
     "val_samples": 0,
     "test_samples": 0,

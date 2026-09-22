@@ -145,6 +145,37 @@ def get_my_contributions_endpoint(
     }
 
 
+@router.get("/user/{target_user_id}")
+def get_user_contributions_endpoint(
+    target_user_id: str,
+    status: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    context: Optional[SessionContext] = Depends(get_optional_session),
+):
+    """
+    List contributions for a specific target user ID.
+    IDOR & Privacy Protection:
+      - If User A calls GET /api/v1/contributions/user/USER_B_ID, drafts and non-public
+        unapproved contributions belonging to User B are hidden unless caller is staff.
+    """
+    items = contrib_repo.list(owner_id=target_user_id, status=status, limit=limit, offset=offset)
+
+    caller_id = context.user.id if (context and context.user) else None
+    caller_roles = [r.id for r in context.roles] if (context and context.roles) else []
+    is_staff = ("moderator" in caller_roles) or ("team_admin" in caller_roles) or ("super_admin" in caller_roles)
+
+    visible = []
+    for it in items:
+        # Hide private drafts of other users
+        if it.status == "draft" and it.owner_id != caller_id and not is_staff:
+            continue
+        visible.append(it.to_dict())
+
+    return {"contributions": visible, "count": len(visible)}
+
+
+
 @router.get("/{contrib_id}")
 def get_contribution(
     contrib_id: str,

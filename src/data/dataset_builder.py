@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Navigators IDR — Synthetic Dataset Builder
+Navigators IDR - Synthetic Dataset Builder
 Generates a massive dataset of synthetic trajectories for training the TCN model.
 Splits data strictly at the trajectory level into train/val/test directories.
 """

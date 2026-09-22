@@ -1,5 +1,5 @@
 """
-Navigators IDR — Phone-to-Vehicle Alignment & Coordinate Transformations
+Navigators IDR - Phone-to-Vehicle Alignment & Coordinate Transformations
 Implements robust attitude estimation, frame transformations, and calibration
 between arbitrary phone mounting orientations and the vehicle frame.
 

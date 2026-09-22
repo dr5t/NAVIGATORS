@@ -10,7 +10,7 @@ const configurationNames = {
     E: 'AI + EKF + NHC', F: 'AI + EKF + NHC + ZUPT', G: 'Full system + map matching',
 };
 const byId = id => document.getElementById(id);
-const readableNumber = (value, suffix = '') => Number.isFinite(value) ? `${value.toFixed(2)}${suffix}` : '—';
+const readableNumber = (value, suffix = '') => Number.isFinite(value) ? `${value.toFixed(2)}${suffix}` : '-';
 const experimentMetrics = ['mean_position_error_m', 'final_position_error_m', 'max_position_error_m', 'velocity_rmse_mps', 'heading_rmse_deg'];
 
 function fitLocalArea() {
@@ -19,7 +19,7 @@ function fitLocalArea() {
 
 window.showStandby = (clearTrack = false) => {
     for (const id of ['speedValue', 'headingValue', 'posErrorValue', 'driftValue', 'confidenceValue', 'driftBadge', 'positionCoordinates']) {
-        byId(id).textContent = '—';
+        byId(id).textContent = '-';
         byId(id).style.color = '';
     }
     byId('posErrorBar').style.width = byId('confidenceBar').style.width = '0%';
@@ -217,7 +217,7 @@ window.refreshDeviceTimings = () => {
         }
     }
 
-    byId('modelSizeReadout').textContent = Number.isFinite(report.model_size_bytes) ? `${(report.model_size_bytes / (1024 * 1024)).toFixed(2)} MB` : '—';
+    byId('modelSizeReadout').textContent = Number.isFinite(report.model_size_bytes) ? `${(report.model_size_bytes / (1024 * 1024)).toFixed(2)} MB` : '-';
     byId('startupReadout').textContent = readableNumber(report.startup_ms, ' ms');
     byId('imuRateReadout').textContent = readableNumber(engine.observedImuRate, ' Hz');
     byId('deviceIdentity').textContent = report.total_navigation_steps

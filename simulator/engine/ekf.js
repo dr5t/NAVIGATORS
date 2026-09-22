@@ -1,5 +1,5 @@
 /**
- * Navigators IDR — Extended Kalman Filter (JavaScript Edge Port)
+ * Navigators IDR - Extended Kalman Filter (JavaScript Edge Port)
  * 15-state EKF for vehicle navigation with GNSS, INS, AI-velocity, NHC, and ZUPT fusion.
  */
 

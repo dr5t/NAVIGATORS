@@ -107,7 +107,7 @@ def main(argv=None):
             save_trajectory(args.output / f'{args.dataset.stem}_{key}_trajectory.csv', recording, estimates, modes, allowed)
             save_browser_trajectory(args.output / f'{args.dataset.stem}_{key}_trajectory.json', recording, estimates, modes, allowed, report)
             score = report['metrics']['outage']
-            print(f'\n{key} — {config.name} (outage reference samples: {score["reference_samples"]})')
+            print(f'\n{key} - {config.name} (outage reference samples: {score["reference_samples"]})')
             for label, metric in [('Final position error', 'final_position_error_m'), ('Mean position error', 'mean_position_error_m'),
                                   ('Max position error', 'max_position_error_m'), ('Velocity RMSE', 'velocity_rmse_mps'),
                                   ('Heading RMSE', 'heading_rmse_deg')]:
@@ -116,7 +116,7 @@ def main(argv=None):
                 print(f'  {label}: {value:.6g} {unit}' if value is not None else f'  {label}: unavailable')
         except Exception as error:
             report = {'mode': key, 'status': 'blocked', 'error': str(error)}
-            print(f'{key} — BLOCKED: {error}')
+            print(f'{key} - BLOCKED: {error}')
         results.append(report)
     output = args.output / f'{args.dataset.stem}_results.json'
     output.write_text(json.dumps(results, indent=2, allow_nan=False) + '\n')

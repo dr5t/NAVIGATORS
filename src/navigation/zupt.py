@@ -1,5 +1,5 @@
 """
-Navigators IDR — Zero Velocity Update (ZUPT) Detection
+Navigators IDR - Zero Velocity Update (ZUPT) Detection
 Multi-signal robust detector identifying when the vehicle is stationary.
 """
 

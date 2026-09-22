@@ -1,5 +1,5 @@
 """
-Navigators IDR — IMU Data Preprocessor
+Navigators IDR - IMU Data Preprocessor
 Noise filtering, gravity removal, phone alignment, and windowing.
 
 ### The Dead Reckoning Problem & Solution
@@ -159,7 +159,7 @@ class IMUPreprocessor:
             return np.eye(3)  # Manual / identity
 
     def _align_by_gravity(self, accel: np.ndarray) -> np.ndarray:
-        """Align based on gravity vector — assumes Z is vertical."""
+        """Align based on gravity vector - assumes Z is vertical."""
         g = self.estimate_gravity_vector(accel)
 
         # Z-axis = gravity direction (down)

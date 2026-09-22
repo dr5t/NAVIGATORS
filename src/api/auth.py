@@ -353,8 +353,17 @@ def update_user(user_id: str, req: UpdateUserRequest):
 
 
 @router.post("/users/{user_id}/roles")
-def assign_user_role(user_id: str, req: AssignRoleRequest):
-    """Assign a role to a user."""
+def assign_user_role(
+    user_id: str,
+    req: AssignRoleRequest,
+    context: Optional[SessionContext] = Depends(get_current_session),
+):
+    """Assign a role to a user. Requires 'role:assign' permission when called via HTTP session."""
+    if context and isinstance(context, SessionContext):
+        decision = authz_service.can(user=context, action="role:assign")
+        if not decision.allowed:
+            raise HTTPException(status_code=403, detail=f"Permission denied: {decision.reason}")
+
     user = repo.get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -369,6 +378,8 @@ def assign_user_role(user_id: str, req: AssignRoleRequest):
         "roles": [r.to_dict() for r in roles],
         "permissions": sorted(list(perms)),
     }
+
+
 
 
 @router.delete("/users/{user_id}/roles/{role_id}")

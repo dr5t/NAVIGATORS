@@ -1,5 +1,5 @@
 """
-Navigators IDR — Non-Holonomic Constraints (NHC)
+Navigators IDR - Non-Holonomic Constraints (NHC)
 Enforces vehicle kinematic constraints to reduce impossible trajectories.
 
 Non-holonomic constraints for a ground vehicle:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Navigators IDR — Model Training Script
+Navigators IDR - Model Training Script
 Trains the TCN model on the generated dataset.
 """
 
@@ -17,7 +17,7 @@ from models.trainer import Trainer
 
 def main():
     print("="*60)
-    print("  NAVIGATORS IDR — MODEL TRAINING (PHASE 3)")
+    print("  NAVIGATORS IDR - MODEL TRAINING (PHASE 3)")
     print("="*60)
     
     data_dir = os.path.join(os.path.dirname(__file__), "..", "data", "real_dataset")

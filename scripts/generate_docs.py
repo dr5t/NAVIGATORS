@@ -4,8 +4,8 @@ import subprocess
 DOCS_DIR = os.path.join(os.path.dirname(__file__), "..", "Important Documents")
 
 DOCUMENTS = {
-    "Design_Requirement.md": """# Navigators IDR — Design Requirements
-*Smart India Hackathon 2026 (SIH26168) — ISRO Problem Statement*
+    "Design_Requirement.md": """# Navigators IDR - Design Requirements
+*Smart India Hackathon 2026 (SIH26168) - ISRO Problem Statement*
 
 ## 1. System Objective
 The system provides intelligent dead reckoning (IDR) using smartphone-only sensors to estimate vehicle trajectory during GNSS outages (e.g., tunnels, forests, urban canyons).
@@ -34,7 +34,7 @@ To prevent the model from overfitting to a single vehicle or driver, the trainin
 Initial invalid benchmarks were flagged during forensic validation due to ground-truth leakage. The new benchmark suite cleanly firewalls ground truth. The system now trains purely on real-world datasets and achieves robust tracking during multi-distance GNSS outages using an offline, on-device WebAssembly execution pipeline.
 """,
     
-    "Detailed_Project_Guide.md": """# Navigators IDR — Detailed Project Guide
+    "Detailed_Project_Guide.md": """# Navigators IDR - Detailed Project Guide
 
 ## 1. Introduction
 This guide explains the exact components and data flow of the Navigators IDR system.
@@ -68,7 +68,7 @@ When generating the training dataset, variety is critical to generalization.
 The `scripts/benchmark.py` script runs the entire system through real-world scenarios. It dynamically injects artificial GNSS outages (e.g. 100m, 250m) and strictly cuts off the EKF's access to the GNSS tracks. The system must natively dead-reckon using only the TCN predictions, and the resulting positional error is measured against the hidden GNSS ground truth.
 """,
     
-    "Implementation_Plans.md": """# Navigators IDR — Implementation Plans
+    "Implementation_Plans.md": """# Navigators IDR - Implementation Plans
 
 ## Phase 1: Architecture Recovery (Completed)
 - **Goal**: Invalidate false benchmarks and establish a scientifically sound benchmark script.
@@ -91,7 +91,7 @@ The `scripts/benchmark.py` script runs the entire system through real-world scen
 - **Method**: Mount the phone in a car, use the Edge Simulator to record JSON trips. Train the pipeline. Use offline spatial trees to snap EKF outputs to known road geometries.
 """,
 
-    "Project_Requirement_Documentation.md": """# Navigators IDR — Project Requirements Document (PRD)
+    "Project_Requirement_Documentation.md": """# Navigators IDR - Project Requirements Document (PRD)
 
 ## 1. Overview
 The Navigators Intelligent Dead Reckoning (IDR) system provides continuous vehicle navigation using smartphone sensors during GNSS outages.
@@ -114,13 +114,13 @@ The Navigators Intelligent Dead Reckoning (IDR) system provides continuous vehic
 - Cloud-based inference (strictly prohibited for the final runtime).
 """,
 
-    "Research.md": """# Navigators IDR — Research & Literature Review
+    "Research.md": """# Navigators IDR - Research & Literature Review
 
 ## 1. The Challenge of Smartphone Pedestrian vs. Vehicle DR
 Unlike Pedestrian Dead Reckoning (PDR) which relies on step-counting, vehicle dynamics are continuous. Double integration of noisy smartphone accelerometers causes catastrophic quadratic drift within seconds.
 
 ## 2. AI for Velocity Estimation
-Recent literature (e.g., ION GNSS+) demonstrates that deep learning models—specifically Temporal Convolutional Networks (TCNs) and LSTMs—can map windowed IMU data directly to velocity vectors, bypassing the double-integration problem.
+Recent literature (e.g., ION GNSS+) demonstrates that deep learning models-specifically Temporal Convolutional Networks (TCNs) and LSTMs-can map windowed IMU data directly to velocity vectors, bypassing the double-integration problem.
 - **Why TCN over LSTM?**: TCNs offer parallelized convolution, meaning lower latency on mobile edge devices compared to the sequential nature of LSTMs.
 
 ## 3. 15-State Extended Kalman Filter
@@ -130,7 +130,7 @@ Standard 6-state or 9-state filters cannot track sensor biases. A 15-state EKF t
 Offline Map Matching using HMM (Hidden Markov Models) acts as a pseudo-lateral constraint, snapping the trajectory to road graphs to eliminate cross-track drift over multi-minute outages.
 """,
 
-    "Summary.md": """# Navigators IDR — Project Summary
+    "Summary.md": """# Navigators IDR - Project Summary
 
 **Status**: Architecture Recovered & Validated
 

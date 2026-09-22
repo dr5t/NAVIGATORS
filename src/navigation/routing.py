@@ -1,5 +1,5 @@
 """
-Navigators IDR — Offline & Online Routing Engine
+Navigators IDR - Offline & Online Routing Engine
 Implements A* shortest path search over RoadNetwork topology to calculate
 recommended, alternative, and offline turn-by-turn routes.
 

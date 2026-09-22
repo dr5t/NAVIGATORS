@@ -1,6 +1,6 @@
-# Navigators IDR — Smartphone Intelligent Dead Reckoning
+# Navigators IDR - Smartphone Intelligent Dead Reckoning
 
-*Smart India Hackathon 2026 (SIH26168) — ISRO Problem Statement*
+*Smart India Hackathon 2026 (SIH26168) - ISRO Problem Statement*
 
 This project implements smartphone IMU navigation, a TCN velocity model, and a 15-state EKF with an offline browser runtime. Real-trip navigation accuracy and smartphone performance have not yet been validated. No valid real phone recording is currently available; the existing checkpoint is a diagnostic artifact.
 

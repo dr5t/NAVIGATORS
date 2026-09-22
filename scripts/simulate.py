@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Navigators IDR — Full Navigation Simulation
+Navigators IDR - Full Navigation Simulation
 Runs the complete navigation pipeline: IMU → AI Model → EKF → DR → Map Match → Output
 
 Generates a synthetic scenario, runs inference, and produces
@@ -50,7 +50,7 @@ def run_simulation(
         8. Record results
     """
     print("\n" + "=" * 60)
-    print("  Navigators IDR — Full Navigation Simulation")
+    print("  Navigators IDR - Full Navigation Simulation")
     print("=" * 60)
 
     # --- Generate scenario ---
@@ -166,7 +166,7 @@ def run_simulation(
         # --- GNSS update ---
         if gnss_available[i]:
             if not prev_gnss:
-                # GNSS just restored — end DR
+                # GNSS just restored - end DR
                 if dr.is_active:
                     dr_summary = dr.stop(gnss_restore_position=gnss_positions[i])
                     print(f"    t={t:.1f}s: GNSS restored | "
@@ -177,11 +177,11 @@ def run_simulation(
             prev_gnss = True
         else:
             if prev_gnss:
-                # GNSS just lost — start DR
+                # GNSS just lost - start DR
                 ekf.set_gnss_denied(timestamp=t)
                 pos = ekf.get_position()
                 dr.start(pos[:2], ekf.get_heading(), np.linalg.norm(ekf.get_velocity()[:2]), t)
-                print(f"    t={t:.1f}s: GNSS DENIED — Dead reckoning active")
+                print(f"    t={t:.1f}s: GNSS DENIED - Dead reckoning active")
 
             # DR update
             dr.update(ai_velocity=ai_velocity, gyro_yaw_rate=gyro[i, 2], timestamp=t)

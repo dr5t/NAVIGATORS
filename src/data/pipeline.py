@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Navigators IDR — Real Dataset Processing Pipeline
+Navigators IDR - Real Dataset Processing Pipeline
 Ingests raw smartphone trips, synchronizes sensors, removes gravity,
 generates training targets (GNSS velocity), and applies trip-level splitting.
 """

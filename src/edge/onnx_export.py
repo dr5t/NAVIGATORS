@@ -1,5 +1,5 @@
 """
-Navigators IDR — ONNX Export
+Navigators IDR - ONNX Export
 Export trained PyTorch models to ONNX format for edge deployment.
 
 ONNX models can run on:

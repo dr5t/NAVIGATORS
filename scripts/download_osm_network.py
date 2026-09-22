@@ -1,5 +1,5 @@
 """
-Navigators IDR — OpenStreetMap Downloader
+Navigators IDR - OpenStreetMap Downloader
 Downloads road network data from OpenStreetMap via Overpass API for local map matching.
 """
 

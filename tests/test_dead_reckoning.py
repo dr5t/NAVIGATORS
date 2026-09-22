@@ -78,7 +78,7 @@ class TestNHC:
     def test_zero_lateral_velocity(self):
         nhc = NonHolonomicConstraints()
         # Vehicle heading North, velocity has lateral component
-        vel = np.array([3.0, 10.0])  # [East, North] — 3 m/s lateral
+        vel = np.array([3.0, 10.0])  # [East, North] - 3 m/s lateral
         heading = 0.0  # North
 
         constrained = nhc.apply_constraints(vel, heading)

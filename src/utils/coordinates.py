@@ -1,5 +1,5 @@
 """
-Navigators IDR — Coordinate Transforms
+Navigators IDR - Coordinate Transforms
 WGS84 (LLA) ↔ ENU (East-North-Up) conversions, bearing, and distance.
 
 References:

@@ -1,5 +1,5 @@
 """
-Navigators IDR — Sensor Adapter Interface
+Navigators IDR - Sensor Adapter Interface
 Provides a unified sensor interface supporting both commercial smartphone IMUs (10 Hz+)
 and high-precision external Fiber Optic Gyroscope (FOG) / tactical-grade IMUs (200 Hz+).
 """

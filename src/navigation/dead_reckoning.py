@@ -1,5 +1,5 @@
 """
-Navigators IDR — Dead Reckoning Engine
+Navigators IDR - Dead Reckoning Engine
 Integrates AI velocity estimates with heading to maintain position during GNSS denial.
 """
 

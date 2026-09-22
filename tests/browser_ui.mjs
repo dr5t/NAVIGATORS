@@ -130,7 +130,7 @@ try {
         speed: document.getElementById('speedValue').textContent,
         metricsHidden: document.getElementById('metricsCard').hidden,
         playbackHidden: document.getElementById('playbackControls').hidden })`),
-    { mode: 'STANDBY', speed: '—', metricsHidden: true, playbackHidden: true });
+    { mode: 'STANDBY', speed: '-', metricsHidden: true, playbackHidden: true });
     await screenshot('desktop.png');
     await click('#btnGuide');
     assert.equal(await evaluate("document.getElementById('guideDialog').open"), true);
@@ -187,7 +187,7 @@ try {
     await evaluate(`seekFrame(${missingIndex})`);
     assert.equal(await evaluate('state.truthMarker.options.opacity'), 0);
     for (const id of ['posErrorValue', 'confidenceValue', 'driftValue']) {
-        assert.equal(await evaluate(`document.getElementById('${id}').textContent`), '—');
+        assert.equal(await evaluate(`document.getElementById('${id}').textContent`), '-');
     }
     assert.equal(await evaluate("document.getElementById('statusAI').textContent"), 'Off');
     assert.equal(await evaluate("document.getElementById('statusEKF').textContent"), 'Off');
@@ -203,7 +203,7 @@ try {
     assert.ok(await evaluate("Array.from(document.querySelectorAll('#experimentRows tr')).every(row => row.lastElementChild.textContent === 'Not run')"));
     const fixture = ['A', 'G'].map((mode, index) => ({
         mode, status: 'completed',
-        dataset: { sha256: 'ui-smoke-fixture-only', metadata: { provenance: 'UI TEST FIXTURE — not a real trip' } },
+        dataset: { sha256: 'ui-smoke-fixture-only', metadata: { provenance: 'UI TEST FIXTURE - not a real trip' } },
         outage: { start_s: 20, requested_duration_s: 60 },
         machine: { label: 'UI smoke fixture; no performance claim' },
         metrics: { outage: { mean_position_error_m: index ? 2.25 : 8.5,
@@ -221,7 +221,7 @@ try {
 
     await select('performance');
     assert.equal(await evaluate("document.querySelectorAll('.performance-card').length"), 4);
-    assert.ok(await evaluate("Array.from(document.querySelectorAll('.performance-card strong')).every(value => value.firstChild.textContent === '—')"));
+    assert.ok(await evaluate("Array.from(document.querySelectorAll('.performance-card strong')).every(value => value.firstChild.textContent === '-')"));
     assert.match(await evaluate("document.getElementById('deviceIdentity').textContent"), /No navigation steps measured/);
     console.log('Device timings: unmeasured results remain placeholders.');
 

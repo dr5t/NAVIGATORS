@@ -25,8 +25,8 @@ ACTIVITY_TYPES = frozenset({"walking", "driving", "gnss_imu", "gnss_outage", "va
 VALID_TRANSITIONS: Dict[str, frozenset] = {
     "uploaded":   frozenset({"validating", "rejected"}),
     "validating": frozenset({"validated", "rejected"}),
-    "validated":  frozenset(),          # terminal — cannot move from validated
-    "rejected":   frozenset(),          # terminal — cannot re-open a rejection
+    "validated":  frozenset(),          # terminal - cannot move from validated
+    "rejected":   frozenset(),          # terminal - cannot re-open a rejection
 }
 
 

@@ -1,5 +1,5 @@
 """
-Navigators IDR — Synthetic Data Generator
+Navigators IDR - Synthetic Data Generator
 Generates realistic IMU + GNSS data from parameterized vehicle trajectories.
 
 Enables development and testing of the full navigation pipeline without
@@ -23,15 +23,15 @@ class TrajectorySegment:
 @dataclass
 class NoiseProfile:
     """Configurable noise parameters to simulate real smartphone IMU."""
-    accel_noise_std: float = 0.5      # m/s² — accelerometer white noise
-    gyro_noise_std: float = 0.02      # rad/s — gyroscope white noise
+    accel_noise_std: float = 0.5      # m/s² - accelerometer white noise
+    gyro_noise_std: float = 0.02      # rad/s - gyroscope white noise
     accel_bias: np.ndarray = field(default_factory=lambda: np.array([0.1, -0.05, 0.2]))
     gyro_bias: np.ndarray = field(default_factory=lambda: np.array([0.001, -0.002, 0.001]))
-    accel_bias_drift: float = 0.001   # m/s²/s — bias random walk
-    gyro_bias_drift: float = 0.0001   # rad/s/s — bias random walk
-    vibration_amplitude: float = 0.3  # m/s² — engine/road vibration
-    vibration_freq: float = 30.0      # Hz — primary vibration frequency
-    gnss_noise_std: float = 2.5       # meters — GPS position noise
+    accel_bias_drift: float = 0.001   # m/s²/s - bias random walk
+    gyro_bias_drift: float = 0.0001   # rad/s/s - bias random walk
+    vibration_amplitude: float = 0.3  # m/s² - engine/road vibration
+    vibration_freq: float = 30.0      # Hz - primary vibration frequency
+    gnss_noise_std: float = 2.5       # meters - GPS position noise
 
 
 class SyntheticDataGenerator:
@@ -227,7 +227,7 @@ class SyntheticDataGenerator:
         Returns:
             Dict with:
                 'positions': (N, 2) noisy GNSS positions in ENU [east, north]
-                'available': (N,) boolean mask — True when GNSS fix available
+                'available': (N,) boolean mask - True when GNSS fix available
                 'lat': (N,) latitude in degrees (noisy)
                 'lon': (N,) longitude in degrees (noisy)
         """

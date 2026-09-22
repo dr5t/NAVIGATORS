@@ -1,5 +1,5 @@
 """
-Navigators IDR — Evaluation Metrics
+Navigators IDR - Evaluation Metrics
 Positional drift, CEP, along/cross-track error, and convergence metrics.
 
 All metrics assume inputs in ENU (meters) or LLA (degrees) coordinates.
