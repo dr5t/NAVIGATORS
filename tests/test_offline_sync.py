@@ -163,10 +163,13 @@ def test_offline_device_push_and_idempotency():
     assert queue_res["count"] == 2
 
 
-def test_version_conflict_detection_on_stale_edit(tmp_path):
+def test_version_conflict_detection_on_stale_edit(tmp_path, monkeypatch):
     """Verify sync engine flags conflict when device base version is outdated."""
     db_file = tmp_path / "conflict_test.db"
     init_db(db_file)
+    from src.api import sync as sync_api_module
+    monkeypatch.setattr(sync_api_module.sync_repo, "db_path", db_file)
+    monkeypatch.setattr(sync_api_module.canonical_repo, "db_path", db_file)
     auth_service = AuthService(db_file)
     place_repo = PlaceRepository(db_file)
 

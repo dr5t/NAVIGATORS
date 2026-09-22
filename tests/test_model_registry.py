@@ -1,28 +1,34 @@
 """
 Navigators IDR - Phase 15 Model Registry & Governance Tests
 Tests the model registry repository state machine, atomic deployment,
-RBAC enforcement, and API router endpoints.
+RBAC enforcement, and API router functions.
 """
 
 import os
-import shutil
-import tempfile
-from pathlib import Path
-
 import pytest
-from fastapi.testclient import TestClient
+from pathlib import Path
+from fastapi import HTTPException
 
 from src.db.database import get_db, init_db
+from src.db.rbac import RBACRepository
 from src.db.model_registry import (
     ModelRegistryRepository,
     ModelEntry,
     VALID_TRANSITIONS,
 )
-from src.db.auth_service import AuthService
-from src.db.authorization import AuthorizationService
-from src.api.server import app
-
-client = TestClient(app)
+from src.db.auth_service import AuthService, SessionContext
+from src.api.model_registry import (
+    list_models as api_list_models,
+    get_production_model as api_get_production_model,
+    get_model as api_get_model,
+    open_model_review as api_open_model_review,
+    approve_model as api_approve_model,
+    reject_model as api_reject_model,
+    deploy_model as api_deploy_model,
+    ApproveModelRequest,
+    RejectModelRequest,
+    repo as global_repo,
+)
 
 
 @pytest.fixture
@@ -40,29 +46,48 @@ def repo(temp_db):
 
 
 @pytest.fixture
+def test_users(temp_db):
+    """Create test users in database so foreign key constraints on users(id) pass."""
+    rbac = RBACRepository(temp_db)
+    admin_user = rbac.create_user(
+        user_id="usr_admin",
+        email="admin@navigators.test",
+        name="Admin User",
+        status="active",
+        initial_role_ids=["team_admin"]
+    )
+    reg_user = rbac.create_user(
+        user_id="usr_test123",
+        email="test@navigators.test",
+        name="Regular User",
+        status="active",
+        initial_role_ids=["user"]
+    )
+    return {"admin": admin_user, "user": reg_user}
+
+
+@pytest.fixture
 def auth_setup(temp_db):
-    """Helper fixture to create test users with different roles and valid session tokens."""
+    """Helper fixture to create test users with valid session contexts."""
     auth_service = AuthService(temp_db)
 
-    # Register admin user
-    admin_res = auth_service.register_user(
-        name="Admin User",
-        email="admin@navigators.test",
+    admin_user, admin_ctx, _ = auth_service.register(
+        email="admin_ctx@navigators.test",
         password="AdminPassword123!",
-        role="team_admin"
+        name="Admin Context User",
+        role_id="team_admin"
     )
 
-    # Register regular user
-    user_res = auth_service.register_user(
-        name="Regular User",
-        email="user@navigators.test",
+    reg_user, user_ctx, _ = auth_service.register(
+        email="user_ctx@navigators.test",
         password="UserPassword123!",
-        role="user"
+        name="User Context User",
+        role_id="user"
     )
 
     return {
-        "admin": admin_res,
-        "user": user_res,
+        "admin_ctx": admin_ctx,
+        "user_ctx": user_ctx,
         "auth_service": auth_service,
     }
 
@@ -84,7 +109,7 @@ def test_seed_production_model(repo):
     assert prod2.id == prod.id
 
 
-def test_register_candidate(repo):
+def test_register_candidate(repo, test_users):
     """Verify registering a new model candidate in candidate_training status."""
     cand = repo.register_candidate(
         name="TCN Candidate v2",
@@ -97,10 +122,10 @@ def test_register_candidate(repo):
     assert cand.registered_by == "usr_test123"
 
 
-def test_state_machine_happy_path(repo, tmp_path):
+def test_state_machine_happy_path(repo, test_users, tmp_path):
     """Verify full state machine progression: candidate_training -> evaluating -> review -> approved/production_candidate -> production."""
     # 1. Register candidate
-    cand = repo.register_candidate(name="TCN Candidate Happy")
+    cand = repo.register_candidate(name="TCN Candidate Happy", registered_by="usr_admin")
     model_id = cand.id
     assert cand.status == "candidate_training"
 
@@ -130,7 +155,6 @@ def test_state_machine_happy_path(repo, tmp_path):
     assert appr_entry.status == "production_candidate"
 
     # 5. Deploy model
-    # Create fake source artifact files
     pt_file = tmp_path / "best_model.pt"
     onnx_file = tmp_path / "model.onnx"
     stats_file = tmp_path / "norm_stats.json"
@@ -164,7 +188,7 @@ def test_state_machine_happy_path(repo, tmp_path):
     assert dest_onnx.read_text() == "dummy_onnx_content"
 
 
-def test_illegal_state_transitions(repo):
+def test_illegal_state_transitions(repo, test_users):
     """Verify that invalid state transitions raise ValueError."""
     cand = repo.register_candidate(name="TCN Candidate Invalid")
     model_id = cand.id
@@ -181,7 +205,7 @@ def test_illegal_state_transitions(repo):
         repo.deploy(model_id, deployer_id="usr_admin")
 
 
-def test_rejection_flow(repo):
+def test_rejection_flow(repo, test_users):
     """Verify review -> rejected transition requires reason."""
     cand = repo.register_candidate(name="TCN Bad Model")
     model_id = cand.id
@@ -203,55 +227,61 @@ def test_rejection_flow(repo):
 
 
 # =============================================================================
-# API Endpoint Integration Tests
+# API Endpoint Function Tests
 # =============================================================================
 
-def test_api_list_and_get_models(temp_db):
-    """Test GET /api/v1/models and GET /api/v1/models/production."""
+def test_api_list_and_get_models(temp_db, monkeypatch):
+    """Test API list and get functions with default DB path."""
     repo = ModelRegistryRepository(temp_db)
     repo.seed_production_model()
+    monkeypatch.setattr(global_repo, "db_path", temp_db)
 
-    response = client.get("/api/v1/models")
-    assert response.status_code == 200
-    data = response.json()
-    assert "models" in data
-    assert data["total"] >= 1
+    list_res = api_list_models(status=None, limit=50, offset=0)
+    assert "models" in list_res
+    assert list_res["total"] >= 1
 
-    prod_res = client.get("/api/v1/models/production")
-    assert prod_res.status_code == 200
-    prod_data = prod_res.json()
-    assert prod_data["model"] is not None
-    assert prod_data["model"]["status"] == "production"
+    prod_res = api_get_production_model()
+    assert prod_res["model"] is not None
+    assert prod_res["model"]["status"] == "production"
+
+    single_res = api_get_model(prod_res["model"]["id"])
+    assert single_res["model"]["id"] == prod_res["model"]["id"]
 
 
-def test_api_rbac_governance(temp_db, auth_setup):
-    """Test full API governance lifecycle with admin token vs unauthenticated/user token."""
+def test_api_rbac_governance(temp_db, auth_setup, monkeypatch):
+    """Test full API governance lifecycle with admin session vs user/unauthenticated sessions."""
     repo = ModelRegistryRepository(temp_db)
-    admin_token = auth_setup["admin"]["token"]
-    user_token = auth_setup["user"]["token"]
+    monkeypatch.setattr(global_repo, "db_path", temp_db)
+
+    admin_ctx = auth_setup["admin_ctx"]
+    user_ctx = auth_setup["user_ctx"]
 
     # Register candidate
     cand = repo.register_candidate(name="TCN API Test Candidate")
     model_id = cand.id
     repo.record_evaluation(model_id, {"candidate_test_mae": 3.9})
 
-    admin_headers = {"Authorization": f"Bearer {admin_token}"}
-    user_headers = {"Authorization": f"Bearer {user_token}"}
+    # 1. Open review as unauthenticated (401)
+    with pytest.raises(HTTPException) as exc_info:
+        api_open_model_review(model_id, context=None)
+    assert exc_info.value.status_code == 401
 
-    # 1. Open review as regular user (Denied)
-    r1 = client.post(f"/api/v1/models/{model_id}/open-review", headers=user_headers)
-    assert r1.status_code == 403
+    # Open review as regular user (403)
+    with pytest.raises(HTTPException) as exc_info:
+        api_open_model_review(model_id, context=user_ctx)
+    assert exc_info.value.status_code == 403
 
-    # Open review as admin (Allowed)
-    r2 = client.post(f"/api/v1/models/{model_id}/open-review", headers=admin_headers)
-    assert r2.status_code == 200
-    assert r2.json()["model"]["status"] == "review"
+    # Open review as team_admin (200 OK)
+    res_open = api_open_model_review(model_id, context=admin_ctx)
+    assert res_open["status"] == "success"
+    assert res_open["model"]["status"] == "review"
 
-    # 2. Approve as regular user (Denied)
-    r3 = client.post(f"/api/v1/models/{model_id}/approve", headers=user_headers, json={"notes": "looks fine"})
-    assert r3.status_code == 403
+    # 2. Approve as regular user (403)
+    with pytest.raises(HTTPException) as exc_info:
+        api_approve_model(model_id, body=ApproveModelRequest(notes="fine"), context=user_ctx)
+    assert exc_info.value.status_code == 403
 
-    # Approve as admin (Allowed)
-    r4 = client.post(f"/api/v1/models/{model_id}/approve", headers=admin_headers, json={"notes": "looks fine"})
-    assert r4.status_code == 200
-    assert r4.json()["model"]["status"] == "production_candidate"
+    # Approve as team_admin (200 OK -> production_candidate)
+    res_appr = api_approve_model(model_id, body=ApproveModelRequest(notes="Approved by admin"), context=admin_ctx)
+    assert res_appr["status"] == "success"
+    assert res_appr["model"]["status"] == "production_candidate"

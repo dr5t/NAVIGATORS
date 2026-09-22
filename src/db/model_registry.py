@@ -148,7 +148,15 @@ class ModelRegistryRepository:
 
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or DEFAULT_DB_PATH
-        self.audit = AuditRepository(self.db_path)
+
+    @property
+    def db_path(self) -> Path:
+        return self._db_path
+
+    @db_path.setter
+    def db_path(self, val: Path) -> None:
+        self._db_path = val
+        self.audit = AuditRepository(val)
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -233,7 +241,7 @@ class ModelRegistryRepository:
                  registered_by, now, now),
             )
         self.audit.log(
-            actor_id=registered_by or "system",
+            actor_id=registered_by,
             action="REGISTER_MODEL_CANDIDATE",
             resource_type="model_registry",
             resource_id=model_id,
@@ -286,7 +294,7 @@ class ModelRegistryRepository:
                 ),
             )
         self.audit.log(
-            actor_id="system",
+            actor_id=None,
             action="RECORD_MODEL_EVALUATION",
             resource_type="model_registry",
             resource_id=model_id,

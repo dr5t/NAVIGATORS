@@ -1,8 +1,6 @@
 -- Navigators IDR - Relational Database Schema & RBAC Data Model
 -- Enforces relational integrity, foreign key constraints, and dynamic permission evaluation.
 
-PRAGMA foreign_keys = ON;
-
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -408,6 +406,7 @@ INSERT OR IGNORE INTO permissions (id, resource, action, description) VALUES
 
     ('model:create', 'model', 'create', 'Register newly trained ONNX model checkpoints'),
     ('model:read', 'model', 'read', 'Inspect model architectures, weights, and evaluation metrics'),
+    ('model:update', 'model', 'update', 'Update candidate model metadata and evaluation results'),
     ('model:review', 'model', 'review', 'Open a candidate model for human evaluation review'),
     ('model:approve', 'model', 'approve', 'Approve candidate model for production qualification'),
     ('model:deploy', 'model', 'deploy', 'Deploy qualified model to live client navigation runtime'),

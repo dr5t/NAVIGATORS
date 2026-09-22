@@ -47,10 +47,11 @@ def _require_permission(context: Optional[SessionContext], permission: str) -> s
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required"
         )
-    if not authz_service.can(context.user.role, permission):
+    decision = authz_service.can(user=context.to_dict(), action=permission, resource="model")
+    if not decision.allowed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Permission '{permission}' required for role '{context.user.role}'"
+            detail=f"Permission denied: {decision.reason}"
         )
     return context.user.id
 

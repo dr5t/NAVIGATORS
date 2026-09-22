@@ -60,9 +60,17 @@ class SyncRepository:
 
     def __init__(self, db_path: Optional[str | Path] = None):
         self.db_path = db_path
-        self.contrib_repo = ContributionRepository(db_path)
-        self.place_repo = PlaceRepository(db_path)
-        self.report_repo = ReportRepository(db_path)
+
+    @property
+    def db_path(self) -> Optional[str | Path]:
+        return self._db_path
+
+    @db_path.setter
+    def db_path(self, val: Optional[str | Path]) -> None:
+        self._db_path = val
+        self.contrib_repo = ContributionRepository(val)
+        self.place_repo = PlaceRepository(val)
+        self.report_repo = ReportRepository(val)
 
     def push_device_changes(
         self,

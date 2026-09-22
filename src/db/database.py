@@ -96,4 +96,6 @@ def init_db(db_path: str | Path | None = None) -> None:
                 conn.execute("ALTER TABLE contributions_migrated RENAME TO contributions")
                 conn.execute("PRAGMA foreign_keys = ON")
 
+        conn.execute("PRAGMA foreign_keys = OFF")
         conn.executescript(schema_sql)
+        conn.execute("PRAGMA foreign_keys = ON")
