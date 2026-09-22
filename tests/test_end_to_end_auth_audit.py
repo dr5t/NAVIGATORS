@@ -405,10 +405,11 @@ def test_api_action_9_deploy_model(temp_db, tmp_path):
             deploy_model(cand.id, context=s_ctx)
         assert exc.value.status_code == 403
 
-    # Team Admin -> ALLOWED
     prod_onnx_dest = tmp_path / "prod_sim_deploy.onnx"
     repo.deploy(cand.id, deployer_id=admin_usr.id, production_onnx_dest=str(prod_onnx_dest))
-    assert repo.get_production_model().id == cand.id
+    prod_model = repo.get_production_model()
+    assert prod_model is not None
+    assert prod_model.id == cand.id
 
 
 def test_api_action_10_manage_roles(temp_db):

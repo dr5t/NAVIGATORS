@@ -227,6 +227,7 @@ def test_session_resolution_and_last_seen_update(auth_service: AuthService):
 
     resolved = auth_service.resolve_session(token)
     assert resolved is not None
+    assert resolved.user is not None
     assert resolved.user.email == "tracker@navigators.dev"
     assert resolved.session_id == initial_session.session_id
     assert resolved.last_seen_at is not None
@@ -358,6 +359,7 @@ def test_server_determines_permissions_dynamically(
 
     # Initial permissions for 'user'
     session = auth_service.resolve_session(token)
+    assert session is not None
     assert "training:create" not in session.permissions
 
     # Server elevates user to 'internal_contributor' in DB
@@ -365,6 +367,7 @@ def test_server_determines_permissions_dynamically(
 
     # Next session resolution immediately reflects newly granted permissions
     updated_session = auth_service.resolve_session(token)
+    assert updated_session is not None
     assert "training:create" in updated_session.permissions
     assert "dataset:create" in updated_session.permissions
 
@@ -372,6 +375,7 @@ def test_server_determines_permissions_dynamically(
     rbac_repo.remove_role_from_user(user.id, "internal_contributor")
 
     revoked_session = auth_service.resolve_session(token)
+    assert revoked_session is not None
     assert "training:create" not in revoked_session.permissions
 
 
@@ -403,6 +407,7 @@ def test_api_auth_endpoints(monkeypatch, temp_db: Path):
     # 2. API /me with Bearer token
     auth_header = f"Bearer {token}"
     context = get_current_session(authorization=auth_header)
+    assert context.user is not None
     assert context.user.email == "api_user@navigators.dev"
 
     profile_resp = api_get_current_user_profile(context=context)

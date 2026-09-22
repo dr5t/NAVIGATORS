@@ -137,9 +137,10 @@ class SessionContext:
     created_at: str
     expires_at: str
     last_seen_at: str
+    db_path: Optional[Any] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d = {
             "session_id": self.session_id,
             "user": self.user.to_dict() if self.user else None,
             "roles": [r.to_dict() for r in self.roles],
@@ -149,6 +150,9 @@ class SessionContext:
             "expires_at": self.expires_at,
             "last_seen_at": self.last_seen_at,
         }
+        if self.db_path is not None:
+            d["db_path"] = str(self.db_path)
+        return d
 
 
 # =============================================================================
@@ -465,6 +469,7 @@ class AuthService:
                 created_at=session.created_at,
                 expires_at=session.expires_at,
                 last_seen_at=now_str,
+                db_path=str(self.db_path) if self.db_path else None,
             )
 
         # Flow for Registered User
@@ -485,6 +490,7 @@ class AuthService:
             created_at=session.created_at,
             expires_at=session.expires_at,
             last_seen_at=now_str,
+            db_path=str(self.db_path) if self.db_path else None,
         )
 
     def revoke_session(self, raw_token: str) -> bool:

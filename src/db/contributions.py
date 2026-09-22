@@ -271,7 +271,14 @@ class ContributionRepository:
             try:
                 from src.db.places import PlaceRepository
                 place_repo = PlaceRepository(self.db_path)
-                place_repo.publish_from_contribution(updated, publisher=user)
+                published_place = place_repo.publish_from_contribution(updated, publisher=user)
+                if published_place and not updated.target_resource_id:
+                    with get_db(self.db_path) as conn:
+                        conn.execute(
+                            "UPDATE contributions SET target_resource_id = ? WHERE id = ?",
+                            (published_place.id, updated.id),
+                        )
+                    updated.target_resource_id = published_place.id
             except Exception:
                 pass
 

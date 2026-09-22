@@ -160,9 +160,11 @@ def update_contribution(
         title=req.title,
         data=req.data,
     )
+    if not updated:
+        raise HTTPException(status_code=500, detail="Contribution update failed.")
     return {
         "message": "Contribution updated successfully.",
-        "contribution": updated.to_dict() if updated else None,
+        "contribution": updated.to_dict(),
     }
 
 
@@ -233,7 +235,7 @@ def submit_contribution(
 @router.post("/{contrib_id}/approve")
 def approve_contribution(
     contrib_id: str,
-    req: Optional[ReviewNotesRequest] = None,
+    req: Optional[ReviewNotesRequest | ReviewContributionRequest] = None,
     context: SessionContext = Depends(get_current_session),
 ):
     """
@@ -266,7 +268,7 @@ def approve_contribution(
 @router.post("/{contrib_id}/reject")
 def reject_contribution(
     contrib_id: str,
-    req: Optional[ReviewNotesRequest] = None,
+    req: Optional[ReviewNotesRequest | ReviewContributionRequest] = None,
     context: SessionContext = Depends(get_current_session),
 ):
     """
