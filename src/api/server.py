@@ -41,6 +41,7 @@ from api.admin import router as admin_router
 from api.routing import router as routing_router
 from api.search import router as search_router
 from api.sos import router as sos_router
+from api.privacy import router as privacy_router
 app.include_router(recordings_router)
 app.include_router(training_router)
 app.include_router(auth_router)
@@ -57,6 +58,8 @@ app.include_router(admin_router)
 app.include_router(routing_router)
 app.include_router(search_router)
 app.include_router(sos_router)
+app.include_router(privacy_router)
+
 
 app.add_middleware(
     CORSMiddleware,

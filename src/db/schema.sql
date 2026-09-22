@@ -348,6 +348,27 @@ CREATE INDEX IF NOT EXISTS idx_emergency_contacts_user ON emergency_contacts(use
 CREATE INDEX IF NOT EXISTS idx_sos_sessions_user ON sos_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_sos_sessions_token ON sos_sessions(live_location_token);
 
+-- ========================================================
+-- Phase 35: User Privacy & Data Controls Table
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS user_privacy_settings (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    domain TEXT NOT NULL CHECK (domain IN (
+        'location_data', 'sensor_data', 'navigation_sessions',
+        'contribution_data', 'dataset_contributions', 'account_data'
+    )),
+    stored_locally INTEGER NOT NULL DEFAULT 1 CHECK (stored_locally IN (0, 1)),
+    synced INTEGER NOT NULL DEFAULT 1 CHECK (synced IN (0, 1)),
+    sharing_level TEXT NOT NULL DEFAULT 'private' CHECK (sharing_level IN ('private', 'anonymous', 'team', 'public')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    UNIQUE (user_id, domain)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_privacy_user_domain ON user_privacy_settings(user_id, domain);
+
+
 CREATE INDEX IF NOT EXISTS idx_model_registry_status  ON model_registry(status);
 CREATE INDEX IF NOT EXISTS idx_model_registry_created ON model_registry(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

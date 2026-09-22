@@ -139,7 +139,7 @@ class NavigationStateEngine:
 
         return self._current_state
 
-    def get_ui_notification(self) -> Optional[dict[str, str]]:
+    def get_ui_notification(self) -> Optional[dict[str, Any]]:
         """
         Formats user-facing minimalist toast notifications when GNSS/DR states change.
         Strict UI rules:
