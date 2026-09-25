@@ -17,8 +17,14 @@ Operating modes:
 """
 
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Optional, Tuple, Dict, Any, List, Union
 from enum import Enum
+
+try:
+    from navigation.interfaces import AIVelocityMeasurement, MapConstraint
+except ImportError:
+    from src.navigation.interfaces import AIVelocityMeasurement, MapConstraint
+
 
 
 class NavigationMode(Enum):
@@ -140,7 +146,7 @@ class ExtendedKalmanFilter:
         self,
         accel_body: np.ndarray,
         gyro_body: np.ndarray,
-        ai_velocity: Optional[np.ndarray] = None,
+        ai_velocity: Optional[Union[np.ndarray, AIVelocityMeasurement]] = None,
         apply_nhc: bool = True,
     ):
         """
@@ -311,6 +317,8 @@ class ExtendedKalmanFilter:
                 cog = float(np.arctan2(gnss_vel_3d[0], gnss_vel_3d[1]))
                 yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
                 self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
+                cog_var = (self.r_gnss_vel / speed_horiz) ** 2
+                self.P[8, 8] = float(max(0.005, (1.0 - 0.15) ** 2 * self.P[8, 8] + (0.15 ** 2) * cog_var))
 
         if self.mode == NavigationMode.REACQUISITION:
 
@@ -370,10 +378,46 @@ class ExtendedKalmanFilter:
 
     def update_map_constraint(
         self,
-        snapped_position: np.ndarray,
+        snapped_position: Optional[Union[np.ndarray, MapConstraint]] = None,
         confidence: float = 1.0,
         covariance_scale: float = 1.0,
+        constraint: Optional[MapConstraint] = None,
     ):
+        target_constraint = constraint
+        if isinstance(snapped_position, MapConstraint):
+            target_constraint = snapped_position
+        elif target_constraint is None and snapped_position is None:
+            return
+
+        if target_constraint is not None:
+            if not target_constraint.has_constraint:
+                return
+            if target_constraint.measurement_matrix is None or target_constraint.noise_covariance is None:
+                if target_constraint.snapped_position is not None:
+                    snapped_position = target_constraint.snapped_position
+                    confidence = target_constraint.confidence
+                else:
+                    return
+            else:
+                H = np.asarray(target_constraint.measurement_matrix, dtype=np.float64)
+                R = np.asarray(target_constraint.noise_covariance, dtype=np.float64)
+                z = np.asarray(target_constraint.observation_vector, dtype=np.float64)
+                if H.shape[1] != self.STATE_DIM:
+                    H_padded = np.zeros((H.shape[0], self.STATE_DIM), dtype=np.float64)
+                    H_padded[:, :min(H.shape[1], self.STATE_DIM)] = H[:, :min(H.shape[1], self.STATE_DIM)]
+                    H = H_padded
+                y = z - H @ self.x
+                if target_constraint.heading_constraint_applied and len(z) >= 3:
+                    y[2] = (z[2] - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
+                S = H @ self.P @ H.T + R
+                K = self.P @ H.T @ np.linalg.inv(S)
+                self.x += K @ y
+                self.x[8] = (self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
+                I_KH = np.eye(self.STATE_DIM) - K @ H
+                self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
+                self._enforce_covariance_symmetry()
+                return
+
         if snapped_position is None or confidence <= 0.2:
             return
         H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
@@ -394,6 +438,7 @@ class ExtendedKalmanFilter:
         I_KH = np.eye(self.STATE_DIM) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
         self._enforce_covariance_symmetry()
+
 
     def update_nhc(self, yaw_rate: float = 0.0):
         """
@@ -472,6 +517,25 @@ class ExtendedKalmanFilter:
     def get_position_uncertainty(self) -> float:
         return float(np.sqrt(self.P[0, 0] + self.P[1, 1]))
 
+    def get_velocity_uncertainty(self) -> float:
+        return float(np.sqrt(self.P[3, 3] + self.P[4, 4]))
+
+    def get_heading_uncertainty_rad(self) -> float:
+        return float(np.sqrt(max(0.0, self.P[8, 8])))
+
+    def get_heading_uncertainty_deg(self) -> float:
+        return float(np.degrees(self.get_heading_uncertainty_rad()))
+
+    def get_uncertainty_profile(self) -> Dict[str, float]:
+        return {
+            "position_horizontal_m": self.get_position_uncertainty(),
+            "position_vertical_m": float(np.sqrt(max(0.0, self.P[2, 2]))),
+            "velocity_horizontal_mps": self.get_velocity_uncertainty(),
+            "velocity_vertical_mps": float(np.sqrt(max(0.0, self.P[5, 5]))),
+            "heading_deg": self.get_heading_uncertainty_deg(),
+            "heading_rad": self.get_heading_uncertainty_rad(),
+        }
+
     def get_state_summary(self) -> Dict[str, Any]:
         pos = self.get_position()
         vel = self.get_velocity()
@@ -486,6 +550,9 @@ class ExtendedKalmanFilter:
             "speed_kmh": float(speed * 3.6),
             "heading_deg": float(heading_deg),
             "position_uncertainty_m": self.get_position_uncertainty(),
+            "velocity_uncertainty_mps": self.get_velocity_uncertainty(),
+            "heading_uncertainty_deg": self.get_heading_uncertainty_deg(),
+            "uncertainties": self.get_uncertainty_profile(),
             "accel_bias": self.x[self.ABIAS].tolist(),
             "gyro_bias": self.x[self.GBIAS].tolist(),
         }

@@ -431,5 +431,8 @@ def create_map_matcher(
 
     if method == "hmm":
         return HMMMapMatcher(road_network, **kwargs)
+    elif method in ("hypothesis", "multi_hypothesis"):
+        from navigation.road_hypothesis import RoadHypothesisEngine
+        return RoadHypothesisEngine(road_network, **kwargs)
     else:
         return GeometricMapMatcher(road_network, **kwargs)

@@ -11,6 +11,9 @@ import json
 import os
 
 class IOVNBDDataset(Dataset):
+    source_dataset = "IO-VNBD"
+    source_kind = "external_benchmark"
+
     def __init__(self, session_pairs: List[Tuple[str, str]], window_size: int = 200, stride: int = 20,
                  mean: Optional[np.ndarray] = None, std: Optional[np.ndarray] = None):
         """
@@ -31,6 +34,7 @@ class IOVNBDDataset(Dataset):
         
         self.windows_x = []
         self.targets_y = []
+        self.window_sources = []
         
         for s_csv, v_csv in session_pairs:
 
@@ -50,6 +54,7 @@ class IOVNBDDataset(Dataset):
                 
                 self.windows_x.append(window_x)
                 self.targets_y.append(target_y)
+                self.window_sources.append((str(s_csv), str(v_csv), start, end))
                 
         if self.windows_x:
             self.windows_x = np.array(self.windows_x, dtype=np.float32)
@@ -77,6 +82,12 @@ class IOVNBDDataset(Dataset):
 
     def __getitem__(self, index):
         return torch.from_numpy(self.windows_x[index]), torch.from_numpy(self.targets_y[index])
+
+    def get_sample_metadata(self, index: int) -> dict:
+        sensor_file, reference_file, start, stop = self.window_sources[index]
+        return {"source_dataset": self.source_dataset, "source_kind": self.source_kind,
+                "sensor_file": sensor_file, "reference_file": reference_file,
+                "start": start, "stop": stop}
 
 
 def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int = 200, batch_size: int = 64, stats_dir: str = "checkpoints") -> Optional[Tuple[DataLoader, DataLoader, DataLoader]]:
@@ -116,6 +127,8 @@ def create_iovnbd_dataloaders(base_dir: str = "data/IO-VNBD", window_size: int =
     os.makedirs(stats_dir, exist_ok=True)
     assert train_ds.mean is not None and train_ds.std is not None
     stats_dict = {
+        "source_dataset": train_ds.source_dataset,
+        "source_kind": train_ds.source_kind,
         "mean": train_ds.mean.flatten().tolist(),
         "std": train_ds.std.flatten().tolist(),
         "features": ["ACCELEROMETER X", "ACCELEROMETER Y", "ACCELEROMETER Z", 

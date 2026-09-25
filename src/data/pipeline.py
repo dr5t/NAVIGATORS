@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import glob
 import json
+from typing import Literal
 import numpy as np
 from scipy.signal import butter, filtfilt
 
@@ -31,21 +32,30 @@ def load_split_config():
         "default": "train"
     }
 
-def butter_filter(data, cutoff, fs, btype='low'):
+def butter_filter(data, cutoff, fs, btype: Literal['low', 'high', 'bandpass', 'bandstop'] = 'low'):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
-    b, a = butter(4, normal_cutoff, btype=btype, analog=False)
+    b, a = butter(4, normal_cutoff, btype=btype, analog=False, output='ba')
     return filtfilt(b, a, data, axis=0)
 
 import scipy.signal
 def remove_outliers(data, threshold=4.0):
     median = np.median(data, axis=0)
     std = np.std(data, axis=0)
-    std[std < 1e-6] = 1.0 # prevent div by zero
+    std[std < 1e-6] = 1.0
     outliers = np.abs((data - median) / std) > threshold
     data_clean = np.copy(data)
     for i in range(data.shape[1]):
-        data_clean[outliers[:, i], i] = median[i]
+        col_outliers = outliers[:, i]
+        if np.any(col_outliers):
+            valid_indices = np.where(~col_outliers)[0]
+            if len(valid_indices) > 0:
+                outlier_indices = np.where(col_outliers)[0]
+                data_clean[outlier_indices, i] = np.interp(
+                    outlier_indices, valid_indices, data_clean[valid_indices, i]
+                )
+            else:
+                data_clean[:, i] = median[i]
     return data_clean
 
 def apply_median_filter(data, kernel_size=5):
@@ -141,6 +151,8 @@ def process_trip(filepath, out_path, calibration_seconds=5, aligned=False):
     metadata = {
         'source_sha256': recording.digest, 'source': recording.path,
         'provenance': recording.metadata['provenance'],
+        'source_dataset': recording.metadata.get('source_dataset'),
+        'source_kind': recording.metadata.get('source_kind'),
         'preprocessing': PREPROCESSING_ID, 'sample_rate_hz': recording.sample_rate,
         'calibration_seconds': calibration_seconds, 'rotation': rotation.tolist(),
         'output_order': ['east', 'north'], 'first_sample': first,
@@ -169,16 +181,13 @@ def main():
         
     for filepath in raw_files:
         filename = os.path.basename(filepath)
-        
-        # Determine split
-        split = config.get("default", "train")
+        split = str(config.get("default", "train"))
         for key in ["train", "val", "test"]:
-            if filename in config.get(key, []):
+            files_in_split = config.get(key, [])
+            if isinstance(files_in_split, (list, tuple)) and filename in files_in_split:
                 split = key
                 break
-                
         out_path = os.path.join(OUT_DIR, split, filename.replace(".json", ".npy"))
-        
         process_trip(filepath, out_path)
         
 if __name__ == "__main__":

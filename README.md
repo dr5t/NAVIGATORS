@@ -335,6 +335,8 @@ To reproduce model training, evaluation, and documentation compilation:
 
 For detailed mathematical formulations, coordinate transformations, and data provenance, refer to [RESEARCH_AND_METHODOLOGY.md](docs/RESEARCH_AND_METHODOLOGY.md) and [REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).
 
+The [Navigators India Dataset pipeline](docs/NAVIGATORS_INDIA_DATASET.md) provides raw collection, strict session validation, source-separated versioned releases, leakage-safe splits, quality reports, and reference-based evaluation. It includes no claimed collected dataset size or road results.
+
 ## Dataset
 
 Model development and evaluation reference the **Inertial and Odometry Vehicle Navigation Benchmark Dataset (IO-VNBD)**:

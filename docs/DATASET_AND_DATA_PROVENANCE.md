@@ -12,6 +12,11 @@ Attribution: Developed by Navigators
 
 ## 1. Data Classification Framework
 
+The [Phase 11 India Dataset pipeline](NAVIGATORS_INDIA_DATASET.md) is the executable
+contract for new research releases. Historical external benchmark figures below
+are not counts of original Navigators India data. No original collection size or
+road accuracy is established by the pipeline implementation or its synthetic tests.
+
 To maintain scientific integrity and respect data licensing, Navigators establishes a transparent, three-tier classification of all datasets utilized in the repository:
 
 ```
@@ -92,10 +97,11 @@ The mobile web client incorporates an integrated sensor logger (`simulator/data_
    - `gyro`: Tri-axial rotation rate ($\text{rad/s}$).
    - `gnss`: Array of $[lat, lon, altitude, speed, heading, accuracy]$.
    - `metadata`: User-agent string, device platform, browser version, and SHA-256 integrity hash.
-3. **Data Quality Verification**: The backend `DatasetRepository` executes an automated validation pass before accepting sessions into the training queue:
-   - Rejects sessions with time reversals ($t_k \le t_{k-1}$).
-   - Rejects sessions with sensor dropout gaps $> 1.0\text{ s}$.
-   - Rejects unphysically large accelerations ($> 50\text{ m/s}^2$).
+3. **Data Quality Verification**: Administrative approval in `DatasetRepository`
+   is distinct from sensor validation. New India Dataset releases must pass the
+   [Phase 11 validation pipeline](NAVIGATORS_INDIA_DATASET.md), which archives raw
+   bytes, rejects invalid sessions, and records the actual sampling, unit, axis,
+   GNSS, identity and duplicate checks and their configurable thresholds.
 
 ---
 

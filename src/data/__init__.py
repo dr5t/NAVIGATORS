@@ -1,4 +1,4 @@
 """
 Navigators IDR - Data Pipeline
-IO-VNBD dataset loading, preprocessing, and synthetic data generation.
+IO-VNBD loading, synthetic data generation, and separate India Dataset releases.
 """

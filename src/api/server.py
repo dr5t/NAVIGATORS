@@ -21,6 +21,7 @@ from navigation.dead_reckoning import DeadReckoningEngine
 from navigation.nhc import NonHolonomicConstraints
 from navigation.zupt import ZUPTDetector
 from navigation.map_matching import create_map_matcher, RoadNetwork
+from navigation.confidence import ConfidenceEstimator
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
@@ -125,6 +126,7 @@ class NavigationSession:
             print("[Server] Could not find data/road_network.json, falling back to synthetic grid")
             self.road_network.generate_grid_network()
         self.map_matcher = create_map_matcher(method="geometric", road_network=self.road_network)
+        self.confidence_estimator = ConfidenceEstimator()
 
     def process_measurement(self, data: dict) -> dict:
         """Process a single measurement packet from client."""
@@ -223,6 +225,15 @@ class NavigationSession:
         est_lat = self.ref_lat + map_match.snapped_position[1] / meters_per_deg_lat
         est_lon = self.ref_lon + map_match.snapped_position[0] / meters_per_deg_lon
         
+        confidence_est = self.confidence_estimator.compute_confidence(
+            covariance=self.ekf.P,
+            dr_duration=self.dr.outage_duration if self.dr.is_active else 0.0,
+            map_confidence=map_match.confidence,
+            ekf_mode=self.ekf.mode.value,
+            distance_traveled=self.dr.distance_traveled if self.dr.is_active else 0.0,
+            timestamp=current_time,
+        )
+
         state_result = {
             "status": "active",
             "nav_mode": self.ekf.mode.value,
@@ -234,9 +245,13 @@ class NavigationSession:
             "speed": float(np.linalg.norm(vel[:2])),
             "heading": self.ekf.get_heading(),
             "position_error": self.ekf.get_position_uncertainty(),
+            "velocity_uncertainty_mps": self.ekf.get_velocity_uncertainty(),
+            "heading_uncertainty_deg": self.ekf.get_heading_uncertainty_deg(),
+            "uncertainties": self.ekf.get_uncertainty_profile(),
             "dr_drift_percent": self.dr.get_drift_percentage() if self.dr.is_active else 0.0,
             "zupt_active": is_stationary,
             "confidence": self.dr.get_confidence() if self.dr.is_active else 1.0,
+            "confidence_object": confidence_est.confidence_object,
             "map_matched": map_match.confidence > 0.5
         }
         
@@ -406,6 +421,14 @@ def get_navigation_state(session_id: str):
     est_lat = session.ref_lat + map_match.snapped_position[1] / meters_per_deg_lat
     est_lon = session.ref_lon + map_match.snapped_position[0] / meters_per_deg_lon
     
+    confidence_est = session.confidence_estimator.compute_confidence(
+        covariance=session.ekf.P,
+        dr_duration=session.dr.outage_duration if session.dr.is_active else 0.0,
+        map_confidence=map_match.confidence,
+        ekf_mode=session.ekf.mode.value,
+        distance_traveled=session.dr.distance_traveled if session.dr.is_active else 0.0,
+    )
+
     return {
         "status": "active",
         "nav_mode": session.ekf.mode.value,
@@ -414,7 +437,11 @@ def get_navigation_state(session_id: str):
         "estimated_lat": est_lat,
         "estimated_lon": est_lon,
         "speed": float(np.linalg.norm(vel[:2])),
-        "heading": heading
+        "heading": heading,
+        "position_error": session.ekf.get_position_uncertainty(),
+        "velocity_uncertainty_mps": session.ekf.get_velocity_uncertainty(),
+        "heading_uncertainty_deg": session.ekf.get_heading_uncertainty_deg(),
+        "confidence_object": confidence_est.confidence_object,
     }
 
 @app.get("/navigation/trajectory")
@@ -428,10 +455,19 @@ def get_metrics(session_id: str):
     if session_id not in active_sessions:
         return {"error": "session not found"}, 404
     session = active_sessions[session_id]
+    confidence_est = session.confidence_estimator.compute_confidence(
+        covariance=session.ekf.P,
+        dr_duration=session.dr.outage_duration if session.dr.is_active else 0.0,
+        map_confidence=1.0,
+        ekf_mode=session.ekf.mode.value,
+    )
     return {
         "position_error": session.ekf.get_position_uncertainty(),
+        "velocity_uncertainty_mps": session.ekf.get_velocity_uncertainty(),
+        "heading_uncertainty_deg": session.ekf.get_heading_uncertainty_deg(),
         "dr_drift_percent": session.dr.get_drift_percentage() if session.dr.is_active else 0.0,
-        "total_trajectory_points": len(session.trajectory)
+        "total_trajectory_points": len(session.trajectory),
+        "confidence_object": confidence_est.confidence_object,
     }
 
 

@@ -2,6 +2,7 @@ import sys
 import os
 import numpy as np
 import pytest
+from typing import Optional, Dict, Any, List, Union
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -38,7 +39,20 @@ from evaluation.preprocessing import CausalFilter
 
 
 class ConcreteTrustEngine(IGNSSTrustEngine):
-    def evaluate_trust(self, gnss_data, imu_accel, dt):
+    def evaluate_trust(
+        self,
+        gnss_data: Optional[Dict[str, Any]] = None,
+        imu_accel: Optional[np.ndarray] = None,
+        dt: float = 0.1,
+        current_position: Optional[np.ndarray] = None,
+        current_velocity: Optional[np.ndarray] = None,
+        current_heading: Optional[float] = None,
+        position_uncertainty: Optional[float] = None,
+        ai_velocity: Optional[np.ndarray] = None,
+        road_distance: Optional[float] = None,
+        *args,
+        **kwargs,
+    ) -> GNSSTrustMetric:
         return GNSSTrustMetric(
             trust_score=0.95,
             is_trusted=True,
@@ -52,7 +66,7 @@ class ConcreteTrustEngine(IGNSSTrustEngine):
 
 
 class ConcreteAnomalyDetector(IGNSSAnomalyDetector):
-    def detect_anomalies(self, gnss_data, predicted_state, innovation):
+    def detect_anomalies(self, gnss_data=None, predicted_state=None, innovation=None, *args, **kwargs):
         return GNSSAnomalyReport(
             detected=False,
             anomaly_type=GNSSAnomalyType.NONE,
@@ -66,7 +80,7 @@ class ConcreteAnomalyDetector(IGNSSAnomalyDetector):
 
 
 class ConcreteAIVelocity(IAIVelocityMeasurement):
-    def estimate_velocity(self, imu_window):
+    def estimate_velocity(self, imu_window, *args, **kwargs):
         return AIVelocityMeasurement(
             velocity_north=5.0,
             velocity_east=0.0,
@@ -81,7 +95,7 @@ class ConcreteAIVelocity(IAIVelocityMeasurement):
 
 
 class ConcreteAdaptiveFusion(IAdaptiveFusionEngine):
-    def compute_adaptive_noise(self, current_mode, innovation, motion_state):
+    def compute_adaptive_noise(self, current_mode="GNSS_INS", innovation=None, motion_state="MOVING", *args, **kwargs):
         return AdaptiveNoiseParameters(
             process_noise_scale_pos=1.0,
             process_noise_scale_vel=1.0,
@@ -93,7 +107,7 @@ class ConcreteAdaptiveFusion(IAdaptiveFusionEngine):
 
 
 class ConcreteConfidenceEstimator(IConfidenceEstimator):
-    def compute_confidence(self, covariance, dr_duration, map_confidence):
+    def compute_confidence(self, covariance=None, dr_duration=0.0, map_confidence=1.0, *args, **kwargs):
         return ConfidenceEstimate(
             horizontal_accuracy_m=2.5,
             heading_accuracy_deg=1.2,
@@ -104,7 +118,7 @@ class ConcreteConfidenceEstimator(IConfidenceEstimator):
 
 
 class ConcreteRoadHypothesisTracker(IRoadHypothesisTracker):
-    def update_hypotheses(self, position, heading, speed):
+    def update_hypotheses(self, position, heading=0.0, speed=0.0, *args, **kwargs):
         return [
             RoadHypothesis(
                 segment_id="road_1_0",

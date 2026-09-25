@@ -314,6 +314,7 @@ class GNSSTrustEngine(IGNSSTrustEngine):
                     "anomaly_reasons": anomaly_rep.reason_codes if anomaly_rep is not None else [],
                 },
             )
+            self._update_tracking(gnss_data, features)
             self.last_metric = metric
             return metric
 

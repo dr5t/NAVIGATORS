@@ -29,6 +29,7 @@ Welcome to the central technical documentation repository for **Navigators**: an
 ### 3. AI / Machine Learning & Empirical Data
 - [AI / ML Neural Pipeline](AI_ML_PIPELINE.md) — TCN architecture, 5.4M parameters, causal receptive field, ONNX export.
 - [Dataset & Data Provenance](DATASET_AND_DATA_PROVENANCE.md) — IO-VNBD benchmark, session splitting, synthetic trajectories.
+- [Navigators India Dataset](NAVIGATORS_INDIA_DATASET.md) — Collection contract, validation, immutable releases, source separation, splits and evaluation.
 - [Experimental Methodology](EXPERIMENTAL_METHODOLOGY.md) — Seven-stage ablation protocol (A–G), zero-leakage constraints.
 - [Quantitative Evaluation & Results](EVALUATION.md) — Benchmark latencies, memory footprint, test suite breakdown.
 - [Academic Research Paper](RESEARCH_AND_METHODOLOGY.md) — Formal research paper and methodological formulation.

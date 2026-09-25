@@ -189,3 +189,50 @@ class DeadReckoningEngine:
         if not self.trajectory:
             return np.empty((0, 2))
         return np.array([t["position"] for t in self.trajectory])
+
+    def apply_map_constraint(
+        self,
+        constraint: Any,
+        max_lateral_correction_m: float = 2.0,
+        max_heading_correction_rad: float = 0.20,
+    ) -> np.ndarray:
+        if constraint is None or not getattr(constraint, "has_constraint", False):
+            return self.position.copy()
+        snapped = getattr(constraint, "snapped_position", None)
+        normal = getattr(constraint, "normal_vector", None)
+        if snapped is None or normal is None:
+            return self.position.copy()
+
+        ct_vector = self.position - snapped[:2]
+        ct_dev = float(np.dot(ct_vector, normal[:2]))
+
+        conf = float(getattr(constraint, "confidence", 1.0))
+        drift_sigma = self.get_estimated_drift()
+        lane_var = 2.0 / max(0.05, conf ** 2)
+        drift_var = drift_sigma ** 2
+        gain = drift_var / (drift_var + lane_var)
+        gain = max(0.0, min(0.85, gain * conf))
+
+        correction = gain * ct_dev * normal[:2]
+        step_norm = float(np.linalg.norm(correction))
+        if step_norm > max_lateral_correction_m:
+            correction = correction * (max_lateral_correction_m / step_norm)
+
+        self.position -= correction
+
+        road_h = getattr(constraint, "road_heading", None)
+        apply_head = getattr(constraint, "heading_constraint_applied", False)
+        if apply_head and road_h is not None:
+            yaw_diff = (road_h - self.heading + np.pi) % (2.0 * np.pi) - np.pi
+            if abs(yaw_diff) <= 0.785398:
+                h_step = 0.25 * conf * yaw_diff
+                if abs(h_step) > max_heading_correction_rad:
+                    h_step = np.sign(h_step) * max_heading_correction_rad
+                self.heading = (self.heading + h_step + np.pi) % (2.0 * np.pi) - np.pi
+                self.velocity = np.array([
+                    self.speed * np.sin(self.heading),
+                    self.speed * np.cos(self.heading),
+                ], dtype=np.float64)
+
+        return self.position.copy()
+

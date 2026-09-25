@@ -37,6 +37,9 @@ class IOVNBDDataset(Dataset):
     labels for training the velocity estimation model.
     """
 
+    source_dataset = "IO-VNBD"
+    source_kind = "external_benchmark"
+
     def __init__(
         self,
         root_dir: str,
@@ -240,6 +243,11 @@ class IOVNBDDataset(Dataset):
             "mean": getattr(self, "_mean", np.zeros(6)),
             "std": getattr(self, "_std", np.ones(6)),
         }
+
+    def get_sample_metadata(self, idx: int) -> dict:
+        """Retain external attribution without changing the tensor-pair API."""
+        return {"source_dataset": self.source_dataset, "source_kind": self.source_kind,
+                "session_id": self.seq_ids[idx], "split": self.split}
 
 
 def create_dataloaders(

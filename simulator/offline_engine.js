@@ -863,6 +863,42 @@ class OfflineEngine {
         const confidenceScore = this.ekf.mode === 'dr'
             ? Math.max(0.1, Math.exp(-(this.drDuration || 0) / 60.0))
             : 1.0;
+        const velUncertainty = Math.hypot(Math.sqrt(this.ekf.P[3][3]), Math.sqrt(this.ekf.P[4][4]));
+        const headingUncertaintyDeg = Math.sqrt(Math.max(0, this.ekf.P[8][8])) * (180 / Math.PI);
+        const confidenceObject = {
+            timestamp: this.lastTimestamp || 0,
+            uncertainties: {
+                position_horizontal_m: Number(Math.sqrt(posUncertainty).toFixed(3)),
+                velocity_horizontal_mps: Number(velUncertainty.toFixed(3)),
+                heading_deg: Number(headingUncertaintyDeg.toFixed(2))
+            },
+            units: {
+                position_horizontal: 'meters',
+                velocity_horizontal: 'meters_per_second',
+                heading: 'degrees'
+            },
+            sensors: {
+                gnss: {
+                    status: this.gnssAvailable ? 'TRUSTED' : 'OUTAGE',
+                    is_trusted: this.gnssAvailable,
+                    accuracy_m: this.gnssAvailable ? (this.walker ? this.walker.accuracy : 2.5) : null
+                },
+                ai_velocity: {
+                    status: aiVelocity ? 'VALID' : (aiError ? 'ERROR' : (this.zuptActive ? 'GATED' : 'BUFFERING')),
+                    is_valid: Boolean(aiVelocity)
+                },
+                map_matching: {
+                    is_matched: match.confidence > 0.8,
+                    confidence: Number(match.confidence.toFixed(3))
+                }
+            },
+            estimator: {
+                mode: this.ekf.mode,
+                integrity_status: Math.sqrt(posUncertainty) > 15.0 ? 'UNRELIABLE' : (Math.sqrt(posUncertainty) > 9.0 || !this.gnssAvailable ? 'DEGRADED' : 'NOMINAL'),
+                dr_drift_percent: Number(driftPct.toFixed(2)),
+                overall_confidence: Number(confidenceScore.toFixed(3))
+            }
+        };
 
         document.getElementById('mapStatus').textContent = this.localMap.contains(estLat, estLon)
             ? 'Local OSM map · navigation active' : 'Outside downloaded map · map matching unavailable';
@@ -891,8 +927,11 @@ class OfflineEngine {
             nhc_active: estimatedSpeed >= 0.5,
             map_matched: match.confidence > 0.8,
             position_error: Math.sqrt(posUncertainty),
+            velocity_uncertainty_mps: velUncertainty,
+            heading_uncertainty_deg: headingUncertaintyDeg,
             dr_drift_percent: driftPct,
-            confidence: confidenceScore
+            confidence: confidenceScore,
+            confidence_object: confidenceObject
         });
         return true;
     }
@@ -937,6 +976,7 @@ class OfflineEngine {
             updatePositionError(data.position_error);
             updateDrift(data.dr_drift_percent);
             updateConfidence(data.confidence);
+            window.latestConfidenceObject = data.confidence_object;
             if (typeof window.updateConsoleTelemetry === 'function') window.updateConsoleTelemetry(data);
 
             if (typeof state !== 'undefined' && state.map) {
