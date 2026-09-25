@@ -96,6 +96,7 @@ class ExtendedKalmanFilter:
 
 
         self.innovation_history: List[float] = []
+        self.last_trust_metric = None
 
     def _build_process_noise(self) -> np.ndarray:
         """Construct the process noise covariance matrix Q."""
@@ -201,8 +202,11 @@ class ExtendedKalmanFilter:
         self._enforce_covariance_symmetry()
 
 
-        if ai_velocity is not None and self.mode in [NavigationMode.DEAD_RECKONING, NavigationMode.GNSS_DEGRADED]:
-            self._update_ai_velocity(ai_velocity)
+        if ai_velocity is not None:
+            if hasattr(ai_velocity, "is_valid"):
+                self.last_ai_measurement = ai_velocity
+            if self.mode in [NavigationMode.DEAD_RECKONING, NavigationMode.GNSS_DEGRADED]:
+                self._update_ai_velocity(ai_velocity)
 
 
         if apply_nhc:
@@ -213,10 +217,13 @@ class ExtendedKalmanFilter:
         gnss_position: np.ndarray,
         gnss_velocity: Optional[np.ndarray] = None,
         timestamp: Optional[float] = None,
+        trust_metric: Optional[Any] = None,
     ):
-        """
-        EKF measurement update from GNSS with anti-jump smooth reacquisition.
-        """
+        if trust_metric is not None:
+            self.last_trust_metric = trust_metric
+            state_val = getattr(trust_metric, "state", None)
+            if state_val == "UNUSABLE" or (hasattr(state_val, "value") and state_val.value == "UNUSABLE"):
+                return
         prior_x = self.x.copy()
         prior_p = self.P.copy()
         if self.mode == NavigationMode.DEAD_RECKONING:
@@ -243,6 +250,8 @@ class ExtendedKalmanFilter:
         H_pos[:3, :3] = np.eye(3)
 
         R_pos = np.eye(3, dtype=np.float64) * (self.r_gnss_pos ** 2)
+        if trust_metric is not None and hasattr(trust_metric, "position_variance_scale"):
+            R_pos = R_pos * float(trust_metric.position_variance_scale)
 
 
 
@@ -284,6 +293,8 @@ class ExtendedKalmanFilter:
             H_vel = np.zeros((3, self.STATE_DIM), dtype=np.float64)
             H_vel[:3, 3:6] = np.eye(3)
             R_vel = np.eye(3, dtype=np.float64) * (self.r_gnss_vel ** 2)
+            if trust_metric is not None and hasattr(trust_metric, "velocity_variance_scale"):
+                R_vel = R_vel * float(trust_metric.velocity_variance_scale)
 
             y_vel = gnss_vel_3d - H_vel @ self.x
             S_vel = H_vel @ self.P @ H_vel.T + R_vel
@@ -315,20 +326,28 @@ class ExtendedKalmanFilter:
             if self.consecutive_good_gnss >= 5 and residual <= 3.0:
                 self.mode = NavigationMode.GNSS_INS
 
-    def _update_ai_velocity(self, ai_velocity: np.ndarray):
-        """
-        Update state using AI-predicted velocity.
-        Uses [v_east, v_north].
-        Standard representation: ai_velocity[0] is East, ai_velocity[1] is North.
-        """
+    def _update_ai_velocity(self, ai_velocity: Any):
+        if ai_velocity is None:
+            return
+        if hasattr(ai_velocity, "is_valid"):
+            self.last_ai_measurement = ai_velocity
+            if not ai_velocity.is_valid:
+                return
+            v_east = float(ai_velocity.velocity_east)
+            v_north = float(ai_velocity.velocity_north)
+            var_e = float(getattr(ai_velocity, "variance_east", self.r_ai_vel ** 2))
+            var_n = float(getattr(ai_velocity, "variance_north", self.r_ai_vel ** 2))
+            R = np.diag([var_e, var_n])
+        else:
+            v_east = float(ai_velocity[0])
+            v_north = float(ai_velocity[1])
+            R = np.eye(2, dtype=np.float64) * (self.r_ai_vel ** 2)
+
         H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
         H[0, 3] = 1.0
         H[1, 4] = 1.0
 
-        R = np.eye(2, dtype=np.float64) * (self.r_ai_vel ** 2)
-
-
-        z = np.array([ai_velocity[0], ai_velocity[1]], dtype=np.float64)
+        z = np.array([v_east, v_north], dtype=np.float64)
         y = z - H @ self.x
 
         S = H @ self.P @ H.T + R
@@ -339,12 +358,42 @@ class ExtendedKalmanFilter:
         self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
         self._enforce_covariance_symmetry()
 
-
-        speed_horiz = float(np.linalg.norm(ai_velocity[:2]))
+        speed_horiz = float(np.linalg.norm(z))
         if speed_horiz > 2.0:
-            cog = float(np.arctan2(ai_velocity[0], ai_velocity[1]))
+            cog = float(np.arctan2(v_east, v_north))
             yaw_err = (cog - self.x[8] + np.pi) % (2.0 * np.pi) - np.pi
             self.x[8] = (self.x[8] + 0.15 * yaw_err + np.pi) % (2.0 * np.pi) - np.pi
+
+    def apply_adaptive_noise(self, noise_params: Any):
+        if noise_params is not None:
+            self.adaptive_noise_params = noise_params
+
+    def update_map_constraint(
+        self,
+        snapped_position: np.ndarray,
+        confidence: float = 1.0,
+        covariance_scale: float = 1.0,
+    ):
+        if snapped_position is None or confidence <= 0.2:
+            return
+        H = np.zeros((2, self.STATE_DIM), dtype=np.float64)
+        H[0, 0] = 1.0
+        H[1, 1] = 1.0
+
+        base_road_variance = 4.0
+        r_val = (base_road_variance / max(confidence, 0.05)) * max(0.05, covariance_scale)
+        R = np.eye(2, dtype=np.float64) * r_val
+
+        z = np.asarray(snapped_position[:2], dtype=np.float64)
+        y = z - H @ self.x
+
+        S = H @ self.P @ H.T + R
+        K = self.P @ H.T @ np.linalg.inv(S)
+
+        self.x += K @ y
+        I_KH = np.eye(self.STATE_DIM) - K @ H
+        self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
+        self._enforce_covariance_symmetry()
 
     def update_nhc(self, yaw_rate: float = 0.0):
         """
@@ -429,7 +478,7 @@ class ExtendedKalmanFilter:
         speed = np.linalg.norm(vel[:2])
         heading_deg = np.degrees(self.get_heading()) % 360
 
-        return {
+        summary = {
             "mode": self.mode.value,
             "position_enu": pos.tolist(),
             "velocity_enu": vel.tolist(),
@@ -440,6 +489,27 @@ class ExtendedKalmanFilter:
             "accel_bias": self.x[self.ABIAS].tolist(),
             "gyro_bias": self.x[self.GBIAS].tolist(),
         }
+        if hasattr(self, "last_trust_metric") and self.last_trust_metric is not None:
+            summary["gnss_trust_state"] = getattr(self.last_trust_metric.state, "value", str(self.last_trust_metric.state))
+            summary["gnss_trust_score"] = float(self.last_trust_metric.trust_score)
+        if hasattr(self, "last_ai_measurement") and self.last_ai_measurement is not None:
+            summary["ai_velocity_valid"] = bool(self.last_ai_measurement.is_valid)
+            summary["ai_velocity_ms"] = [
+                float(self.last_ai_measurement.velocity_east),
+                float(self.last_ai_measurement.velocity_north),
+            ]
+        if hasattr(self, "adaptive_noise_params") and self.adaptive_noise_params is not None:
+            summary["adaptive_fusion"] = {
+                "process_noise_scale_pos": float(self.adaptive_noise_params.process_noise_scale_pos),
+                "process_noise_scale_vel": float(self.adaptive_noise_params.process_noise_scale_vel),
+                "measurement_noise_scale_gnss_pos": float(self.adaptive_noise_params.measurement_noise_scale_gnss_pos),
+                "measurement_noise_scale_ai_vel": float(self.adaptive_noise_params.measurement_noise_scale_ai_vel),
+                "measurement_noise_scale_map": float(self.adaptive_noise_params.measurement_noise_scale_map),
+                "downweighted_reasons": list(self.adaptive_noise_params.downweighted_reasons),
+                "rejected_reasons": list(self.adaptive_noise_params.rejected_reasons),
+                "telemetry": dict(self.adaptive_noise_params.telemetry),
+            }
+        return summary
 
     def initialize_from_gnss(
         self,

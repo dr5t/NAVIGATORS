@@ -97,10 +97,20 @@ class NavigationStateEngine:
         hdop: float = 1.0,
         imu_healthy: bool = True,
         reacquiring_progress: float = 1.0,
+        trust_state: Optional[Any] = None,
     ) -> NavState:
-        """
-        Evaluates sensor status telemetry and drives automatic state transitions.
-        """
+        if trust_state is not None:
+            state_str = getattr(trust_state, "value", str(trust_state))
+            if state_str == "UNUSABLE":
+                gnss_available = False
+            elif state_str in ("DEGRADED", "SUSPICIOUS"):
+                gnss_available = True
+                if hdop <= 2.5:
+                    hdop = 3.5
+            elif state_str == "TRUSTED":
+                gnss_available = True
+                hdop = 1.0
+
         if not imu_healthy:
             return self.transition(NavState.ERROR, reason="IMU sensor failure")
 
