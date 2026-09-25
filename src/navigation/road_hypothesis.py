@@ -2,12 +2,12 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Tuple
 
-from navigation.interfaces import (
+from src.navigation.interfaces import (
     IRoadHypothesisTracker,
     RoadHypothesis,
     RoadAmbiguityState,
 )
-from navigation.map_matching import RoadNetwork, RoadSegment, MapMatchResult
+from src.navigation.map_matching import RoadNetwork, RoadSegment, MapMatchResult
 
 
 @dataclass

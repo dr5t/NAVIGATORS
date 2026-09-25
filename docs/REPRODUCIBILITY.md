@@ -1,4 +1,4 @@
-# Navigators — Reproducibility & Replication Guide
+# Navigators :  Reproducibility & Replication Guide
 
 ```
 Document Identifier: REP-NAV-01

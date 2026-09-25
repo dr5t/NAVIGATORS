@@ -1,4 +1,4 @@
-# Navigators — Security Architecture & Threat Mitigation
+# Navigators :  Security Architecture & Threat Mitigation
 
 ```
 Document Identifier: SEC-NAV-01

@@ -1,4 +1,4 @@
-# Navigators — Engineering & Management Dashboard Specification
+# Navigators :  Engineering & Management Dashboard Specification
 
 ```
 Document Identifier: DASH-NAV-01

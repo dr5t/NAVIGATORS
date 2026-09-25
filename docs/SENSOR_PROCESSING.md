@@ -1,4 +1,4 @@
-# Navigators — Sensor Processing & Signal Conditioning
+# Navigators :  Sensor Processing & Signal Conditioning
 
 ```
 Document Identifier: SENS-NAV-01

@@ -1,4 +1,4 @@
-# Navigators — Model Lifecycle & Governance Specification
+# Navigators :  Model Lifecycle & Governance Specification
 
 ```
 Document Identifier: MOD-NAV-01

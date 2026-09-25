@@ -1,4 +1,4 @@
-# Navigators — Contributor System & Workflow Specification
+# Navigators :  Contributor System & Workflow Specification
 
 ```
 Document Identifier: CONTRIB-NAV-01

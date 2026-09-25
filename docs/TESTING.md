@@ -1,4 +1,4 @@
-# Navigators — Verification & Testing Protocol
+# Navigators :  Verification & Testing Protocol
 
 ```
 Document Identifier: TEST-NAV-01

@@ -1,4 +1,4 @@
-# Navigators — Product Requirements Document (PRD)
+# Navigators :  Product Requirements Document (PRD)
 
 ```
 Document Identifier: PRD-NAV-01

@@ -1,12 +1,12 @@
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, Tuple, List
-from navigation.interfaces import (
+from src.navigation.interfaces import (
     GNSSTrustState,
     GNSSTrustMetric,
     IGNSSTrustEngine,
 )
-from navigation.gnss_anomaly import (
+from src.navigation.gnss_anomaly import (
     GNSSAnomalyDetector,
     IGNSSAnomalyDetector,
     GNSSAnomalyStatus,

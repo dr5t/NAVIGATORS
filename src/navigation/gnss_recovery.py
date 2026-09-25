@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Tuple, Union
 
-from navigation.interfaces import (
+from src.navigation.interfaces import (
     GNSSRecoveryState,
     GNSSRecoveryPlan,
     IGNSSRecoveryManager,
@@ -10,7 +10,7 @@ from navigation.interfaces import (
     GNSSTrustMetric,
     IGNSSTrustEngine,
 )
-from navigation.map_matching import RoadNetwork, RoadSegment
+from src.navigation.map_matching import RoadNetwork, RoadSegment
 
 
 @dataclass

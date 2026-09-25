@@ -1,4 +1,4 @@
-# Navigators — Authentication & Role-Based Access Control (RBAC)
+# Navigators :  Authentication & Role-Based Access Control (RBAC)
 
 ```
 Document Identifier: RBAC-NAV-01

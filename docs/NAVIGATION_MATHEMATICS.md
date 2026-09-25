@@ -1,4 +1,4 @@
-# Navigators — Navigation Mathematics & Theoretical Formulation
+# Navigators :  Navigation Mathematics & Theoretical Formulation
 
 ```
 Document Identifier: MATH-NAV-01

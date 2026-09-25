@@ -1,4 +1,4 @@
-# Navigators — Database Design & Entity Relationship Specification
+# Navigators :  Database Design & Entity Relationship Specification
 
 ```
 Document Identifier: DB-NAV-01

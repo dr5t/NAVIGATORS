@@ -1,4 +1,4 @@
-# Navigators — Web Application & Interface Specification
+# Navigators :  Web Application & Interface Specification
 
 ```
 Document Identifier: WEB-NAV-01

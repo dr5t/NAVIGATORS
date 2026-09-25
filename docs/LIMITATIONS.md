@@ -1,4 +1,4 @@
-# Navigators — System Limitations & Scientific Disclosures
+# Navigators :  System Limitations & Scientific Disclosures
 
 ```
 Document Identifier: LIM-NAV-01

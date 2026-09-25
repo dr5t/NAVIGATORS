@@ -1,4 +1,4 @@
-# Navigators — REST API Reference Specification
+# Navigators :  REST API Reference Specification
 
 ```
 Document Identifier: API-NAV-01

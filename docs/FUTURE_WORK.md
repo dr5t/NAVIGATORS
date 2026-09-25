@@ -1,4 +1,4 @@
-# Navigators — Future Work & Technical Roadmap
+# Navigators :  Future Work & Technical Roadmap
 
 ```
 Document Identifier: FUT-NAV-01

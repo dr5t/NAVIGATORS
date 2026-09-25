@@ -1,4 +1,4 @@
-# Navigators — Quantitative Evaluation & Benchmark Results
+# Navigators :  Quantitative Evaluation & Benchmark Results
 
 ```
 Document Identifier: EVAL-NAV-01

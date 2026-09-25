@@ -1,4 +1,4 @@
-# Navigators — Android Mobile Integration & PWA Deployment
+# Navigators :  Android Mobile Integration & PWA Deployment
 
 ```
 Document Identifier: AND-NAV-01

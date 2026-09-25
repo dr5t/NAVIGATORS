@@ -1,4 +1,4 @@
-# Navigators — Privacy Architecture & Telemetry Protection
+# Navigators :  Privacy Architecture & Telemetry Protection
 
 ```
 Document Identifier: PRIV-NAV-01

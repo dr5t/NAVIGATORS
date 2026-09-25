@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, Tuple, List
-from navigation.interfaces import (
+from src.navigation.interfaces import (
     GNSSAnomalyStatus,
     GNSSAnomalyType,
     GNSSAnomalyReport,

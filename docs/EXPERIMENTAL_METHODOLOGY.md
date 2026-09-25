@@ -1,4 +1,4 @@
-# Navigators — Experimental Methodology & Ablation Protocol
+# Navigators :  Experimental Methodology & Ablation Protocol
 
 ```
 Document Identifier: EXP-NAV-01

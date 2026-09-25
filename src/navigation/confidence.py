@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List, Union
 import numpy as np
 
-from navigation.interfaces import (
+from src.navigation.interfaces import (
     IConfidenceEstimator,
     ConfidenceEstimate,
     GNSSTrustMetric,

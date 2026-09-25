@@ -1,16 +1,12 @@
-import os
-import sys
 import numpy as np
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from navigation.map_matching import RoadNetwork, RoadSegment
-from navigation.road_hypothesis import RoadHypothesisEngine, RoadHypothesisConfig
-from navigation.map_constraint import MapConstraintEngine, MapConstraintConfig, MapConstraintMetrics
-from navigation.dead_reckoning import DeadReckoningEngine
-from navigation.ekf import ExtendedKalmanFilter, NavigationMode
-from navigation.interfaces import RoadAmbiguityState, MapConstraint
+from src.navigation.map_matching import RoadNetwork, RoadSegment
+from src.navigation.road_hypothesis import RoadHypothesisEngine, RoadHypothesisConfig
+from src.navigation.map_constraint import MapConstraintEngine, MapConstraintConfig, MapConstraintMetrics
+from src.navigation.dead_reckoning import DeadReckoningEngine
+from src.navigation.ekf import ExtendedKalmanFilter, NavigationMode
+from src.navigation.interfaces import RoadAmbiguityState, MapConstraint
 
 
 def build_straight_network(length_m: float = 300.0) -> RoadNetwork:
