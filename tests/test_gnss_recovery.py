@@ -247,16 +247,16 @@ def test_parallel_road_gnss_recovery():
     road_network = RoadNetwork()
     seg_main = RoadSegment(
         id="main_arterial",
-        start=np.array([0.0, 0.0, 0.0]),
-        end=np.array([0.0, 1000.0, 0.0]),
+        start=np.array([0.0, 0.0]),
+        end=np.array([0.0, 1000.0]),
         name="Main Arterial",
         speed_limit=60.0,
         one_way=True,
     )
     seg_parallel = RoadSegment(
         id="parallel_service",
-        start=np.array([15.0, 0.0, 0.0]),
-        end=np.array([15.0, 1000.0, 0.0]),
+        start=np.array([15.0, 0.0]),
+        end=np.array([15.0, 1000.0]),
         name="Service Road",
         speed_limit=30.0,
         one_way=True,

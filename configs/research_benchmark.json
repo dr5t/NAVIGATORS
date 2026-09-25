@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "seed": 42,
+  "sessions": [],
+  "outage_durations_s": [10, 30, 60, 120, 300],
+  "outage_starts_s": [30],
+  "include_observed": true,
+  "calibration_seconds": 5,
+  "recovery_window_s": 15,
+  "recovery_error_threshold_m": 5,
+  "recovery_hold_s": 3,
+  "prediction_horizon_s": 5,
+  "prediction_threshold": 0.65,
+  "bootstrap_samples": 2000,
+  "material_improvement_m": 1,
+  "repeats": 1,
+  "production_adapter": "python_replay_G",
+  "production_model": {
+    "path": "../simulator/model.onnx",
+    "stats": "../checkpoints/norm_stats.json",
+    "backend": "onnx"
+  },
+  "candidate_model": null
+}

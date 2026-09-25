@@ -292,6 +292,8 @@ class IConfidenceEstimator(ABC):
 
 
 class IRoadHypothesisTracker(ABC):
+    state: RoadAmbiguityState
+
     @abstractmethod
     def update_hypotheses(
         self,
