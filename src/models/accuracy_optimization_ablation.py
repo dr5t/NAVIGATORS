@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Sized, cast
 import numpy as np
 import math
 import time
@@ -109,8 +109,8 @@ class ExperimentDataset(Dataset):
     def __len__(self) -> int:
         return len(self.windows)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.windows[idx], self.targets[idx]
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.windows[index], self.targets[index]
 
 
 class ExperimentRunner:
@@ -178,8 +178,13 @@ class ExperimentRunner:
                 out = model(x_b)
                 preds.append(out.numpy())
                 targets.append(y_b.numpy())
+        ds = dataloader.dataset
+        ds_len = len(cast(Sized, ds)) if hasattr(ds, "__len__") else len(dataloader)
         t_elapsed = (time.time() - t0) * 1000.0
-        lat_ms = t_elapsed / max(1, len(dataloader.dataset))
+        lat_ms = t_elapsed / max(1, ds_len)
+
+        if not preds:
+            return 0.0, 0.0, 0.0, 0.0
 
         p_arr = np.vstack(preds)
         t_arr = np.vstack(targets)

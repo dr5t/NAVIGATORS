@@ -67,7 +67,7 @@ def _enrich_contribution(c: Contribution) -> Dict[str, Any]:
     data = base.get("data", {})
 
 
-    author_info = {"id": c.owner_id, "name": "Unknown", "email": ""}
+    author_info: Dict[str, Any] = {"id": c.owner_id, "name": "Unknown", "email": ""}
     try:
         user = rbac_repo.get_user(c.owner_id)
         if user:

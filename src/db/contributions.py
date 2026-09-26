@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Community Contribution Repository & Data Layer
 Manages contribution entities, drafts, pending reviews, and moderation decisions

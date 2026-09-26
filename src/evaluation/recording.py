@@ -44,7 +44,7 @@ def load_recording(path, gyro_order=None):
         accel = np.column_stack([rows[k] for k in ('ax', 'ay', 'az')])
         gyro = np.column_stack([rows[k] for k in ('gx', 'gy', 'gz')])
         gnss = np.column_stack([rows[k] for k in CSV_COLUMNS[7:]])
-        if 'gnss_timestamp' in rows.dtype.names:
+        if rows.dtype.names is not None and 'gnss_timestamp' in rows.dtype.names:
             fix_time = rows['gnss_timestamp']
     elif path.suffix.lower() == '.json':
         payload = json.loads(path.read_text())

@@ -40,7 +40,9 @@ def tmp_db(tmp_path):
     return db_file
 
 
-def _register(db_file, role: str, tag: str = ""):
+from typing import Any, Tuple
+
+def _register(db_file, role: str, tag: str = "") -> Tuple[Any, Any]:
     auth = AuthService(db_file)
     suffix = tag or secrets.token_hex(4)
     user, session, _ = auth.register(
@@ -52,7 +54,7 @@ def _register(db_file, role: str, tag: str = ""):
     return user, session
 
 
-def _submit(repo: DatasetRepository, contributor_id: str, activity: str = "walking") -> object:
+def _submit(repo: DatasetRepository, contributor_id: str, activity: str = "walking") -> Any:
     return repo.submit_session(
         contributor_id=contributor_id,
         activity_type=activity,
@@ -172,7 +174,7 @@ def test_reject_from_uploaded_state(tmp_db):
     )
 
     assert rejected.status == "rejected"
-    assert "corrupted" in rejected.rejection_reason
+    assert rejected.rejection_reason is not None and "corrupted" in rejected.rejection_reason
     assert rejected.validated_by == admin.id
 
 
@@ -334,6 +336,8 @@ def test_api_normal_user_denied_dataset_submit(tmp_db, monkeypatch):
             body=SubmitSessionModel(
                 activity_type="walking",
                 device="iPhone 15",
+                duration_seconds=100.0,
+                gnss_available=True,
                 consent=True,
             ),
             context=session,

@@ -47,6 +47,7 @@ def test_third_party_provenance_separation():
     assert all(d.category == DatasetProvenanceCategory.ORIGINAL for d in original)
 
     iovnbd = registry.get_dataset("IO-VNBD")
+    assert iovnbd is not None
     assert iovnbd.license == "CC-BY-4.0"
     assert "Oxford" in iovnbd.source
 

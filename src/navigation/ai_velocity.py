@@ -225,7 +225,7 @@ class AIVelocityEngine(IAIVelocityMeasurement):
                             timestamp=latest_ts,
                         )
 
-        if not self.is_ready():
+        if not self.is_ready() or self.mean is None or self.std is None or self.session is None or self.input_name is None:
             return self._create_invalid_measurement(
                 reason="onnx_model_or_statistics_not_loaded",
                 status="MODEL_UNAVAILABLE",
@@ -238,7 +238,8 @@ class AIVelocityEngine(IAIVelocityMeasurement):
         try:
             self.total_inferences += 1
             outputs = self.session.run(None, {self.input_name: norm_window})
-            raw_vel = np.asarray(outputs[0][0], dtype=np.float64)
+            out_arr = np.asarray(outputs[0])
+            raw_vel = np.asarray(out_arr[0], dtype=np.float64)
         except Exception as e:
             self.failed_inferences += 1
             return self._create_invalid_measurement(

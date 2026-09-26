@@ -16,7 +16,10 @@ from src.data.india_dataset.schema import GNSS, IMU
 from src.data.india_dataset.__main__ import main
 
 
-def fixture(index=0, **metadata_changes):
+from typing import Dict, Any, List
+
+
+def fixture(index=0, **metadata_changes) -> Dict[str, Any]:
     metadata = dict(schema_version="1.0.0", session_id=f"session-{index}", recording_id=f"drive-{index}",
                     source_kind="navigators_collection", source_dataset=DATASET_NAME, country="IN", consent=True,
                     provenance=dict(original_collection=True, collector="test-only fictional collector",
@@ -328,7 +331,8 @@ def test_ambiguous_json_is_rejected_and_raw_is_quarantined(tmp_path):
 @pytest.mark.parametrize("key,value", [("timestamp", -1), ("timestamp", 1e308), ("accelerometer_x", 10**1000)])
 def test_extreme_numbers_are_rejections_not_crashes(key, value):
     payload = fixture()
-    payload["records"][0][key] = value
+    rec: dict = payload["records"][0]
+    rec[key] = value
     assert not validate_session(**payload)[0]["accepted"]
 
 

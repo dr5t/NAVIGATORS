@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Database Engine & Connection Management
 Manages SQLite database connections, schema migrations, and connection lifecycles.

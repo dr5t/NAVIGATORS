@@ -105,4 +105,4 @@ def test_admin_page_route_serving():
     """Test that /admin route serves the admin.html file response."""
     response = get_admin_page()
     assert response is not None
-    assert response.path.endswith("admin.html")
+    assert str(response.path).endswith("admin.html")

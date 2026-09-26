@@ -1,0 +1,25 @@
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py:104:22 - error: "__getitem__" method not defined on type "SparseTensor" (reportIndexIssue)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:181:91 - error: Object of type "None" cannot be used as iterable value (reportOptionalIterable)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py:101:49 - error: Object of type "None" cannot be used as iterable value (reportOptionalIterable)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py:103:83 - error: Argument of type "str | list[Any] | None" cannot be assigned to parameter "obj" of type "Sized" in function "len"
+    Type "str | list[Any] | None" is not assignable to type "Sized"
+      "None" is incompatible with protocol "Sized"
+        "__len__" is not present (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/models/accuracy_optimization_ablation.py
+  /Users/shauryatiwari/Navigators-SIH/src/models/accuracy_optimization_ablation.py:182:22 - error: Argument of type "Dataset[Unknown]" cannot be assigned to parameter "obj" of type "Sized" in function "len"
+    "Dataset[Unknown]" is incompatible with protocol "Sized"
+      "__len__" is not present (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py:240:34 - error: "outputs" is not defined (reportUndefinedVariable)
+/Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:94:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:127:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:158:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:181:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:198:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:216:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:234:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+13 errors, 0 warnings, 0 informations

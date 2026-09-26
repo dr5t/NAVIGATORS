@@ -1,0 +1,704 @@
+You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.
+/Users/shauryatiwari/Navigators-SIH/evaluate_model.py
+  /Users/shauryatiwari/Navigators-SIH/evaluate_model.py:10:45 - error: "None" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+/Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:89:64 - error: Argument of type "Literal['type']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['type']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['type']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['type']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:108:30 - error: Argument of type "dict[str, str]" cannot be assigned to parameter "object" of type "str" in function "append" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:131:46 - error: Argument of type "Literal['type']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['type']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['type']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['type']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:133:21 - error: Argument of type "Literal['depth']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['depth']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['depth']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['depth']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:133:21 - error: Operator "+=" not supported for types "str" and "Literal[1]"
+    Operator "+" not supported for types "str" and "Literal[1]" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:138:21 - error: Argument of type "Literal['depth']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['depth']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['depth']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['depth']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:138:21 - error: Operator "-=" not supported for types "str" and "Literal[1]"
+    Operator "-" not supported for types "str" and "Literal[1]" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:139:24 - error: Argument of type "Literal['depth']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['depth']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['depth']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['depth']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:148:44 - error: Argument of type "Literal['type']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['type']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['type']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['type']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/scripts/clean_comments.py:156:30 - error: Argument of type "dict[str, str | int]" cannot be assigned to parameter "object" of type "str" in function "append" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/api/moderation.py
+  /Users/shauryatiwari/Navigators-SIH/src/api/moderation.py:76:13 - error: Argument of type "str | None" cannot be assigned to parameter "value" of type "str" in function "__setitem__"
+    Type "str | None" is not assignable to type "str"
+      "None" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/api/moderation.py:77:13 - error: Argument of type "list[str]" cannot be assigned to parameter "value" of type "str" in function "__setitem__"
+    "list[str]" is not assignable to "str" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/api/privacy.py
+  /Users/shauryatiwari/Navigators-SIH/src/api/privacy.py:70:40 - error: Cannot access attribute "user_id" for class "SessionContext"
+    Attribute "user_id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/api/privacy.py:75:20 - error: Cannot access attribute "user_id" for class "SessionContext"
+    Attribute "user_id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/api/privacy.py:91:69 - error: Argument of type "List[Dict[str, Any]]" cannot be assigned to parameter "settings" of type "List[DomainSettingResponse]" in function "__init__"
+    "List[Dict[str, Any]]" is not assignable to "List[DomainSettingResponse]"
+      Type parameter "_T@list" is invariant, but "Dict[str, Any]" is not the same as "DomainSettingResponse"
+      Consider switching from "list" to "Sequence" which is covariant (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/api/server.py
+  /Users/shauryatiwari/Navigators-SIH/src/api/server.py:563:15 - error: "HTTPException" is not defined (reportUndefinedVariable)
+  /Users/shauryatiwari/Navigators-SIH/src/api/server.py:578:15 - error: "HTTPException" is not defined (reportUndefinedVariable)
+/Users/shauryatiwari/Navigators-SIH/src/data/data_loader.py
+  /Users/shauryatiwari/Navigators-SIH/src/data/data_loader.py:15:98 - error: Expression of type "None" cannot be assigned to parameter of type "dict[Unknown, Unknown]"
+    "None" is not assignable to "dict[Unknown, Unknown]" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/data/dataset_builder.py
+  /Users/shauryatiwari/Navigators-SIH/src/data/dataset_builder.py:67:72 - error: Argument of type "int64" cannot be assigned to parameter "seed" of type "int | None" in function "__init__"
+    Type "int64" is not assignable to type "int | None"
+      "signedinteger[_64Bit]" is not assignable to "int"
+      "signedinteger[_64Bit]" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/data/dataset_builder.py:68:67 - error: Argument of type "int64" cannot be assigned to parameter "num_segments" of type "int" in function "generate_random_segments"
+    "signedinteger[_64Bit]" is not assignable to "int" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/data/india_dataset/schema.py
+  /Users/shauryatiwari/Navigators-SIH/src/data/india_dataset/schema.py:132:42 - error: Operator "<=" not supported for types "Literal[0]" and "Unknown | None"
+    Operator "<=" not supported for types "Literal[0]" and "None" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/data/india_dataset/schema.py:132:47 - error: Operator "<=" not supported for "None" (reportOptionalOperand)
+  /Users/shauryatiwari/Navigators-SIH/src/data/india_dataset/schema.py:135:28 - error: Operator "<=" not supported for "None" (reportOptionalOperand)
+  /Users/shauryatiwari/Navigators-SIH/src/data/india_dataset/schema.py:280:29 - error: Operator "/" not supported for types "Unknown | float" and "Unknown | None"
+    Operator "/" not supported for types "float" and "None" (reportOperatorIssue)
+/Users/shauryatiwari/Navigators-SIH/src/data_prep/iovnbd_parser.py
+  /Users/shauryatiwari/Navigators-SIH/src/data_prep/iovnbd_parser.py:67:14 - error: Operator "/" not supported for types "ArrayLike | Unknown" and "float"
+    Operator "/" not supported for types "ExtensionArray" and "float" (reportOperatorIssue)
+/Users/shauryatiwari/Navigators-SIH/src/db/authorization.py
+  /Users/shauryatiwari/Navigators-SIH/src/db/authorization.py:104:30 - error: Type "list[Unknown | str | None]" is not assignable to declared type "List[str]" (reportAssignmentType)
+/Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py
+  /Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py:252:16 - error: Type "ModelEntry | None" is not assignable to return type "ModelEntry"
+    Type "ModelEntry | None" is not assignable to type "ModelEntry"
+      "None" is not assignable to "ModelEntry" (reportReturnType)
+  /Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py:305:16 - error: Type "ModelEntry | None" is not assignable to return type "ModelEntry"
+    Type "ModelEntry | None" is not assignable to type "ModelEntry"
+      "None" is not assignable to "ModelEntry" (reportReturnType)
+  /Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py:329:16 - error: Type "ModelEntry | None" is not assignable to return type "ModelEntry"
+    Type "ModelEntry | None" is not assignable to type "ModelEntry"
+      "None" is not assignable to "ModelEntry" (reportReturnType)
+  /Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py:365:16 - error: Type "ModelEntry | None" is not assignable to return type "ModelEntry"
+    Type "ModelEntry | None" is not assignable to type "ModelEntry"
+      "None" is not assignable to "ModelEntry" (reportReturnType)
+  /Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py:402:16 - error: Type "ModelEntry | None" is not assignable to return type "ModelEntry"
+    Type "ModelEntry | None" is not assignable to type "ModelEntry"
+      "None" is not assignable to "ModelEntry" (reportReturnType)
+  /Users/shauryatiwari/Navigators-SIH/src/db/model_registry.py:474:16 - error: Type "ModelEntry | None" is not assignable to return type "ModelEntry"
+    Type "ModelEntry | None" is not assignable to type "ModelEntry"
+      "None" is not assignable to "ModelEntry" (reportReturnType)
+/Users/shauryatiwari/Navigators-SIH/src/db/places.py
+  /Users/shauryatiwari/Navigators-SIH/src/db/places.py:588:53 - error: "user" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/db/places.py:589:38 - error: "user" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/db/places.py:591:42 - error: "id" is not a known attribute of "None" (reportOptionalMemberAccess)
+/Users/shauryatiwari/Navigators-SIH/src/db/sync.py
+  /Users/shauryatiwari/Navigators-SIH/src/db/sync.py:73:45 - error: Argument of type "str | Path | None" cannot be assigned to parameter "db_path" of type "Path | None" in function "__init__"
+    Type "str | Path | None" is not assignable to type "Path | None"
+      Type "str" is not assignable to type "Path | None"
+        "str" is not assignable to "Path"
+        "str" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/db/sync.py:212:17 - error: Argument missing for parameter "user" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/db/sync.py:215:21 - error: No parameter named "actor" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/db/sync.py:304:17 - error: Argument missing for parameter "user" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/db/sync.py:307:21 - error: No parameter named "actor" (reportCallIssue)
+/Users/shauryatiwari/Navigators-SIH/src/edge/onnx_export.py
+  /Users/shauryatiwari/Navigators-SIH/src/edge/onnx_export.py:88:26 - error: "optimizer" is unknown import symbol (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/edge/onnx_export.py:193:16 - error: "__getitem__" method not defined on type "SparseTensor" (reportIndexIssue)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/recording.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/recording.py:47:12 - error: Operator "in" not supported for types "Literal['gnss_timestamp']" and "tuple[str, ...] | None"
+    Operator "in" not supported for types "Literal['gnss_timestamp']" and "None" (reportOperatorIssue)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py:104:22 - error: "__getitem__" method not defined on type "SparseTensor" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py:158:24 - error: Argument of type "NDArray[Any]" cannot be assigned to parameter "points" of type "List[ndarray[_AnyShape, dtype[Any]]]" in function "add_road"
+    "ndarray[_AnyShape, dtype[Any]]" is not assignable to "List[ndarray[_AnyShape, dtype[Any]]]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py:191:29 - error: "predict" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py:233:35 - error: "match" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/replay.py:269:92 - error: "window_size" is not a known attribute of "None" (reportOptionalMemberAccess)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/research/metrics.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/metrics.py:38:13 - error: Argument of type "float" cannot be assigned to parameter "value" of type "None" in function "__setitem__"
+    "float" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/metrics.py:89:13 - error: Argument of type "float | None" cannot be assigned to parameter "value" of type "None" in function "__setitem__"
+    Type "float | None" is not assignable to type "None"
+      "float" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/metrics.py:100:5 - error: Argument of type "float | None" cannot be assigned to parameter "value" of type "None" in function "__setitem__"
+    Type "float | None" is not assignable to type "None"
+      "float" is not assignable to "None" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:69:24 - error: Cannot assign to attribute "anomaly_detector" for class "GNSSTrustEngine"
+    Expression of type "None" cannot be assigned to attribute "anomaly_detector" of class "GNSSTrustEngine"
+      Type "None" is not assignable to type "IGNSSAnomalyDetector | GNSSAnomalyDetector"
+        "None" is not assignable to "IGNSSAnomalyDetector"
+        "None" is not assignable to "GNSSAnomalyDetector" (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:79:60 - error: "roads" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:79:86 - error: Argument of type "RoadHypothesisEngine | NearestRoadTracker | None" cannot be assigned to parameter "hypothesis_tracker" of type "IRoadHypothesisTracker | None" in function "__init__"
+    Type "RoadHypothesisEngine | NearestRoadTracker | None" is not assignable to type "IRoadHypothesisTracker | None"
+      Type "NearestRoadTracker" is not assignable to type "IRoadHypothesisTracker | None"
+        "NearestRoadTracker" is not assignable to "IRoadHypothesisTracker"
+        "NearestRoadTracker" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:94:40 - error: "predict" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:100:73 - error: Argument of type "int | None" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    Type "int | None" is not assignable to type "int"
+      "None" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "imu_accel" of type "ndarray[_AnyShape, dtype[Any]] | None" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+      Type "float" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+        "float" is not assignable to "ndarray[_AnyShape, dtype[Any]]"
+        "float" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "dt" of type "float" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "float"
+      "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "current_position" of type "ndarray[_AnyShape, dtype[Any]] | None" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+      Type "float" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+        "float" is not assignable to "ndarray[_AnyShape, dtype[Any]]"
+        "float" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "current_velocity" of type "ndarray[_AnyShape, dtype[Any]] | None" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+      Type "float" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+        "float" is not assignable to "ndarray[_AnyShape, dtype[Any]]"
+        "float" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "current_heading" of type "float | None" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "float | None"
+      Type "NDArray[float64]" is not assignable to type "float | None"
+        "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float"
+        "ndarray[_AnyShape, dtype[float64]]" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "position_uncertainty" of type "float | None" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "float | None"
+      Type "NDArray[float64]" is not assignable to type "float | None"
+        "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float"
+        "ndarray[_AnyShape, dtype[float64]]" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:113:109 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "road_distance" of type "float | None" in function "evaluate_trust"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "float | None"
+      Type "NDArray[float64]" is not assignable to type "float | None"
+        "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float"
+        "ndarray[_AnyShape, dtype[float64]]" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:169:51 - error: Argument of type "GNSSTrustMetric | None" cannot be assigned to parameter "obj" of type "_DataclassT@replace" in function "replace"
+    Type "GNSSTrustMetric | None" is not assignable to type "DataclassInstance"
+      Type "GNSSTrustMetric | None" is not assignable to type "DataclassInstance"
+        "None" is incompatible with protocol "DataclassInstance"
+          "__dataclass_fields__" is not present (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:174:42 - error: Object of type "None" is not subscriptable (reportOptionalSubscript)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:174:42 - error: Argument of type "Unknown | NDArray[float64] | float" cannot be assigned to parameter "gnss_position" of type "ndarray[_AnyShape, dtype[Any]]" in function "update_gnss"
+    Type "Unknown | NDArray[float64] | float" is not assignable to type "ndarray[_AnyShape, dtype[Any]]"
+      "float" is not assignable to "ndarray[_AnyShape, dtype[Any]]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:174:64 - error: Object of type "None" is not subscriptable (reportOptionalSubscript)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:174:64 - error: Argument of type "Unknown | NDArray[float64] | float" cannot be assigned to parameter "gnss_velocity" of type "ndarray[_AnyShape, dtype[Any]] | None" in function "update_gnss"
+    Type "Unknown | NDArray[float64] | float" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+      Type "float" is not assignable to type "ndarray[_AnyShape, dtype[Any]] | None"
+        "float" is not assignable to "ndarray[_AnyShape, dtype[Any]]"
+        "float" is not assignable to "None" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:206:30 - error: "update" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:211:72 - error: Object of type "None" is not subscriptable (reportOptionalSubscript)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:212:48 - error: Object of type "None" is not subscriptable (reportOptionalSubscript)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:212:69 - error: Cannot access attribute "copy" for class "float"
+    Attribute "copy" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:212:77 - error: Object of type "None" is not subscriptable (reportOptionalSubscript)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:212:98 - error: Cannot access attribute "copy" for class "float"
+    Attribute "copy" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:213:32 - error: Object of type "None" is not subscriptable (reportOptionalSubscript)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:218:92 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "heading" of type "float" in function "evaluate_from_state"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "float"
+      "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/navigation.py:222:59 - error: Argument of type "float | Unknown | NDArray[float64]" cannot be assigned to parameter "heading" of type "float" in function "update_hypotheses"
+    Type "float | Unknown | NDArray[float64]" is not assignable to type "float"
+      "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:104:9 - error: Argument of type "bool" cannot be assigned to parameter "value" of type "str | dict[str, str] | list[str] | None" in function "__setitem__"
+    Type "bool" is not assignable to type "str | dict[str, str] | list[str] | None"
+      "bool" is not assignable to "str"
+      "bool" is not assignable to "dict[str, str]"
+      "bool" is not assignable to "None"
+      "bool" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:109:9 - error: Argument of type "dict[str, dict[str, Unknown]]" cannot be assigned to parameter "value" of type "str | dict[str, str] | list[str] | None" in function "__setitem__"
+    Type "dict[str, dict[str, Unknown]]" is not assignable to type "str | dict[str, str] | list[str] | None"
+      "dict[str, dict[str, Unknown]]" is not assignable to "str"
+      "dict[str, dict[str, Unknown]]" is not assignable to "dict[str, str]"
+        Type parameter "_VT@dict" is invariant, but "dict[str, Unknown]" is not the same as "str"
+        Consider switching from "dict" to "Mapping" which is covariant in the value type
+      "dict[str, dict[str, Unknown]]" is not assignable to "None"
+      "dict[str, dict[str, Unknown]]" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:176:34 - error: Argument of type "Literal['censored']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['censored']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['censored']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['censored']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:176:57 - error: Argument of type "Literal['episodes']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['episodes']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['episodes']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['episodes']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:176:57 - error: "__getitem__" method not defined on type "int" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:176:57 - error: Object of type "None" cannot be used as iterable value (reportOptionalIterable)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:178:59 - error: Argument of type "Literal['episodes']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['episodes']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['episodes']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['episodes']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/runner.py:178:59 - error: "__getitem__" method not defined on type "int" (reportIndexIssue)
+/Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py:100:78 - error: Object of type "None" cannot be used as iterable value (reportOptionalIterable)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py:100:108 - error: Argument of type "Literal['jump_sample_indices']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['jump_sample_indices']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['jump_sample_indices']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['jump_sample_indices']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/src/evaluation/research/worker.py:101:79 - error: Argument of type "str | None" cannot be assigned to parameter "obj" of type "Sized" in function "len"
+    Type "str | None" is not assignable to type "Sized"
+      "None" is incompatible with protocol "Sized"
+        "__len__" is not present (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/models/accuracy_optimization_ablation.py
+  /Users/shauryatiwari/Navigators-SIH/src/models/accuracy_optimization_ablation.py:182:41 - error: Argument of type "Dataset[Unknown]" cannot be assigned to parameter "obj" of type "Sized" in function "len"
+    "Dataset[Unknown]" is incompatible with protocol "Sized"
+      "__len__" is not present (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/models/dataset.py
+  /Users/shauryatiwari/Navigators-SIH/src/models/dataset.py:106:12 - error: Type "tuple[DataLoader[Unknown] | None, DataLoader[Unknown] | None, DataLoader[Unknown] | None]" is not assignable to return type "Tuple[DataLoader[Unknown], DataLoader[Unknown], DataLoader[Unknown]]"
+    Type "DataLoader[Unknown] | None" is not assignable to type "DataLoader[Unknown]"
+      "None" is not assignable to "DataLoader[Unknown]"
+    Type "DataLoader[Unknown] | None" is not assignable to type "DataLoader[Unknown]"
+      "None" is not assignable to "DataLoader[Unknown]"
+    Type "DataLoader[Unknown] | None" is not assignable to type "DataLoader[Unknown]"
+      "None" is not assignable to "DataLoader[Unknown]" (reportReturnType)
+/Users/shauryatiwari/Navigators-SIH/src/models/tcn_model.py
+  /Users/shauryatiwari/Navigators-SIH/src/models/tcn_model.py:223:27 - error: "__getitem__" method not defined on type "Module" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/models/tcn_model.py:223:48 - error: Cannot access attribute "conv" for class "Tensor"
+    Attribute "conv" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/models/tcn_model.py:223:53 - error: Cannot access attribute "kernel_size" for class "Tensor"
+    Attribute "kernel_size" is unknown (reportAttributeAccessIssue)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py:236:23 - error: Operator "/" not supported for types "NDArray[floating[_32Bit]] | Unknown" and "ndarray[_AnyShape, dtype[Any]] | None"
+    Operator "/" not supported for types "NDArray[floating[_32Bit]]" and "None" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py:236:24 - error: Operator "-" not supported for types "ndarray[_AnyShape, dtype[floating[_32Bit]]]" and "ndarray[_AnyShape, dtype[Any]] | None"
+    Operator "-" not supported for types "ndarray[_AnyShape, dtype[floating[_32Bit]]]" and "None" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py:240:36 - error: "run" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ai_velocity.py:241:34 - error: "__getitem__" method not defined on type "SparseTensor" (reportIndexIssue)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/confidence_aware_navigation.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/confidence_aware_navigation.py:102:35 - error: Cannot access attribute "reset" for class "ConfidenceEstimator"
+    Attribute "reset" is unknown (reportAttributeAccessIssue)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/dead_reckoning.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/dead_reckoning.py:195:21 - error: "Any" is not defined (reportUndefinedVariable)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/ekf.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ekf.py:231:86 - error: "value" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ekf.py:431:24 - error: "__getitem__" method not defined on type "MapConstraint" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ekf.py:563:74 - error: Cannot access attribute "is_valid" for class "ndarray[_AnyShape, dtype[Any]]"
+    Attribute "is_valid" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ekf.py:565:48 - error: Cannot access attribute "velocity_east" for class "ndarray[_AnyShape, dtype[Any]]"
+    Attribute "velocity_east" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/ekf.py:566:48 - error: Cannot access attribute "velocity_north" for class "ndarray[_AnyShape, dtype[Any]]"
+    Attribute "velocity_north" is unknown (reportAttributeAccessIssue)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/gnss_prediction.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/gnss_prediction.py:132:16 - error: Type "dict[str, float | ndarray[_AnyShape, dtype[float64]] | None]" is not assignable to return type "Dict[str, float]"
+    Type "ndarray[_AnyShape, dtype[float64]] | None" is not assignable to type "float"
+      "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float"
+    Type "ndarray[_AnyShape, dtype[float64]] | None" is not assignable to type "float"
+      "ndarray[_AnyShape, dtype[float64]]" is not assignable to "float" (reportReturnType)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/gnss_prediction.py:424:25 - error: No overloads for "__setitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/gnss_prediction.py:424:25 - error: Argument of type "float" cannot be assigned to parameter "value" of type "None" in function "__setitem__"
+    "float" is not assignable to "None" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/map_matching.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/map_matching.py:436:16 - error: Type "RoadHypothesisEngine" is not assignable to return type "GeometricMapMatcher | HMMMapMatcher"
+    Type "RoadHypothesisEngine" is not assignable to type "GeometricMapMatcher | HMMMapMatcher"
+      "RoadHypothesisEngine" is not assignable to "GeometricMapMatcher"
+      "RoadHypothesisEngine" is not assignable to "HMMMapMatcher" (reportReturnType)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/motion_domain.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/motion_domain.py:116:28 - error: Cannot access attribute "predict" for class "IAIVelocityMeasurement"
+    Attribute "predict" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/motion_domain.py:120:25 - error: Cannot access attribute "reset" for class "IAIVelocityMeasurement"
+    Attribute "reset" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/motion_domain.py:180:10 - error: "Tuple" is not defined (reportUndefinedVariable)
+/Users/shauryatiwari/Navigators-SIH/src/navigation/multimodal_fusion.py
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/multimodal_fusion.py:101:29 - error: Cannot access attribute "reset" for class "MapConstraintEngine"
+    Attribute "reset" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/src/navigation/multimodal_fusion.py:189:33 - error: Cannot access attribute "update" for class "MapConstraintEngine"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+/Users/shauryatiwari/Navigators-SIH/test_export.py
+  /Users/shauryatiwari/Navigators-SIH/test_export.py:15:12 - error: Argument of type "Tensor" cannot be assigned to parameter "args" of type "tuple[Any, ...]" in function "export"
+    "Tensor" is not assignable to "tuple[Any, ...]" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/tests/test_admin_dashboard.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_admin_dashboard.py:108:26 - error: Cannot access attribute "endswith" for class "PathLike[str]"
+    Attribute "endswith" is unknown (reportAttributeAccessIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_ai_velocity.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_ai_velocity.py:229:12 - error: "meas" is possibly unbound (reportPossiblyUnboundVariable)
+/Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:166:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:169:23 - error: "conf_healthy" is possibly unbound (reportPossiblyUnboundVariable)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:176:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:196:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:202:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:209:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:213:29 - error: "horizontal_accuracy_m" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:213:71 - error: "horizontal_accuracy_m" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:214:29 - error: "heading_accuracy_deg" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:214:71 - error: "heading_accuracy_deg" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:215:29 - error: "overall_confidence" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:215:68 - error: "overall_confidence" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:216:29 - error: "integrity_status" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:226:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:232:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:236:39 - error: "horizontal_accuracy_m" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:237:47 - error: "horizontal_accuracy_m" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:243:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:252:60 - error: "overall_confidence" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:262:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:274:70 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_confidence_replay.py:294:74 - error: Argument of type "Literal['VALID']" cannot be assigned to parameter "receptive_field_samples" of type "int" in function "__init__"
+    "Literal['VALID']" is not assignable to "int" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/tests/test_dataset_registry.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_dataset_registry.py:50:19 - error: "license" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_dataset_registry.py:51:31 - error: "source" is not a known attribute of "None" (reportOptionalMemberAccess)
+/Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:78:20 - error: Cannot access attribute "status" for class "object"
+    Attribute "status" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:79:20 - error: Cannot access attribute "contributor_id" for class "object"
+    Attribute "contributor_id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:80:20 - error: Cannot access attribute "activity_type" for class "object"
+    Attribute "activity_type" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:81:20 - error: Cannot access attribute "gnss_available" for class "object"
+    Attribute "gnss_available" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:82:20 - error: Cannot access attribute "consent" for class "object"
+    Attribute "consent" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:83:20 - error: Cannot access attribute "rejection_reason" for class "object"
+    Attribute "rejection_reason" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:84:20 - error: Cannot access attribute "validated_by" for class "object"
+    Attribute "validated_by" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:139:20 - error: Cannot access attribute "status" for class "object"
+    Attribute "status" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:141:58 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:153:46 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:154:58 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:169:28 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:175:12 - error: Operator "in" not supported for types "Literal['corrupted']" and "str | None"
+    Operator "in" not supported for types "Literal['corrupted']" and "None" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:186:46 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:188:28 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:209:50 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:219:46 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:220:46 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:225:32 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:232:50 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:242:44 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:245:50 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:263:30 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:264:30 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:271:40 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:302:29 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:303:29 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:306:27 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:334:18 - error: Arguments missing for parameters "duration_seconds", "gnss_available", "sensor_data_path", "notes" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:354:14 - error: Argument missing for parameter "sensor_data_path" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:387:50 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:391:50 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:410:28 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:432:49 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_datasets.py:437:32 - error: Cannot access attribute "id" for class "object"
+    Attribute "id" is unknown (reportAttributeAccessIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_end_to_end_auth_audit.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_end_to_end_auth_audit.py:311:14 - error: Arguments missing for parameters "gnss_available", "sensor_data_path", "notes" (reportCallIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_gnss_anomaly.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_gnss_anomaly.py:396:27 - error: Argument of type "RoadHypothesis | None" cannot be assigned to parameter "road_distance" of type "float | None" in function "evaluate_trust"
+    Type "RoadHypothesis | None" is not assignable to type "float | None"
+      Type "RoadHypothesis" is not assignable to type "float | None"
+        "RoadHypothesis" is not assignable to "float"
+        "RoadHypothesis" is not assignable to "None" (reportArgumentType)
+/Users/shauryatiwari/Navigators-SIH/tests/test_gnss_prediction.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_gnss_prediction.py:333:24 - error: "Optional" is not defined (reportUndefinedVariable)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_gnss_prediction.py:334:31 - error: "Optional" is not defined (reportUndefinedVariable)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_gnss_prediction.py:335:26 - error: "Optional" is not defined (reportUndefinedVariable)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_gnss_prediction.py:336:26 - error: "Optional" is not defined (reportUndefinedVariable)
+/Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:57:5 - error: No overloads for "__getitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:57:5 - error: Argument of type "Literal['units']" cannot be assigned to parameter "s" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    "Literal['units']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:57:34 - error: Cannot access attribute "update" for class "str"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:57:34 - error: Cannot access attribute "update" for class "bool"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:57:34 - error: Cannot access attribute "update" for class "int"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:58:5 - error: No overloads for "__getitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:58:5 - error: Argument of type "Literal['axes']" cannot be assigned to parameter "s" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    "Literal['axes']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:58:5 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:58:5 - error: "__setitem__" method not defined on type "bool" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:58:5 - error: Argument of type "list[str]" cannot be assigned to parameter "value" of type "bool | str" in function "__setitem__"
+    Type "list[str]" is not assignable to type "bool | str"
+      "list[str]" is not assignable to "bool"
+      "list[str]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:58:5 - error: "__setitem__" method not defined on type "int" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:60:13 - error: Cannot access attribute "update" for class "str"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:60:30 - error: Argument of type "Literal['timestamp']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['timestamp']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['timestamp']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['timestamp']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:60:70 - error: Argument of type "Literal['gnss_timestamp']" cannot be assigned to parameter "key" of type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    Type "Literal['gnss_timestamp']" is not assignable to type "SupportsIndex | slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]"
+      "Literal['gnss_timestamp']" is incompatible with protocol "SupportsIndex"
+        "__index__" is not present
+      "Literal['gnss_timestamp']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:104:5 - error: Argument of type "Literal[-1]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[-1]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:104:5 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:104:5 - error: "__setitem__" method not defined on type "bool" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:104:5 - error: Argument of type "Literal[4]" cannot be assigned to parameter "value" of type "bool | str" in function "__setitem__"
+    Type "Literal[4]" is not assignable to type "bool | str"
+      "Literal[4]" is not assignable to "bool"
+      "Literal[4]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:104:5 - error: "__setitem__" method not defined on type "int" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:104:5 - error: Argument of type "Literal[4]" cannot be assigned to parameter "value" of type "str | list[str]" in function "__setitem__"
+    Type "Literal[4]" is not assignable to type "str | list[str]"
+      "Literal[4]" is not assignable to "str"
+      "Literal[4]" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:108:5 - error: Argument of type "Literal[2]" cannot be assigned to parameter "key" of type "str" in function "__setitem__"
+    "Literal[2]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:108:5 - error: Argument of type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | dict[str, float | str]" cannot be assigned to parameter "value" of type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]" in function "__setitem__"
+    Type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | dict[str, float | str]" is not assignable to type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]"
+      Type "dict[str, float | str]" is not assignable to type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]"
+        "dict[str, float | str]" is not assignable to "str"
+        "dict[str, float | str]" is not assignable to "bool"
+        "dict[str, float | str]" is not assignable to "dict[str, bool | str]"
+          Type parameter "_VT@dict" is invariant, but "float | str" is not the same as "bool | str"
+          Consider switching from "dict" to "Mapping" which is covariant in the value type
+        "dict[str, float | str]" is not assignable to "int" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:108:5 - error: No overloads for "__setitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:108:5 - error: Argument of type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | dict[str, float | str]" cannot be assigned to parameter "value" of type "dict[str, float | str]" in function "__setitem__"
+    Type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | dict[str, float | str]" is not assignable to type "dict[str, float | str]"
+      "int" is not assignable to "dict[str, float | str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:108:43 - error: Argument of type "Literal[1]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[1]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:118:16 - error: Argument of type "slice[Literal[2], Literal[5], None]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "slice[Literal[2], Literal[5], None]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:118:16 - error: "bool" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:118:16 - error: "int" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:121:5 - error: Argument of type "Literal[5]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[5]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:121:27 - error: Cannot access attribute "update" for class "str"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:121:27 - error: Cannot access attribute "update" for class "bool"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:121:27 - error: Cannot access attribute "update" for class "int"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:121:72 - error: Argument of type "Literal[14]" cannot be assigned to parameter "latitude" of type "bool | str" in function "update"
+    Type "Literal[14]" is not assignable to type "bool | str"
+      "Literal[14]" is not assignable to "bool"
+      "Literal[14]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:121:72 - error: Argument of type "Literal[14]" cannot be assigned to parameter "latitude" of type "str | list[str]" in function "update"
+    Type "Literal[14]" is not assignable to type "str | list[str]"
+      "Literal[14]" is not assignable to "str"
+      "Literal[14]" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:5 - error: Argument of type "Literal[6]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[6]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:27 - error: Cannot access attribute "update" for class "str"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:27 - error: Cannot access attribute "update" for class "bool"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:27 - error: Cannot access attribute "update" for class "int"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:72 - error: Argument of type "Literal[14]" cannot be assigned to parameter "latitude" of type "bool | str" in function "update"
+    Type "Literal[14]" is not assignable to type "bool | str"
+      "Literal[14]" is not assignable to "bool"
+      "Literal[14]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:72 - error: Argument of type "Literal[14]" cannot be assigned to parameter "latitude" of type "str | list[str]" in function "update"
+    Type "Literal[14]" is not assignable to type "str | list[str]"
+      "Literal[14]" is not assignable to "str"
+      "Literal[14]" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:90 - error: Argument of type "Literal[400]" cannot be assigned to parameter "GNSS_accuracy" of type "bool | str" in function "update"
+    Type "Literal[400]" is not assignable to type "bool | str"
+      "Literal[400]" is not assignable to "bool"
+      "Literal[400]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:122:90 - error: Argument of type "Literal[400]" cannot be assigned to parameter "GNSS_accuracy" of type "str | list[str]" in function "update"
+    Type "Literal[400]" is not assignable to type "str | list[str]"
+      "Literal[400]" is not assignable to "str"
+      "Literal[400]" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:130:9 - error: No overloads for "update" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:130:13 - error: Cannot access attribute "update" for class "str"
+    Attribute "update" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:130:20 - error: Argument of type "dict[str, None]" cannot be assigned to parameter "m" of type "Iterable[tuple[str, float | str]]" in function "update" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:131:9 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:137:5 - error: Argument of type "dict[str, str]" cannot be assigned to parameter "value" of type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]" in function "__setitem__"
+    Type "dict[str, str]" is not assignable to type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]"
+      "dict[str, str]" is not assignable to "str"
+      "dict[str, str]" is not assignable to "bool"
+      "dict[str, str]" is not assignable to "dict[str, bool | str]"
+        Type parameter "_VT@dict" is invariant, but "str" is not the same as "bool | str"
+        Consider switching from "dict" to "Mapping" which is covariant in the value type
+      "dict[str, str]" is not assignable to "int"
+      "dict[str, str]" is not assignable to "dict[str, str | list[str]]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:137:5 - error: No overloads for "__setitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:137:5 - error: Argument of type "Literal['provenance']" cannot be assigned to parameter "key" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__setitem__"
+    "Literal['provenance']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:137:5 - error: Argument of type "dict[str, str]" cannot be assigned to parameter "value" of type "Iterable[dict[str, float | str]]" in function "__setitem__"
+    "dict[str, str]" is not assignable to "Iterable[dict[str, float | str]]"
+      Type parameter "_T_co@Iterable" is covariant, but "str" is not a subtype of "dict[str, float | str]"
+        "str" is not assignable to "dict[str, float | str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:147:5 - error: No overloads for "__setitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:147:5 - error: Argument of type "Literal['source_dataset']" cannot be assigned to parameter "key" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__setitem__"
+    "Literal['source_dataset']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:147:5 - error: Argument of type "Literal['Navigators India Dataset']" cannot be assigned to parameter "value" of type "Iterable[dict[str, float | str]]" in function "__setitem__"
+    "Literal['Navigators India Dataset']" is not assignable to "Iterable[dict[str, float | str]]"
+      Type parameter "_T_co@Iterable" is covariant, but "str" is not a subtype of "dict[str, float | str]"
+        "str" is not assignable to "dict[str, float | str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:153:5 - error: No overloads for "__setitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:153:5 - error: Argument of type "Literal['session_id']" cannot be assigned to parameter "key" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__setitem__"
+    "Literal['session_id']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:153:5 - error: Argument of type "Literal['renamed']" cannot be assigned to parameter "value" of type "Iterable[dict[str, float | str]]" in function "__setitem__"
+    "Literal['renamed']" is not assignable to "Iterable[dict[str, float | str]]"
+      Type parameter "_T_co@Iterable" is covariant, but "str" is not a subtype of "dict[str, float | str]"
+        "str" is not assignable to "dict[str, float | str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:159:5 - error: Argument of type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | list[dict[str, float | str]]" cannot be assigned to parameter "value" of type "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]] | list[dict[str, float | str]]" in function "__setitem__"
+    Type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | list[dict[str, float | str]]" is not assignable to type "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]] | list[dict[str, float | str]]"
+      Type "int" is not assignable to type "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]] | list[dict[str, float | str]]"
+        "int" is not assignable to "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]]"
+        "int" is not assignable to "list[dict[str, float | str]]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:159:20 - error: Argument of type "slice[Literal[6], None, None]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "slice[Literal[6], None, None]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:193:5 - error: No overloads for "__setitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:193:5 - error: Argument of type "Literal['start_time_utc_s']" cannot be assigned to parameter "key" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__setitem__"
+    "Literal['start_time_utc_s']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:193:5 - error: Argument of type "Unknown | int" cannot be assigned to parameter "value" of type "Iterable[dict[str, float | str]]" in function "__setitem__"
+    Type "Unknown | int" is not assignable to type "Iterable[dict[str, float | str]]"
+      "int" is incompatible with protocol "Iterable[dict[str, float | str]]"
+        "__iter__" is not present (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:193:41 - error: No overloads for "__getitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:193:41 - error: Argument of type "Literal['start_time_utc_s']" cannot be assigned to parameter "s" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    "Literal['start_time_utc_s']" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:193:41 - error: Operator "+" not supported for types "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | Unknown" and "Literal[2]"
+    Operator "+" not supported for types "str" and "Literal[2]"
+    Operator "+" not supported for types "dict[str, bool | str]" and "Literal[2]"
+    Operator "+" not supported for types "dict[str, str | list[str]]" and "Literal[2]" (reportOperatorIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:229:48 - error: Argument of type "Literal[0]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[0]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:229:48 - error: Argument of type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | dict[str, float | str]" cannot be assigned to parameter "fieldnames" of type "Collection[_T@DictWriter]" in function "__init__"
+    Type "str | bool | dict[str, bool | str] | int | dict[str, str | list[str]] | dict[str, float | str]" is not assignable to type "Collection[_T@DictWriter]"
+      "int" is incompatible with protocol "Collection[_T@DictWriter]"
+        "__len__" is not present
+        "__iter__" is not present
+        "__contains__" is not present (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:231:22 - error: Argument of type "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]] | list[dict[str, float | str]]" cannot be assigned to parameter "rowdicts" of type "Iterable[Mapping[Unknown, Any]]" in function "writerows"
+    Type "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]] | list[dict[str, float | str]]" is not assignable to type "Iterable[Mapping[Unknown, Any]]"
+      "dict[str, str | bool | dict[str, bool | str] | int | dict[str, str | list[str]]]" is not assignable to "Iterable[Mapping[Unknown, Any]]"
+        Type parameter "_T_co@Iterable" is covariant, but "str" is not a subtype of "Mapping[Unknown, Any]"
+          "str" is not assignable to "Mapping[Unknown, Any]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:272:9 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:302:9 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:302:28 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: Argument of type "Literal[0]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[0]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: "__setitem__" method not defined on type "bool" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: Argument of type "None" cannot be assigned to parameter "value" of type "bool | str" in function "__setitem__"
+    Type "None" is not assignable to type "bool | str"
+      "None" is not assignable to "bool"
+      "None" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: "__setitem__" method not defined on type "int" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: Argument of type "None" cannot be assigned to parameter "value" of type "str | list[str]" in function "__setitem__"
+    Type "None" is not assignable to type "str | list[str]"
+      "None" is not assignable to "str"
+      "None" is not assignable to "list[str]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:310:5 - error: Argument of type "None" cannot be assigned to parameter "value" of type "float | str" in function "__setitem__"
+    Type "None" is not assignable to type "float | str"
+      "None" is not assignable to "float"
+      "None" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:331:5 - error: Argument of type "Literal[0]" cannot be assigned to parameter "key" of type "str" in function "__getitem__"
+    "Literal[0]" is not assignable to "str" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:331:5 - error: "__setitem__" method not defined on type "str" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:331:5 - error: "__setitem__" method not defined on type "bool" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_india_dataset_pipeline.py:331:5 - error: "__setitem__" method not defined on type "int" (reportIndexIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_internal_contributors.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_internal_contributors.py:352:14 - error: Argument missing for parameter "requested_scope" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_internal_contributors.py:399:12 - error: Argument missing for parameter "requested_scope" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_internal_contributors.py:448:14 - error: Argument missing for parameter "requested_scope" (reportCallIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_offline_sync.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_offline_sync.py:109:9 - error: Argument missing for parameter "base_version" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_offline_sync.py:121:9 - error: Argument missing for parameter "base_version" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_offline_sync.py:215:11 - error: Argument missing for parameter "client_timestamp" (reportCallIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:49:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:89:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:122:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:153:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:176:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:193:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:211:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:229:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:255:41 - error: "segment_id" is not a known attribute of "None" (reportOptionalMemberAccess)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:274:16 - error: Argument of type "List[RoadHypothesis] | None" cannot be assigned to parameter "obj" of type "Sized" in function "len"
+    Type "List[RoadHypothesis] | None" is not assignable to type "Sized"
+      "None" is incompatible with protocol "Sized"
+        "__len__" is not present (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:286:70 - error: No parameter named "speed" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:286:82 - error: No parameter named "position_uncertainty" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:290:74 - error: No parameter named "speed" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_road_hypothesis.py:290:86 - error: No parameter named "position_uncertainty" (reportCallIssue)
+/Users/shauryatiwari/Navigators-SIH/tests/test_ui_integration.py
+  /Users/shauryatiwari/Navigators-SIH/tests/test_ui_integration.py:127:14 - error: Arguments missing for parameters "sensor_data_path", "notes" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_ui_integration.py:153:14 - error: Arguments missing for parameters "sensor_data_path", "notes" (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/tests/test_ui_integration.py:222:9 - error: Arguments missing for parameters "sensor_data_path", "notes" (reportCallIssue)
+/Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:3:12 - error: Cannot access attribute "reconfigure" for class "TextIO"
+    Attribute "reconfigure" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:21:45 - error: "None" is not iterable
+    "__iter__" method not defined (reportGeneralTypeIssues)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:165:16 - error: Argument of type "Tensor" cannot be assigned to parameter "args" of type "tuple[Any, ...]" in function "export"
+    "Tensor" is not assignable to "tuple[Any, ...]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:190:42 - error: Cannot access attribute "shape" for class "SparseTensor"
+    Attribute "shape" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:190:42 - error: Cannot access attribute "shape" for class "list[Unknown]"
+    Attribute "shape" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:190:42 - error: Cannot access attribute "shape" for class "dict[Unknown, Unknown]"
+    Attribute "shape" is unknown (reportAttributeAccessIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:192:38 - error: "__getitem__" method not defined on type "SparseTensor" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:192:38 - error: No overloads for "__getitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:192:38 - error: Argument of type "tuple[Literal[0], Literal[0]]" cannot be assigned to parameter "s" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    "tuple[Literal[0], Literal[0]]" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:192:57 - error: "__getitem__" method not defined on type "SparseTensor" (reportIndexIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:192:57 - error: No overloads for "__getitem__" match the provided arguments (reportCallIssue)
+  /Users/shauryatiwari/Navigators-SIH/train_and_evaluate.py:192:57 - error: Argument of type "tuple[Literal[0], Literal[1]]" cannot be assigned to parameter "s" of type "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" in function "__getitem__"
+    "tuple[Literal[0], Literal[1]]" is not assignable to "slice[SupportsIndex | None, SupportsIndex | None, SupportsIndex | None]" (reportArgumentType)
+298 errors, 0 warnings, 0 informations

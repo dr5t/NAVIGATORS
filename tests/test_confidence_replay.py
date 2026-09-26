@@ -157,15 +157,17 @@ def test_replay_healthy_navigation():
 def test_replay_gnss_outage():
     rig = create_navigation_rig()
     dt = 0.1
+    conf_healthy = None
 
     for step in range(20):
         t = step * dt
         accel = np.array([0.0, 0.0, 9.81])
         gyro = np.array([0.0, 0.0, 0.0])
         gnss = {"east": 0.0, "north": 10.0 * t, "accuracy": 2.0, "speed": 10.0, "heading": 0.0, "timestamp": t}
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         conf_healthy = step_rig(rig, dt, accel, gyro, gnss_data=gnss, ai_vel=ai_vel, t=t)
 
+    assert conf_healthy is not None
     healthy_pos_unc = conf_healthy.horizontal_accuracy_m
     outage_history = []
 
@@ -173,7 +175,7 @@ def test_replay_gnss_outage():
         t = step * dt
         accel = np.array([0.0, 0.0, 9.81])
         gyro = np.array([0.0, 0.0, 0.0])
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         conf = step_rig(rig, dt, accel, gyro, gnss_data=None, ai_vel=ai_vel, t=t)
         outage_history.append(conf)
 
@@ -193,23 +195,24 @@ def test_replay_longer_gnss_outage():
     for step in range(20):
         t = step * dt
         gnss = {"east": 0.0, "north": 10.0 * t, "accuracy": 2.0, "speed": 10.0, "heading": 0.0, "timestamp": t}
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]), gnss_data=gnss, ai_vel=ai_vel, t=t)
 
     short_outage_conf = None
     for step in range(20, 50):
         t = step * dt
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         short_outage_conf = step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]),
                                      gnss_data=None, ai_vel=ai_vel, t=t)
 
     long_outage_conf = None
     for step in range(50, 150):
         t = step * dt
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         long_outage_conf = step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]),
                                     gnss_data=None, ai_vel=ai_vel, t=t)
 
+    assert long_outage_conf is not None and short_outage_conf is not None
     assert long_outage_conf.horizontal_accuracy_m > short_outage_conf.horizontal_accuracy_m
     assert long_outage_conf.heading_accuracy_deg >= short_outage_conf.heading_accuracy_deg
     assert long_outage_conf.overall_confidence < short_outage_conf.overall_confidence
@@ -223,16 +226,17 @@ def test_replay_gnss_recovery():
     for step in range(20):
         t = step * dt
         gnss = {"east": 0.0, "north": 10.0 * t, "accuracy": 2.0, "speed": 10.0, "heading": 0.0, "timestamp": t}
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         initial_conf = step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]), gnss_data=gnss, ai_vel=ai_vel, t=t)
 
     outage_conf = None
     for step in range(20, 60):
         t = step * dt
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         outage_conf = step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]),
                                gnss_data=None, ai_vel=ai_vel, t=t)
 
+    assert outage_conf is not None and initial_conf is not None
     peak_outage_pos_unc = outage_conf.horizontal_accuracy_m
     assert peak_outage_pos_unc > initial_conf.horizontal_accuracy_m
 
@@ -240,7 +244,7 @@ def test_replay_gnss_recovery():
     for step in range(60, 100):
         t = step * dt
         gnss = {"east": 0.0, "north": 10.0 * t, "accuracy": 2.0, "speed": 10.0, "heading": 0.0, "timestamp": t}
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         conf = step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]),
                         gnss_data=gnss, ai_vel=ai_vel, t=t)
         recovery_history.append(conf)
@@ -259,7 +263,7 @@ def test_replay_gnss_anomaly():
     for step in range(30):
         t = step * dt
         gnss = {"east": 0.0, "north": 10.0 * t, "accuracy": 2.0, "speed": 10.0, "heading": 0.0, "timestamp": t}
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]), gnss_data=gnss, ai_vel=ai_vel, t=t)
 
     t = 30 * dt
@@ -271,7 +275,7 @@ def test_replay_gnss_anomaly():
         "heading": 0.0,
         "timestamp": t,
     }
-    ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+    ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
     conf = step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]),
                     gnss_data=jumped_gnss, ai_vel=ai_vel, t=t)
 
@@ -291,7 +295,7 @@ def test_replay_ai_failure():
     for step in range(20):
         t = step * dt
         gnss = {"east": 0.0, "north": 10.0 * t, "accuracy": 2.0, "speed": 10.0, "heading": 0.0, "timestamp": t}
-        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, "VALID")
+        ai_vel = AIVelocityMeasurement(10.0, 0.0, 0.16, 0.16, 2.0, True, status="VALID")
         step_rig(rig, dt, np.array([0.0, 0.0, 9.81]), np.array([0.0, 0.0, 0.0]), gnss_data=gnss, ai_vel=ai_vel, t=t)
 
     t = 20 * dt

@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Release verification and strict sample-identity joins, isolated from navigation."""
 from dataclasses import dataclass
 import json

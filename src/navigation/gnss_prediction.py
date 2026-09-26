@@ -104,7 +104,7 @@ class BaselineGNSSDegradationPredictor(IGNSSDegradationPredictor):
         self.history.clear()
         self.last_prediction = None
 
-    def _extract_gnss_scalars(self, gnss_data: Optional[Dict[str, Any]]) -> Dict[str, float]:
+    def _extract_gnss_scalars(self, gnss_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         if not gnss_data or not isinstance(gnss_data, dict):
             return {}
 
@@ -377,7 +377,7 @@ class GNSSPredictionEvaluator:
         metrics.total_degradation_events = len(events)
         event_detected_flags = [False] * len(events)
 
-        first_alarm_time_per_event = [None] * len(events)
+        first_alarm_time_per_event: List[Optional[float]] = [None] * len(events)
 
         for step in timeline:
             metrics.total_epochs += 1

@@ -308,7 +308,7 @@ def test_api_action_5_approve_contribution(temp_db):
 def test_api_action_6_upload_dataset(temp_db):
     """Action 6: Upload dataset is DENIED for Guest (401/403), User/Local/Moderator (403), ALLOWED for Internal Contributor & Admin."""
     sessions = temp_db["sessions"]
-    ds_req = SubmitSessionModel(activity_type="walking", device="Pixel 8", duration_seconds=100.0, consent=True)
+    ds_req = SubmitSessionModel(activity_type="walking", device="Pixel 8", duration_seconds=100.0, gnss_available=True, consent=True)
 
 
     _, guest_ctx = sessions["guest"]

@@ -249,7 +249,9 @@ class ModelRegistryRepository:
             new_state="candidate_training",
             metadata={"name": name, "architecture": architecture},
         )
-        return self.get_model(model_id)
+        res = self.get_model(model_id)
+        assert res is not None
+        return res
 
     def record_evaluation(self, model_id: str, metrics: Dict[str, Any]) -> ModelEntry:
         """
@@ -302,7 +304,9 @@ class ModelRegistryRepository:
             new_state="evaluating",
             metadata={"test_mae": metrics.get("candidate_test_mae")},
         )
-        return self.get_model(model_id)
+        res = self.get_model(model_id)
+        assert res is not None
+        return res
 
     def open_for_review(self, model_id: str, reviewer_id: str) -> ModelEntry:
         """Transition evaluating → review. Called when a team admin opens the entry."""
@@ -326,7 +330,9 @@ class ModelRegistryRepository:
             new_state="review",
             metadata={},
         )
-        return self.get_model(model_id)
+        res = self.get_model(model_id)
+        assert res is not None
+        return res
 
     def approve_model(
         self,
@@ -362,7 +368,9 @@ class ModelRegistryRepository:
             new_state="production_candidate",
             metadata={"notes": notes},
         )
-        return self.get_model(model_id)
+        res = self.get_model(model_id)
+        assert res is not None
+        return res
 
     def reject_model(
         self,
@@ -399,7 +407,9 @@ class ModelRegistryRepository:
             new_state="rejected",
             metadata={"reason": clean},
         )
-        return self.get_model(model_id)
+        res = self.get_model(model_id)
+        assert res is not None
+        return res
 
     def deploy(
         self,
@@ -471,7 +481,9 @@ class ModelRegistryRepository:
                 "onnx_dest": production_onnx_dest,
             },
         )
-        return self.get_model(model_id)
+        res = self.get_model(model_id)
+        assert res is not None
+        return res
 
     def get_model(self, model_id: str) -> Optional[ModelEntry]:
         """Fetch single model entry with joined display names."""

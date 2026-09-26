@@ -7,7 +7,11 @@ from src.data_prep.iovnbd_parser import parse_synchronized_iovnbd
 
 def evaluate():
     print("Loading test data...")
-    train_loader, val_loader, test_loader = create_iovnbd_dataloaders("data/IO-VNBD", window_size=200, batch_size=64)
+    res = create_iovnbd_dataloaders("data/IO-VNBD", window_size=200, batch_size=64)
+    if res is None or res[2] is None:
+        print("Failed to load test dataloader.")
+        return
+    train_loader, val_loader, test_loader = res
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TCNVelocityEstimator(input_channels=6, output_dim=2, num_channels=[64, 64, 128, 128], kernel_size=7)

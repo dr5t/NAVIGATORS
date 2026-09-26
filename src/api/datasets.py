@@ -40,8 +40,8 @@ class SubmitSessionModel(BaseModel):
     duration_seconds: float = Field(0.0, ge=0.0, description="Recording duration in seconds")
     gnss_available: bool = Field(True, description="Whether GNSS was available during the session")
     consent: bool = Field(..., description="Explicit contributor consent for data use (required)")
-    sensor_data_path: Optional[str] = Field(None, description="Relative path to raw sensor data file")
-    notes: Optional[str] = Field(None, description="Optional notes about recording conditions")
+    sensor_data_path: Optional[str] = Field(default=None, description="Relative path to raw sensor data file")
+    notes: Optional[str] = Field(default=None, description="Optional notes about recording conditions")
 
 
 class RejectSessionModel(BaseModel):

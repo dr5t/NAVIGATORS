@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Phase 33 Search Engine & Data Repositories
 Supports unified search across:

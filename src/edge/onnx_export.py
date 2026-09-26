@@ -85,12 +85,15 @@ def export_to_onnx(
 
 
     if optimize:
-        from onnx import optimizer
         try:
-            passes = ["eliminate_identity", "fuse_bn_into_conv", "fuse_consecutive_transposes"]
-            optimized = optimizer.optimize(onnx_model, passes)
-            onnx.save(optimized, output_path)
-            print("[ONNX] Optimization passes applied ✓")
+            optimizer = getattr(onnx, "optimizer", None)
+            if optimizer is not None:
+                passes = ["eliminate_identity", "fuse_bn_into_conv", "fuse_consecutive_transposes"]
+                optimized = optimizer.optimize(onnx_model, passes)
+                onnx.save(optimized, output_path)
+                print("[ONNX] Optimization passes applied ✓")
+            else:
+                print("[ONNX] Optimization skipped (onnx.optimizer module unavailable)")
         except Exception:
             print("[ONNX] Optimization skipped (optional passes unavailable)")
 
@@ -190,4 +193,5 @@ class ONNXInferenceEngine:
 
         imu_window = imu_window.astype(np.float32)
         result = self.session.run(None, {self.input_name: imu_window})
-        return result[0][0]
+        out_arr = np.asarray(result[0])
+        return out_arr[0]

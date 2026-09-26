@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Authentication & Session Management Service
 Implements PBKDF2-HMAC-SHA256 password hashing, extensible identity management,

@@ -8,6 +8,7 @@ the existing EKF's apply_adaptive_noise method alone only stores telemetry.
 from collections import Counter, deque
 from dataclasses import replace
 from time import perf_counter
+from typing import cast, Any
 import numpy as np
 
 from evaluation.preprocessing import CausalFilter
@@ -66,7 +67,7 @@ class ResearchNavigation:
         self.anomaly = GNSSAnomalyDetector() if architecture.anomaly_detection else None
         self.trust = GNSSTrustEngine() if architecture.gnss_trust else None
         if self.trust:
-            self.trust.anomaly_detector = None  # Anomaly detection is exclusively controlled above.
+            setattr(self.trust, "anomaly_detector", None)
         self.adaptive = AdaptiveFusionEngine() if architecture.adaptive_fusion else None
         self.confidence = ConfidenceEstimator() if architecture.confidence else None
         self.recovery = ValidatedGNSSRecoveryManager() if architecture.recovery else None
@@ -75,8 +76,17 @@ class ResearchNavigation:
         self.matcher = load_map(map_path, origin) if architecture.map_constraints or architecture.road_hypotheses else None
         self.tracker = None
         if self.matcher:
-            self.tracker = RoadHypothesisEngine(self.matcher.roads) if architecture.road_hypotheses else NearestRoadTracker(self.matcher)
-        self.map_engine = MapConstraintEngine(self.matcher.roads, hypothesis_tracker=self.tracker) if architecture.map_constraints else None
+            roads = getattr(self.matcher, "roads", None)
+            if architecture.road_hypotheses and roads is not None:
+                self.tracker = RoadHypothesisEngine(roads)
+            else:
+                self.tracker = NearestRoadTracker(self.matcher)
+            if architecture.map_constraints and roads is not None:
+                self.map_engine = MapConstraintEngine(roads, hypothesis_tracker=cast(Any, self.tracker))
+            else:
+                self.map_engine = None
+        else:
+            self.map_engine = None
         self.recovering = False
         self.denied_since = None
         self.distance = 0.
@@ -89,28 +99,36 @@ class ResearchNavigation:
         aligned, linear = self.frontend.step(accel, gyro, dt)
         self.buffer.append(linear)
         ai, measurement, inference_ms = None, None, None
-        if cfg.ai_velocity and len(self.buffer) == self.buffer.maxlen:
+        if cfg.ai_velocity and len(self.buffer) == self.buffer.maxlen and self.model is not None:
             clock = perf_counter()
             ai = np.asarray(self.model.predict(self.buffer), dtype=float)
             inference_ms = (perf_counter() - clock) * 1000
             if ai.shape != (2,) or not np.isfinite(ai).all():
                 raise ValueError("Invalid AI ENU velocity")
+            maxlen = self.buffer.maxlen or 1
             measurement = AIVelocityMeasurement(ai[1], ai[0], self.ekf.r_ai_vel**2,
                                                 self.ekf.r_ai_vel**2, inference_ms, True,
-                                                receptive_field_samples=self.buffer.maxlen, timestamp=timestamp)
+                                                receptive_field_samples=maxlen, timestamp=timestamp)
             self.counts["ai_velocity"] += 1
         data = None if gnss is None else dict(position_enu=enu(gnss[:2], self.origin),
                  velocity_enu=gnss_velocity(gnss), accuracy=float(gnss[5]), speed=float(gnss[3]),
                  heading=float(np.deg2rad(gnss[4])), timestamp=timestamp if receiver_time is None else receiver_time)
-        context = dict(dt=max(dt, 1e-6), current_position=self.position, current_velocity=self.velocity,
-                       current_heading=self.heading, position_uncertainty=self.ekf.get_position_uncertainty())
         anomaly = None
         if self.anomaly and (fresh or data is None):
-            anomaly = self.anomaly.detect_anomalies(data, inertial_velocity=ai, **context)
+            anomaly = self.anomaly.detect_anomalies(data, inertial_velocity=ai, dt=float(max(dt, 1e-6)),
+                                                     current_position=np.asarray(self.position),
+                                                     current_velocity=np.asarray(self.velocity),
+                                                     current_heading=float(self.heading),
+                                                     position_uncertainty=float(self.ekf.get_position_uncertainty()))
             self.counts["anomaly_detection"] += 1
         if self.trust:
             if fresh or data is None:
-                self.last_trust = self.trust.evaluate_trust(data, ai_velocity=ai, anomaly_report=anomaly, **context)
+                self.last_trust = self.trust.evaluate_trust(data, ai_velocity=ai, anomaly_report=anomaly,
+                                                             dt=float(max(dt, 1e-6)),
+                                                             current_position=np.asarray(self.position),
+                                                             current_velocity=np.asarray(self.velocity),
+                                                             current_heading=float(self.heading),
+                                                             position_uncertainty=float(self.ekf.get_position_uncertainty()))
                 self.counts["gnss_trust"] += 1
             trust = self.last_trust
         else:
@@ -165,13 +183,16 @@ class ResearchNavigation:
                     self.counts["recovery"] += 1
                 if plan is None or (plan.consistency_passed and plan.step_correction_norm_m > 0):
                     effective_trust = trust if cfg.gnss_trust else None
-                    if noise:
+                    if noise and trust is not None:
                         effective_trust = replace(trust, position_variance_scale=noise.measurement_noise_scale_gnss_pos,
                                                   velocity_variance_scale=noise.measurement_noise_scale_gnss_vel)
                     # Disable the EKF's implicit reacquisition path: the intervention
                     # is wholly owned by the explicitly enabled recovery manager.
                     self.ekf.mode = NavigationMode.GNSS_INS
-                    self.ekf.update_gnss(data["position_enu"], data["velocity_enu"], timestamp, effective_trust)
+                    if data is not None:
+                        pos = np.asarray(data["position_enu"])
+                        vel = np.asarray(data["velocity_enu"]) if data["velocity_enu"] is not None else None
+                        self.ekf.update_gnss(pos, vel, timestamp, effective_trust)
                     if plan is not None:
                         correction = self.ekf.x - prior
                         correction[8] = (correction[8] + np.pi) % (2*np.pi) - np.pi
@@ -203,14 +224,16 @@ class ResearchNavigation:
                 self.velocity += acceleration*dt
             if cfg.vehicle_constraints:
                 self.velocity = np.dot(self.velocity, forward) * forward
-                if self.zupt.update(aligned[:3], aligned[3:], dt, estimated_speed=float(np.linalg.norm(self.velocity))):
+                if self.zupt and self.zupt.update(aligned[:3], aligned[3:], dt, estimated_speed=float(np.linalg.norm(self.velocity))):
                     self.velocity[:] = 0
                     self.counts["zupt"] += 1
                 self.counts["vehicle_constraints"] += 1
-            if admitted and fresh:
-                gnss_correction = float(np.linalg.norm(self.position - data["position_enu"]))
-                self.position, self.velocity = data["position_enu"].copy(), data["velocity_enu"].copy()
-                self.heading = data["heading"]
+            if admitted and fresh and data is not None:
+                pos = np.asarray(data["position_enu"])
+                vel = np.asarray(data["velocity_enu"])
+                gnss_correction = float(np.linalg.norm(self.position - pos))
+                self.position, self.velocity = pos.copy(), vel.copy()
+                self.heading = float(data["heading"])
                 self.counts["gnss_updates"] += 1
                 self.recovering, self.denied_since = False, None
         hypothesis, constraint = None, MapConstraint(False)

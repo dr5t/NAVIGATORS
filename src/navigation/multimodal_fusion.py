@@ -11,15 +11,10 @@ from src.models.motion_classifier import (
     TemporallyStabilizedMotionClassifier,
     MotionRouter,
 )
-from src.models.motion_classifier import (
-    MotionClass,
-    MotionClassifierConfig,
-    TemporallyStabilizedMotionClassifier,
-    MotionRouter,
-)
 from src.navigation.ekf import ExtendedKalmanFilter, NavigationMode
 from src.navigation.adaptive_fusion import AdaptiveFusionEngine, AdaptiveFusionConfig
 from src.navigation.map_constraint import MapConstraintEngine, MapConstraintConfig
+from src.navigation.map_matching import RoadNetwork
 
 
 @dataclass
@@ -103,7 +98,7 @@ class MultiModalAdaptiveFusionEngine:
         self.ekf = ExtendedKalmanFilter()
         self.adaptive_fusion.reset()
         if self.map_engine is not None and hasattr(self.map_engine, "reset"):
-            self.map_engine.reset()
+            getattr(self.map_engine, "reset")()
         self.last_timestamp = 0.0
         self.is_dead_reckoning = False
 
@@ -191,7 +186,7 @@ class MultiModalAdaptiveFusionEngine:
 
         if map_constraint is not None and self.map_engine is not None:
             if hasattr(self.map_engine, "update"):
-                self.map_engine.update(map_constraint)
+                getattr(self.map_engine, "update")(map_constraint)
 
         pos_enu = self.ekf.x[0:3].copy()
         vel_enu = self.ekf.x[3:6].copy()

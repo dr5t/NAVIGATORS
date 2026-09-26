@@ -67,12 +67,12 @@ class DeleteAccountResponse(BaseModel):
 
 
 def _ensure_authenticated_user(context: SessionContext) -> str:
-    if context.is_guest or not context.user_id:
+    if context.is_guest or not context.user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required to access or modify privacy settings",
         )
-    return context.user_id
+    return context.user.id
 
 
 
@@ -87,7 +87,8 @@ def get_privacy_settings(
     Retrieves privacy settings for all 6 data domains for the current user.
     """
     user_id = _ensure_authenticated_user(context)
-    settings = privacy_repo.get_privacy_settings(user_id)
+    raw_settings = privacy_repo.get_privacy_settings(user_id)
+    settings = [DomainSettingResponse(**s) if isinstance(s, dict) else s for s in raw_settings]
     return PrivacySettingsSummaryResponse(user_id=user_id, settings=settings)
 
 

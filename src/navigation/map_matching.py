@@ -11,7 +11,7 @@ Uses offline road network data (no external API required).
 
 import json
 import numpy as np
-from typing import List, Tuple, Optional, Dict, Union
+from typing import List, Tuple, Optional, Dict, Union, Any
 from dataclasses import dataclass, field
 from scipy.spatial import cKDTree
 
@@ -110,7 +110,7 @@ class RoadNetwork:
 
     def add_road(
         self,
-        points: List[np.ndarray],
+        points: Union[List[np.ndarray], np.ndarray, Any],
         road_id: str = "",
         name: str = "",
         speed_limit: float = 50.0,
@@ -410,7 +410,7 @@ def create_map_matcher(
     method: str = "geometric",
     road_network: Optional[RoadNetwork] = None,
     **kwargs
-) -> Union[GeometricMapMatcher, HMMMapMatcher]:
+) -> Any:
     """
     Factory function to create a map matcher.
 

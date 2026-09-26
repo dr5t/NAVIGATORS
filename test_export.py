@@ -12,7 +12,7 @@ model, checkpoint = Trainer.load_checkpoint(best_model_path, device=torch.device
 onnx_path = os.path.join("simulator", "model.onnx")
 dummy_input = torch.randn(1, 200, 6)
 torch.onnx.export(
-    model, dummy_input, onnx_path,
+    model, (dummy_input,), onnx_path,
     input_names=['input'], output_names=['output'],
     dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
 )

@@ -68,9 +68,10 @@ class SyncRepository:
     @db_path.setter
     def db_path(self, val: Optional[str | Path]) -> None:
         self._db_path = val
-        self.contrib_repo = ContributionRepository(val)
-        self.place_repo = PlaceRepository(val)
-        self.report_repo = ReportRepository(val)
+        path_obj = Path(val) if val is not None else None
+        self.contrib_repo = ContributionRepository(path_obj)
+        self.place_repo = PlaceRepository(path_obj)
+        self.report_repo = ReportRepository(path_obj)
 
     def push_device_changes(
         self,
@@ -212,7 +213,7 @@ class SyncRepository:
                 self.contrib_repo.transition_state(
                     contribution_id=contrib.id,
                     target_state=ContributionState.PENDING_REVIEW,
-                    actor=actor_id,
+                    user=actor_id,
                 )
             except Exception:
                 pass
@@ -304,7 +305,7 @@ class SyncRepository:
                 self.contrib_repo.transition_state(
                     contribution_id=contrib.id,
                     target_state=ContributionState.PENDING_REVIEW,
-                    actor=actor_id,
+                    user=actor_id,
                 )
             except Exception:
                 pass

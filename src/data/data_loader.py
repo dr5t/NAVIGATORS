@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import glob
 import numpy as np
@@ -12,7 +13,7 @@ class TrajectoryWindowDataset(Dataset):
     Loads complete trajectories and provides sliding windows of IMU data
     to predict the velocity at the last timestep of the window.
     """
-    def __init__(self, data_dir: str, window_size: int = 200, step_size: int = 10, stats: dict = None):
+    def __init__(self, data_dir: str, window_size: int = 200, step_size: int = 10, stats: dict | None = None):
         """
         Args:
             data_dir: Directory containing .npy trajectory files.

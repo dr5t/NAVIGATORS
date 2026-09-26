@@ -29,7 +29,7 @@ authz_service = AuthorizationService()
 class SubmitInternalRequestModel(BaseModel):
     reason: str = Field(..., min_length=5, description="Applicant motivation and project objectives")
     experience: str = Field(..., min_length=5, description="Sensors, hardware, or navigation experience")
-    requested_scope: Optional[str] = Field("trajectories_and_models", description="Requested access scope")
+    requested_scope: Optional[str] = Field(default="trajectories_and_models", description="Requested access scope")
 
 
 class RejectInternalRequestModel(BaseModel):

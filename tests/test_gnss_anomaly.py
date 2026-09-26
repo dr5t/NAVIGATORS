@@ -393,7 +393,7 @@ def test_replay_with_gnss_anomalies():
             current_velocity=est_vel,
             current_heading=0.0,
             position_uncertainty=2.0,
-            road_distance=road_h,
+            road_distance=road_h.cross_track_distance_m if road_h is not None else None,
         )
 
         if metric.state in (GNSSTrustState.SUSPICIOUS, GNSSTrustState.UNUSABLE):

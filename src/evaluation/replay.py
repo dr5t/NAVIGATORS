@@ -101,7 +101,9 @@ class VelocityModel:
     def predict(self, window):
         window = ((np.asarray(window, dtype=np.float32) - self.mean) / self.std)[None]
         if self.backend == 'onnx':
-            output = self.session.run(None, {self.session.get_inputs()[0].name: window})[0][0]
+            res = self.session.run(None, {self.session.get_inputs()[0].name: window})
+            out_arr = np.asarray(res[0])
+            output = out_arr[0]
         else:
             import torch
             with torch.inference_mode():
@@ -168,7 +170,8 @@ class Navigation:
     def __init__(self, config, rotation, initial_fix, origin, model=None, matcher=None):
         self.config, self.origin, self.model, self.matcher = config, origin, model, matcher
         self.filter = CausalFilter(rotation)
-        self.buffer = deque(maxlen=model.window_size if model else 200)
+        window_size = getattr(model, "window_size", 200) if model else 200
+        self.buffer = deque(maxlen=window_size)
         self.ekf = ExtendedKalmanFilter()
         self.ekf.initialize_from_gnss(enu(initial_fix[:2], origin), gnss_velocity(initial_fix), np.deg2rad(initial_fix[4]))
         self.zupt = ZUPTDetector()
@@ -186,7 +189,7 @@ class Navigation:
         imu = np.r_[linear[:3] + [0, 0, 9.81], linear[3:]] if cfg.filtered else aligned
         self.buffer.append(linear)
         ai = None
-        if cfg.ai and len(self.buffer) == self.buffer.maxlen:
+        if cfg.ai and len(self.buffer) == self.buffer.maxlen and self.model is not None:
             timer = perf_counter()
             ai = self.model.predict(self.buffer)
             self.timings['tcn'].append((perf_counter() - timer) * 1000)
@@ -228,7 +231,7 @@ class Navigation:
                 self.heading = np.deg2rad(gnss[4])
                 self.counters['gnss_updates'] += 1
             mode = 'dr' if gnss is None else 'gnss_ins'
-        if cfg.map_matching and gnss is None:
+        if cfg.map_matching and gnss is None and self.matcher is not None:
             timer = perf_counter()
             result = self.matcher.match(self.position, heading=self.heading)
             if result.confidence > 0.8:
@@ -266,7 +269,7 @@ def run_replay(recording, config, start, duration, calibration_seconds=5, aligne
         raise ValueError('This ablation requires a trained model; no synthetic AI fallback is allowed')
     if model and model.sample_rate and abs(recording.sample_rate / model.sample_rate - 1) > 0.1:
         raise ValueError('Recording sample rate differs from the model contract by more than 10%; resample or retrain')
-    if config.ai and (start - recording.timestamps[first]) * recording.sample_rate < model.window_size:
+    if config.ai and model is not None and (start - recording.timestamps[first]) * recording.sample_rate < model.window_size:
         raise ValueError('Outage starts before the AI window is full; increase --outage-start')
     matcher = load_map(map_path, origin) if config.map_matching else None
     nav = Navigation(config, rotation, recording.gnss[first], origin, model, matcher)

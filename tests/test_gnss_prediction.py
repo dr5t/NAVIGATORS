@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-import pytest
+from typing import Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 

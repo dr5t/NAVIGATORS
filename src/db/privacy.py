@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Phase 35: Privacy and Data Controls Repository
 Manages domain-level privacy settings (stored_locally, synced, sharing_level)

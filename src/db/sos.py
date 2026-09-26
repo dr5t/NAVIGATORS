@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Phase 34 SOS & Emergency System Data Layer
 Manages the non-modal SOS emergency workflow:

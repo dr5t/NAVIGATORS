@@ -228,7 +228,7 @@ class ExtendedKalmanFilter:
         if trust_metric is not None:
             self.last_trust_metric = trust_metric
             state_val = getattr(trust_metric, "state", None)
-            if state_val == "UNUSABLE" or (hasattr(state_val, "value") and state_val.value == "UNUSABLE"):
+            if state_val == "UNUSABLE" or (getattr(state_val, "value", None) == "UNUSABLE"):
                 return
         prior_x = self.x.copy()
         prior_p = self.P.copy()
@@ -428,7 +428,8 @@ class ExtendedKalmanFilter:
         r_val = (base_road_variance / max(confidence, 0.05)) * max(0.05, covariance_scale)
         R = np.eye(2, dtype=np.float64) * r_val
 
-        z = np.asarray(snapped_position[:2], dtype=np.float64)
+        pos_arr = np.asarray(snapped_position)
+        z = np.asarray(pos_arr[:2], dtype=np.float64)
         y = z - H @ self.x
 
         S = H @ self.P @ H.T + R
@@ -560,10 +561,10 @@ class ExtendedKalmanFilter:
             summary["gnss_trust_state"] = getattr(self.last_trust_metric.state, "value", str(self.last_trust_metric.state))
             summary["gnss_trust_score"] = float(self.last_trust_metric.trust_score)
         if hasattr(self, "last_ai_measurement") and self.last_ai_measurement is not None:
-            summary["ai_velocity_valid"] = bool(self.last_ai_measurement.is_valid)
+            summary["ai_velocity_valid"] = bool(getattr(self.last_ai_measurement, "is_valid", False))
             summary["ai_velocity_ms"] = [
-                float(self.last_ai_measurement.velocity_east),
-                float(self.last_ai_measurement.velocity_north),
+                float(getattr(self.last_ai_measurement, "velocity_east", 0.0)),
+                float(getattr(self.last_ai_measurement, "velocity_north", 0.0)),
             ]
         if hasattr(self, "adaptive_noise_params") and self.adaptive_noise_params is not None:
             summary["adaptive_fusion"] = {

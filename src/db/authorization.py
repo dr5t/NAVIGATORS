@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Central Authorization Service & Middleware
 Single point of truth for evaluating authorization decisions across the application:
@@ -101,7 +102,7 @@ class AuthorizationService:
             else:
                 user_perms = {"place:read"}
             if "roles" in user and isinstance(user["roles"], list):
-                user_roles = [r.get("id") if isinstance(r, dict) else str(r) for r in user["roles"]]
+                user_roles = [str(r.get("id") if isinstance(r, dict) else r) for r in user["roles"] if r is not None]
         else:
             return AuthorizationResult(
                 allowed=False,

@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Dynamic Role-Based Access Control (RBAC) Repository
 Enforces permissions through relational mapping without hardcoded role names.

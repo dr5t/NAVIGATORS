@@ -4,7 +4,7 @@ Integrates AI velocity estimates with heading to maintain position during GNSS d
 """
 
 import numpy as np
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, Any
 
 
 class DeadReckoningEngine:

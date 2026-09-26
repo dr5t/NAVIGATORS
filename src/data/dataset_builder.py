@@ -64,8 +64,8 @@ def build_dataset(base_dir: str, num_train: int = 200, num_val: int = 40, num_te
         print(f"Generating {count} trajectories for {split_name}...")
         
         for i in tqdm(range(count)):
-            gen = SyntheticDataGenerator(sample_rate=sample_rate, seed=rng.integers(1000000))
-            segments = generate_random_segments(rng, num_segments=rng.integers(10, 30))
+            gen = SyntheticDataGenerator(sample_rate=sample_rate, seed=int(rng.integers(1000000)))
+            segments = generate_random_segments(rng, num_segments=int(rng.integers(10, 30)))
             
             # We don't need GNSS outages for TCN training, just true IMU and true velocity
             scenario = gen.generate_full_scenario(segments=segments, outage_ranges=[])

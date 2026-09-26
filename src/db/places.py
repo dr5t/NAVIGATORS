@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Canonical Places Repository & Versioned Audit Layer
 Manages canonical map places, immutable version history snapshots,
@@ -585,9 +586,9 @@ class PlaceRepository:
         If action is 'delete', archives the target canonical place.
         """
         publisher_id = None
-        if hasattr(publisher, "user") and publisher.user:
+        if publisher is not None and getattr(publisher, "user", None) is not None:
             publisher_id = publisher.user.id
-        elif hasattr(publisher, "id"):
+        elif publisher is not None and getattr(publisher, "id", None) is not None:
             publisher_id = str(publisher.id)
         elif isinstance(publisher, str):
             publisher_id = publisher

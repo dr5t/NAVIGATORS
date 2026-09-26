@@ -142,6 +142,7 @@ class TCNVelocityEstimator(nn.Module):
 
         self.use_skip = use_skip_connections
         self.num_blocks = len(num_channels)
+        self.kernel_size = kernel_size
 
 
         self.blocks = nn.ModuleList()
@@ -220,6 +221,6 @@ class TCNVelocityEstimator(nn.Module):
         Compute the effective receptive field of the TCN.
         RF = 1 + 2 * (kernel_size - 1) * sum(dilations)
         """
-        kernel_size = int(self.blocks[0].conv1.conv.kernel_size[0])
+        kernel_size = getattr(self, "kernel_size", 3)
         dilations = [2 ** i for i in range(self.num_blocks)]
         return 1 + 2 * (kernel_size - 1) * sum(dilations)

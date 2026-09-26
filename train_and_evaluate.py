@@ -1,6 +1,7 @@
 import os
 import sys
-sys.stdout.reconfigure(line_buffering=True)
+if hasattr(sys.stdout, "reconfigure"):
+    getattr(sys.stdout, "reconfigure")(line_buffering=True)
 import math
 import torch
 import numpy as np
@@ -18,9 +19,13 @@ def run_pipeline():
     print("1 & 4. DATA SPLIT & INPUT NORMALIZATION")
     print("==================================================")
     iovnbd_dir = os.path.join(os.path.dirname(__file__), "data", "IO-VNBD")
-    train_loader, val_loader, test_loader = create_iovnbd_dataloaders(
+    res = create_iovnbd_dataloaders(
         base_dir=iovnbd_dir, window_size=200, batch_size=256
     )
+    if res is None:
+        print("Failed to load dataloaders.")
+        return
+    train_loader, val_loader, test_loader = res
     
     if not train_loader:
         print("Failed to load dataloaders.")
@@ -162,26 +167,26 @@ def run_pipeline():
     onnx_path = os.path.join("simulator", "model.onnx")
     dummy_input = torch.randn(1, 200, 6).to(device)
     torch.onnx.export(
-        model, dummy_input, onnx_path,
+        model, (dummy_input,), onnx_path,
         input_names=['input'], output_names=['output'],
         dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
     )
     
     print("Running ONNX Parity Test...")
 
-    for X, Y in test_loader:
-        sample_x = X.numpy()
-        break
-        
+    sample_x = dummy_input.cpu().numpy()
+    if test_loader is not None:
+        for X, Y in test_loader:
+            sample_x = X.numpy()
+            break
 
     with torch.no_grad():
-        pt_out = model(torch.from_numpy(sample_x).to(device)).cpu().numpy()
-        
+        pt_out = np.asarray(model(torch.from_numpy(sample_x).to(device)).cpu().numpy())
 
     ort_session = ort.InferenceSession(onnx_path)
     ort_inputs = {ort_session.get_inputs()[0].name: sample_x}
     ort_outs = ort_session.run(None, ort_inputs)
-    onnx_out = ort_outs[0]
+    onnx_out = np.asarray(ort_outs[0])
     
     max_diff = np.max(np.abs(pt_out - onnx_out))
     

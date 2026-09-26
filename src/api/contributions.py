@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Community Contributions API Router
 Guarded by central AuthorizationService to enforce strict ownership rules:

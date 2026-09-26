@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Navigators IDR - Platform Audit Logging Engine
 Provides immutable audit record persistence for all governance actions,

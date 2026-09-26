@@ -1,6 +1,7 @@
 """Reproducible scheduling, isolated execution, reports and input/output hashes."""
 from collections import Counter
 from dataclasses import asdict
+from typing import Dict, Any, cast
 import importlib.metadata
 import json
 import os
@@ -99,7 +100,7 @@ def benchmark(config, output, *, isolated=True, model_factory=None, progress=Non
         write_json(work / "benchmark_config.json", config)
         write_json(work / "architectures.json", interventions())
         write_json(work / "metric_definitions.json", DEFINITIONS)
-        repro = provenance()
+        repro: Dict[str, Any] = provenance()
         repro["config_sha256"] = digest(config)
         repro["isolated_workers"] = isolated
         if model_factory:
@@ -155,8 +156,8 @@ def benchmark(config, output, *, isolated=True, model_factory=None, progress=Non
                                            "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
                                     process = subprocess.run([sys.executable, "-m", "evaluation.research.worker",
                                                               str(directory / "job.json"), str(directory)],
-                                                             env=env, cwd=ROOT.parent, capture_output=True, text=True,
-                                                             timeout=config["timeout_s"])
+                                                              env=env, cwd=ROOT.parent, capture_output=True, text=True,
+                                                              timeout=config["timeout_s"])
                                     (directory / "worker.log").write_text(process.stdout + process.stderr)
                                     result = json.loads((directory / "result.json").read_text())
                                     if process.returncode and result["status"] == "completed":
@@ -173,9 +174,13 @@ def benchmark(config, output, *, isolated=True, model_factory=None, progress=Non
                         if result["status"] != "completed":
                             failures.append(dict(stage="execution", job_id=job_id, architecture=architecture,
                                                  status=result["status"], error=result["error"]))
-                        elif any(e["censored"] for e in result["recovery"]["episodes"]):
-                            failures.append(dict(stage="recovery", job_id=job_id, error="Recovery threshold not demonstrated within observation window",
-                                                 episodes=result["recovery"]["episodes"]))
+                        else:
+                            rec = result.get("recovery")
+                            if isinstance(rec, dict):
+                                eps: list[Any] = cast(list[Any], rec.get("episodes", []))
+                                if any(isinstance(e, dict) and e.get("censored") for e in eps):
+                                    failures.append(dict(stage="recovery", job_id=job_id, error="Recovery threshold not demonstrated within observation window",
+                                                         episodes=eps))
         if not config["sessions"]:
             failures.append(dict(stage="coverage", error="No held-out sessions configured; no navigation results measured"))
         aggregates = aggregate(results)

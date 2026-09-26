@@ -99,7 +99,8 @@ class ConfidenceAwareNavigationEngine:
         self.fusion.reset()
         self.trust_engine.reset()
         self.anomaly_detector.reset()
-        self.confidence_estimator.reset()
+        if hasattr(self.confidence_estimator, "reset"):
+            getattr(self.confidence_estimator, "reset")()
         self.recovery_manager.reset()
         self.navigation_mode = NavigationStateMode.NORMAL
         self.last_gnss_fix = None

@@ -6,7 +6,7 @@ import json
 import math
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import torch
 from torch.utils.data import Dataset, DataLoader
 
@@ -72,7 +72,7 @@ class SensorTrajectoryDataset(Dataset):
     def __getitem__(self, idx):
         return torch.from_numpy(self.windows[idx]), torch.from_numpy(self.targets[idx])
 
-def create_dataloaders(recordings_dir: Path, window_size: int = 200, batch_size: int = 64) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def create_dataloaders(recordings_dir: Path, window_size: int = 200, batch_size: int = 64) -> Tuple[Optional[DataLoader], Optional[DataLoader], Optional[DataLoader]]:
     """
     Reads all trip_*.json files, splits them by trip (to avoid data leakage),
     and creates DataLoaders.

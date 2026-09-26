@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List, Union, Tuple
 import numpy as np
 
 from navigation.interfaces import (
@@ -111,13 +111,13 @@ class VehicleModel(IVelocityModel):
         *args,
         **kwargs,
     ) -> Optional[AIVelocityMeasurement]:
-        if self.engine is None:
+        if self.engine is None or not hasattr(self.engine, "predict"):
             return None
-        return self.engine.predict(imu_buffer, dt=dt, *args, **kwargs)
+        return getattr(self.engine, "predict")(imu_buffer, dt=dt, *args, **kwargs)
 
     def reset(self) -> None:
         if self.engine is not None and hasattr(self.engine, "reset"):
-            self.engine.reset()
+            getattr(self.engine, "reset")()
 
 
 class PedestrianModel(IVelocityModel):

@@ -64,7 +64,7 @@ def parse_synchronized_iovnbd(s_csv_path: str, v_csv_path: str) -> Tuple[np.ndar
     heading_deg = heading_deg[mask]
     
 
-    vel_ms = vel_kmh / 3.6
+    vel_ms = np.asarray(vel_kmh, dtype=np.float64) / 3.6
     heading_rad = np.radians(heading_deg)
     
     v_n = vel_ms * np.cos(heading_rad)

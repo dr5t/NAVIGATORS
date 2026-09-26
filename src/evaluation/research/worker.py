@@ -96,9 +96,12 @@ def run_job(job, output, model_override=None, isolated=True):
                             "In-process test run; peak RSS includes prior work and cannot compare systems")
     whole = next(r for r in regions if r["phase"] == "whole" and r["environment"] == "all")
     for key in ("recovery_time_s", "max_recovery_position_jump_m"):
-        whole["metrics"][key] = recovery[key]
-        whole["support"][key] = dict(sample_indices=sorted({i for episode in recovery["episodes"] for i in episode["jump_sample_indices"]}),
-                                      reason=recovery["reason"], episodes=len(recovery["episodes"]))
+        whole["metrics"][key] = recovery.get(key)
+        episodes_list = recovery.get("episodes")
+        eps = episodes_list if isinstance(episodes_list, list) else []
+        jump_indices = sorted({i for episode in eps if isinstance(episode, dict) for i in (episode.get("jump_sample_indices") or [])})
+        whole["support"][key] = dict(sample_indices=jump_indices,
+                                      reason=recovery.get("reason"), episodes=len(eps))
     for key, value in (("memory_usage_bytes", machine["process_peak_rss_bytes"] if isolated else None),
                        ("model_size_bytes", model_metadata.get("model_size_bytes") if model_metadata else None)):
         whole["metrics"][key] = value

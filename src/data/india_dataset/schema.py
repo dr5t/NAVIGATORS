@@ -129,10 +129,10 @@ def validate_session(metadata, records, policy=None):
         issue("timestamp_clock", "timestamp_clock must be unix or elapsed")
     if metadata.get("timestamp_clock") == "elapsed":
         start_time = metadata.get("start_time_utc_s")
-        if not number(start_time) or not 0 <= start_time <= 253402300799:
+        if not number(start_time) or start_time is None or not (0 <= start_time <= 253402300799):
             issue("timestamp_clock", "Elapsed clocks require a UTC epoch start_time_utc_s within years 1970–9999")
     rate = metadata.get("sample_rate_hz")
-    if not number(rate) or rate <= 0:
+    if not number(rate) or rate is None or rate <= 0:
         issue("sampling_rate", "sample_rate_hz must be finite and positive")
     units = metadata.get("units", {})
     if not isinstance(units, dict):
@@ -271,13 +271,14 @@ def validate_session(metadata, records, policy=None):
             issue("timestamp_order", "Timestamps must be strictly increasing; samples were not sorted")
         else:
             import statistics
+            rate_val = float(rate) if rate is not None and number(rate) and rate > 0 else 10.0
             observed = 1 / statistics.median(delta)
-            jitter = sum(abs(d * rate - 1) > policy.max_jitter_fraction for d in delta)
+            jitter = sum(abs(d * rate_val - 1) > policy.max_jitter_fraction for d in delta)
             sampling = dict(observed_rate_hz=observed if number(observed) else None, declared_rate_hz=rate,
                             max_gap_s=max(delta), irregular_intervals=jitter)
-            if not number(observed) or abs(observed / rate - 1) > policy.sample_rate_tolerance:
+            if not number(observed) or observed is None or abs(observed / rate_val - 1) > policy.sample_rate_tolerance:
                 issue("sampling_rate", "Observed median sampling rate differs from declared rate")
-            if max(delta) > policy.max_gap_periods / rate:
+            if max(delta) > policy.max_gap_periods / rate_val:
                 issue("sampling_gap", "Sensor gap exceeds policy; no interpolation was applied")
             if jitter:
                 issue("sampling_jitter", f"{jitter} intervals exceed jitter tolerance", severity="warning")

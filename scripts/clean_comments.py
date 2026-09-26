@@ -74,12 +74,14 @@ def clean_python(source: str) -> str:
     ast.parse(cleaned)
     return cleaned
 
+from typing import Any, List
+
 def clean_js(code: str) -> str:
-    out = []
+    out: List[str] = []
     i = 0
     n = len(code)
     # Stack elements: 'CODE' or dict(type='TEMPLATE') or dict(type='EXPR', depth=1)
-    stack = ["CODE"]
+    stack: List[Any] = ["CODE"]
 
     while i < n:
         current = stack[-1]

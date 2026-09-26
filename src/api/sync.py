@@ -35,12 +35,12 @@ class SyncItemModel(BaseModel):
     client_sequence: int = Field(1, description="Sequence of change on client device")
     operation: str = Field(..., description="Operation type: add_place, suggest_edit, or report")
     payload: Dict[str, Any] = Field(..., description="Operation payload")
-    base_version: Optional[int] = Field(None, description="Expected base version of target resource for conflict detection")
+    base_version: Optional[int] = Field(default=None, description="Expected base version of target resource for conflict detection")
 
 
 class PushSyncRequest(BaseModel):
     device_id: str = Field(..., min_length=3, description="Unique client device identifier")
-    client_timestamp: Optional[str] = Field(None, description="Client timestamp when batch was prepared")
+    client_timestamp: Optional[str] = Field(default=None, description="Client timestamp when batch was prepared")
     items: List[SyncItemModel] = Field(..., description="List of queued offline changes to push")
 
 

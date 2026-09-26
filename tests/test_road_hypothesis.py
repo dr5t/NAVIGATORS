@@ -10,6 +10,12 @@ from navigation.road_hypothesis import RoadHypothesisEngine, RoadHypothesisConfi
 from navigation.interfaces import RoadAmbiguityState, RoadHypothesis
 
 
+def _best_id(engine) -> str:
+    best = engine.get_best_hypothesis()
+    assert best is not None
+    return best.segment_id
+
+
 def build_parallel_network():
     network = RoadNetwork()
     network.add_road([np.array([0.0, -100.0]), np.array([0.0, 100.0])], "main", "Main Road", 60.0)
@@ -45,8 +51,7 @@ def test_replay_normal_single_road():
     assert top.connectivity_compatibility > 0.80
     assert top.combined_likelihood > 0.0
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis() is not None
-    assert engine.get_best_hypothesis().segment_id == "highway_0"
+    assert _best_id(engine) == "highway_0"
 
 
 def test_replay_parallel_roads():
@@ -85,8 +90,7 @@ def test_replay_parallel_roads():
     assert final_resolved[0].segment_id == "main_0"
     assert final_resolved[0].probability > 0.75
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis() is not None
-    assert engine.get_best_hypothesis().segment_id == "main_0"
+    assert _best_id(engine) == "main_0"
 
 
 def test_replay_service_road_versus_highway():
@@ -119,7 +123,7 @@ def test_replay_service_road_versus_highway():
     assert highway_hyp.velocity_compatibility == 1.0
     assert highway_hyp.probability > 0.85
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis().segment_id == highway_hyp.segment_id
+    assert _best_id(engine) == highway_hyp.segment_id
 
 
 def test_replay_intersection():
@@ -150,7 +154,7 @@ def test_replay_intersection():
         assert ew_hyp.heading_compatibility < 0.01
         assert ew_hyp.probability < 0.05
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis().segment_id == ns_hyp.segment_id
+    assert _best_id(engine) == ns_hyp.segment_id
 
 
 def test_replay_road_merge():
@@ -164,6 +168,7 @@ def test_replay_road_merge():
     dt = 0.1
 
     ramp_hyps = []
+    h = 0.0
     for step in range(12):
         alpha = step / 14.0
         pos = (1.0 - alpha) * np.array([-15.0, -50.0]) + alpha * np.array([0.0, 0.0])
@@ -171,8 +176,7 @@ def test_replay_road_merge():
         h = float(np.arctan2(seg_dir[0], seg_dir[1]))
         ramp_hyps = engine.update_hypotheses(pos, h, speed=10.0, position_uncertainty=2.5)
 
-    assert engine.get_best_hypothesis() is not None
-    assert engine.get_best_hypothesis().segment_id == "ramp_a_0"
+    assert _best_id(engine) == "ramp_a_0"
 
     junction_hyps = engine.update_hypotheses(np.array([0.0, 0.0]), h, speed=10.0, position_uncertainty=2.5)
     assert len(junction_hyps) >= 2
@@ -189,7 +193,7 @@ def test_replay_road_merge():
     assert trunk_hyp.probability > 0.80
     assert trunk_hyp.connectivity_compatibility > 0.70
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis().segment_id == trunk_hyp.segment_id
+    assert _best_id(engine) == trunk_hyp.segment_id
 
 
 def test_replay_road_split():
@@ -207,7 +211,7 @@ def test_replay_road_split():
         pos = np.array([0.0, y])
         engine.update_hypotheses(pos, 0.0, speed=10.0, position_uncertainty=2.0)
 
-    assert engine.get_best_hypothesis().segment_id == "trunk_0"
+    assert _best_id(engine) == "trunk_0"
 
     fork_hyps = engine.update_hypotheses(np.array([0.0, 2.0]), 0.0, speed=10.0, position_uncertainty=4.0)
     assert len(fork_hyps) >= 2
@@ -225,7 +229,7 @@ def test_replay_road_split():
     right_hyp = next(h for h in final_hyps if "fork_right" in h.segment_id)
     assert right_hyp.probability > 0.85
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis().segment_id == right_hyp.segment_id
+    assert _best_id(engine) == right_hyp.segment_id
 
 
 def test_replay_temporary_map_ambiguity():
@@ -250,8 +254,7 @@ def test_replay_temporary_map_ambiguity():
         hyps = engine.update_hypotheses(pos, 0.0, speed=10.0, position_uncertainty=2.0)
 
     assert engine.state == RoadAmbiguityState.CONVERGED
-    assert engine.get_best_hypothesis() is not None
-    assert engine.get_best_hypothesis().segment_id == "parallel_0"
+    assert _best_id(engine) == "parallel_0"
 
 
 def test_replay_gnss_outage_during_ambiguity():
@@ -270,6 +273,7 @@ def test_replay_gnss_outage_during_ambiguity():
         outage_hyps = engine.update_hypotheses(pos, 0.0, speed=10.0, position_uncertainty=unc)
 
     assert engine.state == RoadAmbiguityState.AMBIGUOUS
+    assert outage_hyps is not None
     assert len(outage_hyps) == 2
     assert engine.get_best_hypothesis() is None
 

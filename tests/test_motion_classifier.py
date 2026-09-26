@@ -89,6 +89,7 @@ def test_motion_classifier_all_six_transitions():
     history_states = []
     for motion_type, _ in transitions:
         win = create_synthetic_imu_window(motion_type, 200)
+        st = None
         for _ in range(3):
             st, _, _ = stabilizer.process_window(win)
         history_states.append(st)

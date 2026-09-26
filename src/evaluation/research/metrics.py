@@ -28,8 +28,10 @@ DEFINITIONS = {
 }
 
 
+from typing import Dict, Optional
+
 def score(rows, capabilities, prediction_threshold=.65):
-    metrics = {key: None for key in DEFINITIONS if key not in ("recovery_time_s", "max_recovery_position_jump_m", "memory_usage_bytes", "model_size_bytes")}
+    metrics: Dict[str, Optional[float]] = {key: None for key in DEFINITIONS if key not in ("recovery_time_s", "max_recovery_position_jump_m", "memory_usage_bytes", "model_size_bytes")}
     support = {key: {"sample_indices": [], "reason": "required reference or component output unavailable"} for key in metrics}
 
     def save(key, values, indices, rms=False):
