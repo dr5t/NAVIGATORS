@@ -82,8 +82,8 @@ class PedestrianIMUDataset(Dataset):
     def __len__(self) -> int:
         return len(self.windows)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.windows[idx], self.targets[idx]
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.windows[index], self.targets[index]
 
 
 class PedestrianTrainingPipeline:
@@ -126,8 +126,8 @@ class PedestrianTrainingPipeline:
 
         n = len(group_keys)
         if n >= 3:
-            n_tr = max(1, int(round(n * self.config.train_ratio)))
-            n_va = max(1, int(round(n * self.config.val_ratio)))
+            n_tr = max(1, round(n * self.config.train_ratio))
+            n_va = max(1, round(n * self.config.val_ratio))
             if n_tr + n_va >= n:
                 n_tr = n - 2
                 n_va = 1
